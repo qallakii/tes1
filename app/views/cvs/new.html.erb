@@ -1,0 +1,15 @@
+<h1 class="text-2xl font-bold mb-4">Upload CV to <%= @folder.name %></h1>
+
+<%= form_with model: [@folder, @cv], local: true, multipart: true do |f| %>
+  <div class="mb-2">
+    <%= f.label :filename, "CV Name", class: "block font-medium" %>
+    <%= f.text_field :filename, class: "border p-2 w-full rounded" %>
+  </div>
+
+  <div class="mb-2">
+    <%= f.label :file, "Upload File", class: "block font-medium" %>
+    <%= f.file_field :file, class: "border p-2 w-full rounded" %>
+  </div>
+
+  <%= f.submit "Upload", class: "btn bg-green-500 text-white px-4 py-2 rounded" %>
+<% end %>

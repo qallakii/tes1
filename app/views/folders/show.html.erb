@@ -1,0 +1,6 @@
+<% @cvs.each do |cv| %>
+  <li class="border p-2 rounded flex justify-between items-center bg-white">
+    <%= link_to cv.filename, folder_cv_path(@folder, cv), class: "text-blue-600" %>
+    <span>Avg Rating: <%= cv.ratings.average(:stars)&.round(1) || "N/A" %></span>
+  </li>
+<% end %>

@@ -1,0 +1,22 @@
+<h1 class="text-2xl font-bold mb-4"><%= @cv.filename %></h1>
+
+<% if @cv.file.attached? %>
+  <p class="mb-4">
+    <%= link_to "Download CV", url_for(@cv.file), target: "_blank", class: "text-blue-600" %>
+  </p>
+<% end %>
+
+<h2 class="text-xl font-semibold mt-4">Ratings</h2>
+<p>Average Rating: <%= @cv.ratings.average(:stars)&.round(1) || "N/A" %></p>
+
+<% if user_signed_in? %>
+  <% if current_user.ratings.exists?(cv: @cv) %>
+    <p class="text-gray-600">You have already rated this CV.</p>
+  <% else %>
+    <%= form_with url: ratings_path, method: :post, local: true do |f| %>
+      <%= hidden_field_tag :cv_id, @cv.id %>
+      <%= number_field_tag :stars, nil, min: 1, max: 5, class: "w-16 border p-1 rounded" %>
+      <%= f.submit "Rate", class: "btn bg-yellow-500 text-white px-2 py-1 rounded" %>
+    <% end %>
+  <% end %>
+<% end %>

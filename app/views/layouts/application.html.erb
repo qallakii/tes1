@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>CV Share App</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <!-- Tailwind CSS -->
+    <%= stylesheet_link_tag "application.tailwind.css", "data-turbo-track": "reload" %>
+
+    <!-- JavaScript -->
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="bg-gray-100 font-sans min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow p-4 flex justify-between items-center mb-6">
+      <div class="text-xl font-bold text-blue-600">
+        <%= link_to "CV Share App", root_path, class: "hover:underline" %>
+      </div>
+
+      <div>
+        <% if defined?(user_signed_in?) && user_signed_in? %>
+          <span class="mr-4 text-gray-700">Hello, <%= current_user.email %></span>
+          <%= link_to "Logout", destroy_user_session_path, method: :delete, class: "text-red-600 font-semibold hover:underline" %>
+        <% else %>
+          <%= link_to "Login", new_user_session_path, class: "mr-4 text-blue-600 font-semibold hover:underline" %>
+          <%= link_to "Sign Up", new_user_registration_path, class: "text-green-600 font-semibold hover:underline" %>
+        <% end %>
+      </div>
+    </nav>
+
+    <!-- Flash messages -->
+    <div class="container mx-auto px-4">
+      <% flash.each do |type, message| %>
+        <% color = case type.to_sym
+                  when :notice then "green"
+                  when :alert then "red"
+                  else "gray"
+                  end %>
+        <div class="bg-<%= color %>-100 border border-<%= color %>-300 text-<%= color %>-800 px-4 py-2 rounded mb-4">
+          <%= message %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Main content -->
+    <div class="container mx-auto px-4">
+      <%= yield %>
+    </div>
+
+  </body>
+</html>
