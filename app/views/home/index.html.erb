@@ -1,0 +1,10 @@
+<div class="text-center py-20">
+  <h1 class="text-5xl font-bold text-gray-800 mb-6">Welcome to TES1 CV App</h1>
+  <p class="text-lg text-gray-600 mb-8">Upload, share, and manage your CVs easily.</p>
+  <% if current_user %>
+    <%= link_to "Go to Dashboard", cvs_path, class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded" %>
+  <% else %>
+    <%= link_to "Sign Up", signup_path, class: "bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-6 rounded mr-4" %>
+    <%= link_to "Login", login_path, class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded" %>
+  <% end %>
+</div>

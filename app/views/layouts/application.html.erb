@@ -1,54 +1,48 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>CV Share App</title>
-    <%= csrf_meta_tags %>
-    <%= csp_meta_tag %>
+<head>
+  <title>TES1 CV App</title>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
 
-    <!-- Tailwind CSS -->
-    <%= stylesheet_link_tag "application.tailwind.css", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  <%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen">
 
-    <!-- JavaScript -->
-    <%= javascript_importmap_tags %>
-  </head>
-
-  <body class="bg-gray-100 font-sans min-h-screen">
-
-    <!-- Navbar -->
-    <nav class="bg-white shadow p-4 flex justify-between items-center mb-6">
-      <div class="text-xl font-bold text-blue-600">
-        <%= link_to "CV Share App", root_path, class: "hover:underline" %>
-      </div>
-
+  <!-- Navigation -->
+  <nav class="bg-blue-600 text-white p-4 shadow-md">
+    <div class="container mx-auto flex justify-between">
+      <a href="/" class="font-bold text-xl">TES1 CV App</a>
       <div>
-        <% if defined?(user_signed_in?) && user_signed_in? %>
-          <span class="mr-4 text-gray-700">Hello, <%= current_user.email %></span>
-          <%= link_to "Logout", destroy_user_session_path, method: :delete, class: "text-red-600 font-semibold hover:underline" %>
+        <% if current_user %>
+          <span class="mr-4">Hello, <%= current_user.name %></span>
+          <%= link_to "Logout", logout_path, method: :delete, class: "hover:underline" %>
         <% else %>
-          <%= link_to "Login", new_user_session_path, class: "mr-4 text-blue-600 font-semibold hover:underline" %>
-          <%= link_to "Sign Up", new_user_registration_path, class: "text-green-600 font-semibold hover:underline" %>
+          <%= link_to "Login", login_path, class: "mr-4 hover:underline" %>
+          <%= link_to "Sign Up", signup_path, class: "hover:underline" %>
         <% end %>
       </div>
-    </nav>
-
-    <!-- Flash messages -->
-    <div class="container mx-auto px-4">
-      <% flash.each do |type, message| %>
-        <% color = case type.to_sym
-                  when :notice then "green"
-                  when :alert then "red"
-                  else "gray"
-                  end %>
-        <div class="bg-<%= color %>-100 border border-<%= color %>-300 text-<%= color %>-800 px-4 py-2 rounded mb-4">
-          <%= message %>
-        </div>
-      <% end %>
     </div>
+  </nav>
 
-    <!-- Main content -->
-    <div class="container mx-auto px-4">
-      <%= yield %>
-    </div>
+  <!-- Flash messages -->
+  <div class="container mx-auto mt-4">
+    <% flash.each do |type, message| %>
+      <div class="mb-4 px-4 py-3 rounded relative
+        <% if type == 'notice' %> bg-green-100 border border-green-400 text-green-700
+        <% elsif type == 'alert' %> bg-red-100 border border-red-400 text-red-700
+        <% end %>"
+      >
+        <span class="block sm:inline"><%= message %></span>
+      </div>
+    <% end %>
+  </div>
 
-  </body>
+  <!-- Main content -->
+  <div class="container mx-auto mt-6">
+    <%= yield %>
+  </div>
+
+</body>
 </html>

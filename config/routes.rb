@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  # Set the homepage
+  root 'home#index'
+
   # Devise routes for users
   devise_for :users
 
