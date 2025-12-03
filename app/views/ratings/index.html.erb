@@ -1,25 +1,26 @@
-<h1 class="text-3xl font-bold mb-6 text-gray-800">Ratings</h1>
+<h1 class="page-title">CV Ratings Dashboard</h1>
 
-<table class="min-w-full bg-white border border-gray-200 shadow rounded">
+<table class="dashboard-table">
   <thead>
-    <tr class="bg-gray-100 text-gray-700">
-      <th class="py-2 px-4 border-b">CV</th>
-      <th class="py-2 px-4 border-b">User</th>
-      <th class="py-2 px-4 border-b">Score</th>
-      <th class="py-2 px-4 border-b">Comment</th>
-      <th class="py-2 px-4 border-b">Actions</th>
+    <tr>
+      <th>ID</th>
+      <th>CV</th>
+      <th>User</th>
+      <th>Stars</th>
+      <th>Created At</th>
+      <th>Actions</th>
     </tr>
   </thead>
   <tbody>
     <% @ratings.each do |rating| %>
-      <tr class="hover:bg-gray-50">
-        <td class="py-2 px-4 border-b"><%= rating.cv.filename if rating.cv %></td>
-        <td class="py-2 px-4 border-b"><%= rating.user.email if rating.user %></td>
-        <td class="py-2 px-4 border-b"><%= rating.score %></td>
-        <td class="py-2 px-4 border-b"><%= rating.comment %></td>
-        <td class="py-2 px-4 border-b space-x-2">
-          <%= link_to "Edit", edit_rating_path(rating), class: "text-green-600 hover:underline" %>
-          <%= link_to "Delete", rating_path(rating), method: :delete, data: { confirm: "Are you sure?" }, class: "text-red-600 hover:underline" %>
+      <tr>
+        <td><%= rating.id %></td>
+        <td><%= rating.cv.title if rating.cv %></td>
+        <td><%= rating.user.email if rating.user %></td>
+        <td><%= "★" * rating.stars %></td>
+        <td><%= rating.created_at.strftime("%b %d, %Y") %></td>
+        <td>
+          <%= link_to "Delete", rating_path(rating), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-delete" %>
         </td>
       </tr>
     <% end %>

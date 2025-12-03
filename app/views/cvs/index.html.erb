@@ -1,23 +1,32 @@
-<h1>CVs</h1>
-<%= link_to "Upload New CV", new_cv_path, class: "button" %>
+<h1 class="page-title">CVs Dashboard</h1>
 
-<table class="table">
+<div class="actions">
+  <%= link_to "Upload New CV", new_cv_path, class: "btn btn-primary" %>
+</div>
+
+<table class="dashboard-table">
   <thead>
     <tr>
-      <th>Title</th>
+      <th>ID</th>
+      <th>CV Name</th>
       <th>Folder</th>
+      <th>Uploaded By</th>
+      <th>Uploaded At</th>
       <th>Actions</th>
     </tr>
   </thead>
   <tbody>
     <% @cvs.each do |cv| %>
       <tr>
+        <td><%= cv.id %></td>
         <td><%= cv.title %></td>
         <td><%= cv.folder.name if cv.folder %></td>
+        <td><%= cv.user.email if cv.user %></td>
+        <td><%= cv.created_at.strftime("%b %d, %Y") %></td>
         <td>
-          <%= link_to "Show", cv_path(cv), class: "button" %>
-          <%= link_to "Edit", edit_cv_path(cv), class: "button" %>
-          <%= link_to "Delete", cv_path(cv), method: :delete, data: { confirm: "Are you sure?" }, class: "button" %>
+          <%= link_to "View", cv_path(cv), class: "btn btn-view" %>
+          <%= link_to "Edit", edit_cv_path(cv), class: "btn btn-edit" %>
+          <%= link_to "Delete", cv_path(cv), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-delete" %>
         </td>
       </tr>
     <% end %>

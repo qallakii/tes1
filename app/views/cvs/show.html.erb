@@ -1,4 +1,29 @@
-<h1><%= @cv.title %></h1>
-<p><strong>Folder:</strong> <%= @cv.folder.name if @cv.folder %></p>
+<h2>Rate this CV</h2>
 
-<%= link_to "Back", cvs_path, class: "button" %>
+<%= form_with(model: [@cv, @rating], local: true) do |f| %>
+  <div class="rating-form">
+    <%= f.label :stars, "Stars (1-5):" %>
+    <%= f.number_field :stars, in: 1..5, class: "input-field" %>
+    <%= f.submit "Submit Rating", class: "btn btn-primary" %>
+  </div>
+<% end %>
+
+<h3>Existing Ratings</h3>
+<table class="dashboard-table">
+  <thead>
+    <tr>
+      <th>User</th>
+      <th>Stars</th>
+      <th>Created At</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @ratings.each do |r| %>
+      <tr>
+        <td><%= r.user.email %></td>
+        <td><%= "★" * r.stars %></td>
+        <td><%= r.created_at.strftime("%b %d, %Y") %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

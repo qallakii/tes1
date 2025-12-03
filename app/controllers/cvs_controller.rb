@@ -1,7 +1,5 @@
-class CvsController < ApplicationController
-  before_action :authenticate_user!
-
-  def index
-    @cvs = Cv.all
-  end
+def show
+  @cv = Cv.find(params[:id])
+  @ratings = @cv.ratings.includes(:user)
+  @rating = Rating.new
 end

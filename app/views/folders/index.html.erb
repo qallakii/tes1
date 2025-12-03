@@ -1,21 +1,28 @@
-<h1>Folders</h1>
-<%= link_to "New Folder", new_folder_path, class: "button" %>
+<h1 class="page-title">Folders Dashboard</h1>
 
-<table class="table">
+<div class="actions">
+  <%= link_to "New Folder", new_folder_path, class: "btn btn-primary" %>
+</div>
+
+<table class="dashboard-table">
   <thead>
     <tr>
-      <th>Name</th>
+      <th>ID</th>
+      <th>Folder Name</th>
+      <th>Created At</th>
       <th>Actions</th>
     </tr>
   </thead>
   <tbody>
     <% @folders.each do |folder| %>
       <tr>
+        <td><%= folder.id %></td>
         <td><%= folder.name %></td>
+        <td><%= folder.created_at.strftime("%b %d, %Y") %></td>
         <td>
-          <%= link_to "Show", folder_path(folder), class: "button" %>
-          <%= link_to "Edit", edit_folder_path(folder), class: "button" %>
-          <%= link_to "Delete", folder_path(folder), method: :delete, data: { confirm: "Are you sure?" }, class: "button" %>
+          <%= link_to "View", folder_path(folder), class: "btn btn-view" %>
+          <%= link_to "Edit", edit_folder_path(folder), class: "btn btn-edit" %>
+          <%= link_to "Delete", folder_path(folder), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-delete" %>
         </td>
       </tr>
     <% end %>
