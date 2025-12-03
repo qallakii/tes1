@@ -5,7 +5,7 @@
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
 
-  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "application.tailwind", "data-turbo-track": "reload" %>
   <%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen">
@@ -16,11 +16,11 @@
       <a href="/" class="font-bold text-xl">TES1 CV App</a>
       <div>
         <% if current_user %>
-          <span class="mr-4">Hello, <%= current_user.name %></span>
-          <%= link_to "Logout", logout_path, method: :delete, class: "hover:underline" %>
+          <span class="mr-4">Hello, <%= current_user.email %></span>
+          <%= link_to "Logout", destroy_user_session_path, method: :delete, class: "hover:underline" %>
         <% else %>
-          <%= link_to "Login", login_path, class: "mr-4 hover:underline" %>
-          <%= link_to "Sign Up", signup_path, class: "hover:underline" %>
+          <%= link_to "Login", new_user_session_path, class: "mr-4 hover:underline" %>
+          <%= link_to "Sign Up", new_user_registration_path, class: "hover:underline" %>
         <% end %>
       </div>
     </div>

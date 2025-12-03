@@ -1,22 +1,30 @@
 Rails.application.routes.draw do
-  # Set the homepage
-  root 'home#index'
-
-  # Devise routes for users
+  # -----------------------------
+  # Devise routes for user auth
+  # -----------------------------
   devise_for :users
 
-  # Folders: all RESTful actions
-  resources :folders
+  # -----------------------------
+  # Folders and nested CVs
+  # -----------------------------
+  resources :folders do
+    resources :cvs, only: [:index, :new, :create, :show, :destroy] do
+      # Ratings nested under CVs
+      resources :ratings, only: [:create]
+    end
 
-  # CVs: all RESTful actions
-  resources :cvs
+    # ShareLinks nested under Folders
+    resources :share_links, only: [:create, :show]
+  end
 
-  # Share links: only index, show, create
-  resources :share_links, only: [:index, :show, :create]
+  # -----------------------------
+  # Additional standalone routes if needed
+  # -----------------------------
+  # resources :cvs, only: [:show, :destroy] # optional, if you want non-nested access
+  # resources :ratings, only: [:create]     # optional, if not nested
 
-  # Ratings: only index, create, edit, update, destroy
-  resources :ratings, only: [:index, :create, :edit, :update, :destroy]
-
+  # -----------------------------
   # Root path
+  # -----------------------------
   root "folders#index"
 end
