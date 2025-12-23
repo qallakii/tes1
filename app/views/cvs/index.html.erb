@@ -1,34 +1,44 @@
-<h1 class="page-title">CVs Dashboard</h1>
+<h2>Dashboard</h2>
+<p>Welcome, <%= current_user.email %>! Here are your uploaded CVs:</p>
 
-<div class="actions">
-  <%= link_to "Upload New CV", new_cv_path, class: "btn btn-primary" %>
-</div>
+<%= link_to "Upload New CV", new_cv_path, class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block" %>
 
-<table class="dashboard-table">
+<table border="1" cellpadding="5" cellspacing="0" style="margin-top: 15px; width: 100%;">
   <thead>
     <tr>
-      <th>ID</th>
-      <th>CV Name</th>
-      <th>Folder</th>
-      <th>Uploaded By</th>
+      <th>Title</th>
       <th>Uploaded At</th>
+      <th>File</th>
       <th>Actions</th>
     </tr>
   </thead>
   <tbody>
     <% @cvs.each do |cv| %>
       <tr>
-        <td><%= cv.id %></td>
         <td><%= cv.title %></td>
-        <td><%= cv.folder.name if cv.folder %></td>
-        <td><%= cv.user.email if cv.user %></td>
-        <td><%= cv.created_at.strftime("%b %d, %Y") %></td>
+        <td><%= cv.created_at.strftime("%d %b %Y %H:%M") %></td>
         <td>
-          <%= link_to "View", cv_path(cv), class: "btn btn-view" %>
-          <%= link_to "Edit", edit_cv_path(cv), class: "btn btn-edit" %>
-          <%= link_to "Delete", cv_path(cv), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-delete" %>
+          <% if cv.file.attached? %>
+            <!-- Download link -->
+            <%= link_to "Download", rails_blob_path(cv.file, disposition: "attachment"), class: "text-blue-600" %>
+
+            <!-- Optional preview for PDFs -->
+            <% if cv.file.content_type == "application/pdf" %>
+              | <%= link_to "Preview", rails_blob_path(cv.file, disposition: "inline"), target: "_blank", class: "text-green-600" %>
+            <% end %>
+          <% else %>
+            No file
+          <% end %>
+        </td>
+        <td>
+          <%= link_to "View", cv_path(cv), class: "text-blue-600" %> |
+          <%= link_to "Delete", cv_path(cv), method: :delete, data: { confirm: "Are you sure?" }, class: "text-red-600" %>
         </td>
       </tr>
     <% end %>
   </tbody>
 </table>
+
+<% if @cvs.empty? %>
+  <p>You have no CVs uploaded yet.</p>
+<% end %>

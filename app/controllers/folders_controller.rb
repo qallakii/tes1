@@ -1,13 +1,13 @@
 class FoldersController < ApplicationController
-  before_action :authenticate_user!
+  before_action :require_login
 
   def index
-    @folders = current_user.folders
+    @folders = current_user.folders.order(created_at: :desc)
   end
 
   def show
     @folder = current_user.folders.find(params[:id])
-    @cvs = @folder.cvs
+    @cvs = @folder.cvs.order(created_at: :desc)
   end
 
   def new
@@ -17,9 +17,11 @@ class FoldersController < ApplicationController
   def create
     @folder = current_user.folders.build(folder_params)
     if @folder.save
-      redirect_to @folder, notice: "Folder created!"
+      flash[:notice] = "Folder created successfully."
+      redirect_to folders_path
     else
-      render :new, alert: "Error creating folder."
+      flash.now[:alert] = @folder.errors.full_messages.join(", ")
+      render :new
     end
   end
 

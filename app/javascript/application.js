@@ -1,3 +1,5 @@
 import "@hotwired/turbo-rails"
-import "./controllers"
-import "../stylesheets/application.tailwind.css"
+import "controllers"
+import "@rails/ujs"
+
+

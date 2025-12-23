@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_02_134503) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_23_141351) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -47,7 +47,9 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_02_134503) do
     t.string "filename"
     t.bigint "folder_id", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["folder_id"], name: "index_cvs_on_folder_id"
+    t.index ["user_id"], name: "index_cvs_on_user_id"
   end
 
   create_table "folders", force: :cascade do |t|
@@ -79,6 +81,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_02_134503) do
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
+    t.string "password_digest"
     t.datetime "remember_created_at"
     t.datetime "reset_password_sent_at"
     t.string "reset_password_token"
@@ -90,6 +93,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_02_134503) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "cvs", "folders"
+  add_foreign_key "cvs", "users"
   add_foreign_key "folders", "users"
   add_foreign_key "ratings", "cvs"
   add_foreign_key "share_links", "folders"

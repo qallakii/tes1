@@ -1,30 +1,16 @@
-<h1 class="page-title">Folders Dashboard</h1>
+<h2>Your Folders</h2>
 
-<div class="actions">
-  <%= link_to "New Folder", new_folder_path, class: "btn btn-primary" %>
-</div>
+<%= link_to "Create New Folder", new_folder_path, class: "bg-green-500 hover:bg-green-700 text-white py-2 px-4 rounded mb-4 inline-block" %>
 
-<table class="dashboard-table">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Folder Name</th>
-      <th>Created At</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @folders.each do |folder| %>
-      <tr>
-        <td><%= folder.id %></td>
-        <td><%= folder.name %></td>
-        <td><%= folder.created_at.strftime("%b %d, %Y") %></td>
-        <td>
-          <%= link_to "View", folder_path(folder), class: "btn btn-view" %>
-          <%= link_to "Edit", edit_folder_path(folder), class: "btn btn-edit" %>
-          <%= link_to "Delete", folder_path(folder), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-delete" %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+<ul>
+  <% @folders.each do |folder| %>
+    <li style="margin-bottom: 10px;">
+      <%= link_to folder.name, folder_path(folder), class: "text-blue-600 hover:underline" %>
+      (<%= folder.cvs.count %> CVs)
+    </li>
+  <% end %>
+</ul>
+
+<% if @folders.empty? %>
+  <p>You have no folders yet.</p>
+<% end %>

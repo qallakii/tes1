@@ -1,38 +1,47 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>CV Share App</title>
-  <%= csrf_meta_tags %>
-  <%= csp_meta_tag %>
-  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
-  <%= javascript_importmap_tags %>
-</head>
-<body>
+  <head>
+    <title>CV Manager</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
 
-  <nav>
-    <div>
-      <%= link_to "CV Share App", root_path %>
-    </div>
-    <div>
-      <% if user_signed_in? %>
-        Hello, <%= current_user.email %>
-        <%= link_to "Logout", destroy_user_session_path, method: :delete %>
-      <% else %>
-        <%= link_to "Login", new_user_session_path %>
-        <%= link_to "Sign Up", new_user_registration_path %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
+  </head>
+
+  <body class="bg-gray-100 font-sans">
+    <header class="bg-white shadow mb-6">
+      <nav class="container mx-auto p-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold">
+          <%= link_to "CV Manager", root_path, class: "text-gray-800 hover:text-black" %>
+        </h1>
+
+        <div>
+          <% if current_user %>
+            <span class="mr-4">Hello, <%= current_user.email %></span>
+            <!-- Recommended DELETE link -->
+            <%= link_to "Logout", logout_path, method: :delete, data: { confirm: "Are you sure?" }, class: "bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded" %>
+            <!-- Optional: fallback GET link for non-JS users -->
+            <noscript>
+              <%= link_to "Logout", logout_path, class: "bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded" %>
+            </noscript>
+          <% else %>
+            <%= link_to "Sign Up", signup_path, class: "bg-green-500 hover:bg-green-700 text-white py-2 px-4 rounded mr-2" %>
+            <%= link_to "Login", login_path, class: "bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded" %>
+          <% end %>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container mx-auto p-4">
+      <% if flash[:notice] %>
+        <div class="bg-green-100 text-green-700 p-3 rounded mb-4"><%= flash[:notice] %></div>
       <% end %>
-    </div>
-  </nav>
+      <% if flash[:alert] %>
+        <div class="bg-red-100 text-red-700 p-3 rounded mb-4"><%= flash[:alert] %></div>
+      <% end %>
 
-  <div class="container">
-    <% flash.each do |type, message| %>
-      <div class="alert <%= type %>">
-        <%= message %>
-      </div>
-    <% end %>
-
-    <%= yield %>
-  </div>
-
-</body>
+      <%= yield %>
+    </main>
+  </body>
 </html>

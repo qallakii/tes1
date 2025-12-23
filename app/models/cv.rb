@@ -1,5 +1,7 @@
 class Cv < ApplicationRecord
-  belongs_to :folder
+  belongs_to :user
+  belongs_to :folder, optional: true
   has_one_attached :file
-  has_many :ratings, dependent: :destroy
+
+  validates :title, presence: true
 end
