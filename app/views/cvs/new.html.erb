@@ -1,26 +1,32 @@
-<h2>Upload New CV in "<%= @folder.name %>"</h2>
+<h2>Upload New CV to "<%= @folder.name %>"</h2>
 
-<%= form_with model: [@folder, @cv], local: true, html: { multipart: true } do |f| %>
-  <div style="margin-bottom: 10px;">
-    <%= f.label :title %><br>
-    <%= f.text_field :title, class: "border rounded px-2 py-1 w-full" %>
-  </div>
+<%= link_to "Back to Folder", folder_path(@folder) %>
 
-  <div style="margin-bottom: 10px;">
-    <%= f.label :file %><br>
-    <%= f.file_field :file, class: "border rounded px-2 py-1 w-full" %>
-  </div>
+<div class="form-container">
+  <%= form_with(model: [@folder, @cv], local: true, html: { multipart: true }) do |f| %>
+    <% if @cv.errors.any? %>
+      <div class="flash flash-alert">
+        <h4><%= pluralize(@cv.errors.count, "error") %> prevented this CV from being saved:</h4>
+        <ul>
+          <% @cv.errors.full_messages.each do |msg| %>
+            <li><%= msg %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
 
-  <div>
-    <%= f.submit "Upload CV", class: "bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded" %>
-    <%= link_to "Back to Folder", folder_path(@folder), class: "ml-2 text-gray-700 hover:underline" %>
-  </div>
-<% end %>
+    <div class="form-group">
+      <%= f.label :title %><br>
+      <%= f.text_field :title, class: "input-field" %>
+    </div>
 
-<% if flash[:notice] %>
-  <p style="color: green; margin-top: 10px;"><%= flash[:notice] %></p>
-<% end %>
+    <div class="form-group">
+      <%= f.label :file %><br>
+      <%= f.file_field :file, class: "input-field" %>
+    </div>
 
-<% if flash[:alert] %>
-  <p style="color: red; margin-top: 10px;"><%= flash[:alert] %></p>
-<% end %>
+    <div>
+      <%= f.submit "Upload CV", class: "btn-blue" %>
+    </div>
+  <% end %>
+</div>

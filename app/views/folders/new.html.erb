@@ -1,21 +1,27 @@
 <h2>Create New Folder</h2>
 
-<%= form_with model: @folder, local: true do |f| %>
-  <div style="margin-bottom: 10px;">
-    <%= f.label :name %><br>
-    <%= f.text_field :name, class: "border rounded px-2 py-1 w-full" %>
-  </div>
+<%= link_to "Back to Folders", folders_path %>
 
-  <div>
-    <%= f.submit "Create Folder", class: "bg-green-500 hover:bg-green-700 text-white py-2 px-4 rounded" %>
-    <%= link_to "Back to Folders", folders_path, class: "ml-2 text-gray-700 hover:underline" %>
-  </div>
-<% end %>
+<div class="form-container">
+  <%= form_with(model: @folder, local: true) do |f| %>
+    <% if @folder.errors.any? %>
+      <div class="flash flash-alert">
+        <h4><%= pluralize(@folder.errors.count, "error") %> prevented this folder from being saved:</h4>
+        <ul>
+          <% @folder.errors.full_messages.each do |msg| %>
+            <li><%= msg %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
 
-<% if flash[:notice] %>
-  <p style="color: green; margin-top: 10px;"><%= flash[:notice] %></p>
-<% end %>
+    <div class="form-group">
+      <%= f.label :name %><br>
+      <%= f.text_field :name, class: "input-field" %>
+    </div>
 
-<% if flash[:alert] %>
-  <p style="color: red; margin-top: 10px;"><%= flash[:alert] %></p>
-<% end %>
+    <div>
+      <%= f.submit "Create Folder", class: "btn-green" %>
+    </div>
+  <% end %>
+</div>

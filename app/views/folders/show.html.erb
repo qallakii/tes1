@@ -1,11 +1,11 @@
 <h2>Folder: <%= @folder.name %></h2>
 
 <p>
-  <%= link_to "Back to Folders", folders_path, class: "text-gray-700 hover:underline" %> |
-  <%= link_to "Upload New CV", new_folder_cv_path(@folder), class: "bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded" %>
+  <%= link_to "Back to Folders", folders_path %> |
+  <%= link_to "Upload New CV", new_folder_cv_path(@folder), class: "btn-blue" %>
 </p>
 
-<table border="1" cellpadding="5" cellspacing="0" style="margin-top: 15px; width: 100%;">
+<table>
   <thead>
     <tr>
       <th>Title</th>
@@ -21,16 +21,16 @@
         <td><%= cv.created_at.strftime("%d %b %Y %H:%M") %></td>
         <td>
           <% if cv.file.attached? %>
-            <%= link_to "Download", rails_blob_path(cv.file, disposition: "attachment"), class: "text-blue-600" %>
+            <%= link_to "Download", rails_blob_path(cv.file, disposition: "attachment") %>
             <% if cv.file.content_type == "application/pdf" %>
-              | <%= link_to "Preview", rails_blob_path(cv.file, disposition: "inline"), target: "_blank", class: "text-green-600" %>
+              | <%= link_to "Preview", rails_blob_path(cv.file, disposition: "inline"), target: "_blank" %>
             <% end %>
           <% else %>
             No file
           <% end %>
         </td>
         <td>
-          <%= link_to "Delete", folder_cv_path(@folder, cv), method: :delete, data: { confirm: "Are you sure?" }, class: "text-red-600" %>
+          <%= link_to "Delete", folder_cv_path(@folder, cv), method: :delete, data: { confirm: "Are you sure?" }, class: "btn-red" %>
         </td>
       </tr>
     <% end %>
