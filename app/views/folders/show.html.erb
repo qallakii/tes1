@@ -1,38 +1,25 @@
-<h2>Folder: <%= @folder.name %></h2>
+<div class="dashboard-page">
+  <h1><%= @folder.name %> - CVs</h1>
 
-<p>
-  <%= link_to "Back to Folders", folders_path %> |
-  <%= link_to "Upload New CV", new_folder_cv_path(@folder), class: "btn-blue" %>
-</p>
+  <% if @cvs.any? %>
+    <div class="cvs-container">
+      <% @cvs.each do |cv| %>
+        <div class="cv-card">
+          <h2><%= cv.title %></h2>
+          <p><%= cv.file.filename %></p>
+          <div class="cv-actions">
+            <%= link_to "Download", rails_blob_path(cv.file, disposition: "attachment"), class: "btn secondary" %>
+            <%= link_to "Delete", folder_cv_path(@folder, cv), method: :delete, data: { confirm: "Are you sure?" }, class: "btn secondary" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <p class="empty-message">No CVs yet. <%= link_to "Upload one", new_folder_cv_path(@folder) %></p>
+  <% end %>
 
-<table>
-  <thead>
-    <tr>
-      <th>Title</th>
-      <th>Uploaded At</th>
-      <th>File</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @cvs.each do |cv| %>
-      <tr>
-        <td><%= cv.title %></td>
-        <td><%= cv.created_at.strftime("%d %b %Y %H:%M") %></td>
-        <td>
-          <% if cv.file.attached? %>
-            <%= link_to "Download", rails_blob_path(cv.file, disposition: "attachment") %>
-            <% if cv.file.content_type == "application/pdf" %>
-              | <%= link_to "Preview", rails_blob_path(cv.file, disposition: "inline"), target: "_blank" %>
-            <% end %>
-          <% else %>
-            No file
-          <% end %>
-        </td>
-        <td>
-          <%= link_to "Delete", folder_cv_path(@folder, cv), method: :delete, data: { confirm: "Are you sure?" }, class: "btn-red" %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+  <div style="text-align:center; margin-top:20px;">
+    <%= link_to "Back to Dashboard", dashboard_path, class: "btn secondary" %>
+    <%= link_to "Upload CV", new_folder_cv_path(@folder), class: "btn primary" %>
+  </div>
+</div>

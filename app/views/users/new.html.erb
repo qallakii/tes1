@@ -1,30 +1,30 @@
-<h2>Sign Up</h2>
+<div class="auth-page">
+  <div class="auth-card">
+    <h2>Sign Up</h2>
 
-<%= form_with model: @user, local: true do |f| %>
-  <div>
-    <%= f.label :email %><br>
-    <%= f.email_field :email %>
+    <%= form_with(model: @user, local: true) do |form| %>
+      <div class="field">
+        <%= form.label :name %>
+        <%= form.text_field :name, placeholder: "Full Name" %>
+      </div>
+
+      <div class="field">
+        <%= form.label :email %>
+        <%= form.email_field :email, placeholder: "Enter your email" %>
+      </div>
+
+      <div class="field">
+        <%= form.label :password %>
+        <%= form.password_field :password, placeholder: "Enter your password" %>
+      </div>
+
+      <div class="actions" style="text-align:center;">
+        <%= form.submit "Sign Up", class: "btn primary" %>
+      </div>
+    <% end %>
+
+    <div class="auth-footer">
+      <p>Already have an account? <%= link_to "Login", login_path %></p>
+    </div>
   </div>
-
-  <div>
-    <%= f.label :password %><br>
-    <%= f.password_field :password %>
-  </div>
-
-  <div>
-    <%= f.label :password_confirmation %><br>
-    <%= f.password_field :password_confirmation %>
-  </div>
-
-  <div>
-    <%= f.submit "Sign Up" %>
-  </div>
-<% end %>
-
-<% if flash[:notice] %>
-  <p style="color: green;"><%= flash[:notice] %></p>
-<% end %>
-
-<% if flash[:alert] %>
-  <p style="color: red;"><%= flash[:alert] %></p>
-<% end %>
+</div>

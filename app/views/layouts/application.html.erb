@@ -1,224 +1,42 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>CV Manager</title>
+    <title>CV Share</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
-    <%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
-
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #f5f5f5;
-        margin: 0;
-        padding: 0;
-      }
-
-      header {
-        background-color: #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        padding: 15px 30px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      header h1 a {
-        text-decoration: none;
-        color: #333;
-      }
-
-      nav a {
-        text-decoration: none;
-        color: #fff;
-        padding: 8px 15px;
-        border-radius: 5px;
-        margin-left: 10px;
-      }
-
-      .btn-green { background-color: #28a745; }
-      .btn-green:hover { background-color: #218838; }
-
-      .btn-blue { background-color: #007bff; }
-      .btn-blue:hover { background-color: #0069d9; }
-
-      .btn-red { background-color: #dc3545; }
-      .btn-red:hover { background-color: #c82333; }
-
-      main {
-        max-width: 1000px;
-        margin: 30px auto;
-        padding: 0 15px;
-      }
-
-      .flash {
-        padding: 10px 15px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-      }
-
-      .flash-notice { background-color: #d4edda; color: #155724; }
-      .flash-alert { background-color: #f8d7da; color: #721c24; }
-
-      /* Folders grid */
-      .folders-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-      }
-
-      .folder-card {
-        background-color: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        width: calc(33% - 20px);
-        text-align: center;
-        text-decoration: none;
-        color: #333;
-        transition: transform 0.2s;
-      }
-
-      .folder-card:hover {
-        transform: translateY(-5px);
-      }
-
-      /* CVs table */
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        background-color: #fff;
-        border-radius: 5px;
-        overflow: hidden;
-      }
-
-      th, td {
-        padding: 12px 15px;
-        border-bottom: 1px solid #ddd;
-        text-align: left;
-      }
-
-      th {
-        background-color: #007bff;
-        color: white;
-      }
-
-      tr:hover { background-color: #f1f1f1; }
-
-      @media (max-width: 768px) {
-        .folder-card { width: calc(50% - 20px); }
-      }
-
-      @media (max-width: 480px) {
-        .folder-card { width: 100%; }
-        header { flex-direction: column; align-items: flex-start; }
-        nav a { margin-left: 0; margin-top: 5px; display: inline-block; }
-      }
-        .form-container {
-  background-color: #fff;
-  padding: 20px 25px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  max-width: 500px;
-  margin-top: 20px;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.input-field {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-input[type="file"] {
-  padding: 3px;
-}
-
-.btn-green, .btn-blue, .btn-red {
-  cursor: pointer;
-  border: none;
-}
-
-/* Folder card header */
-.folder-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* CV count badge */
-.cv-count {
-  background-color: #007bff;
-  color: #fff;
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-}
-
-/* Folder creation date */
-.folder-created {
-  font-size: 12px;
-  color: #666;
-  margin-top: 5px;
-}
-
-/* Hover overlay */
-.folder-hover {
-  display: none;
-  margin-top: 10px;
-  font-weight: bold;
-  color: #007bff;
-}
-
-.folder-card:hover .folder-hover {
-  display: block;
-}
-
-/* Slight lift effect */
-.folder-card {
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.folder-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-
-    </style>
+    <%= javascript_importmap_tags %>
   </head>
 
   <body>
-    <header>
-      <h1><%= link_to "CV Manager", root_path %></h1>
-      <nav>
-        <% if current_user %>
-          <span>Hello, <%= current_user.email %></span>
-          <%= link_to "Logout", logout_path, method: :delete, data: { confirm: "Are you sure?" }, class: "btn-red" %>
-        <% else %>
-          <%= link_to "Sign Up", signup_path, class: "btn-green" %>
-          <%= link_to "Login", login_path, class: "btn-blue" %>
-        <% end %>
-      </nav>
-    </header>
+    <% unless controller_name.in?(%w[sessions users home]) %>
+      <header class="main-header">
+        <div class="container">
+          <div class="logo">
+            <%= link_to "CV Share", root_path %>
+          </div>
+          <nav class="nav-links">
+            <% if current_user %>
+              <%= link_to "Dashboard", dashboard_path, class: "btn primary" %>
+              <%= button_to "Logout", logout_path, method: :delete, class: "btn secondary" %>
+            <% else %>
+              <%= link_to "Login", login_path, class: "btn secondary" %>
+              <%= link_to "Sign Up", signup_path, class: "btn primary" %>
+            <% end %>
+          </nav>
+        </div>
+      </header>
+    <% end %>
 
-    <main>
-      <% if flash[:notice] %>
-        <div class="flash flash-notice"><%= flash[:notice] %></div>
-      <% end %>
-      <% if flash[:alert] %>
-        <div class="flash flash-alert"><%= flash[:alert] %></div>
-      <% end %>
+    <% if flash[:notice] %>
+      <p class="flash notice"><%= flash[:notice] %></p>
+    <% end %>
 
-      <%= yield %>
-    </main>
+    <% if flash[:alert] %>
+      <p class="flash alert"><%= flash[:alert] %></p>
+    <% end %>
+
+    <%= yield %>
   </body>
 </html>
