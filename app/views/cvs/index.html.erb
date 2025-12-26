@@ -1,3 +1,4 @@
+<!-- app/views/cvs/index.html.erb -->
 <div class="dashboard-page">
   <h1>CVs in <%= @folder.name %></h1>
 
@@ -5,16 +6,17 @@
     <div class="cvs-container">
       <% @cvs.each do |cv| %>
         <div class="cv-card">
-          <h2><%= cv.title %></h2>
-          <p><%= cv.file.filename %></p>
+          <h2><%= cv.file.filename %></h2>
           <div class="cv-actions">
             <%= link_to "Download", rails_blob_path(cv.file, disposition: "attachment"), class: "btn secondary" %>
-            <%= link_to "Delete", cv_path(cv), method: :delete, data: { confirm: "Are you sure?" }, class: "btn secondary" %>
+            <%= link_to "Delete", folder_cv_path(@folder, cv), method: :delete, data: { confirm: "Are you sure?" }, class: "btn secondary" %>
           </div>
         </div>
       <% end %>
     </div>
   <% else %>
-    <p class="empty-message">No CVs yet. <%= link_to "Upload one", new_cv_path(folder_id: @folder.id) %></p>
+    <p class="empty-message">
+      No CVs yet. <%= link_to "Upload one", new_folder_cv_path(@folder) %>
+    </p>
   <% end %>
 </div>

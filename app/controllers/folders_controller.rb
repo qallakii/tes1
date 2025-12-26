@@ -2,12 +2,12 @@ class FoldersController < ApplicationController
   before_action :require_login
 
   def index
-    @folders = current_user.folders.order(created_at: :desc)
+    @folders = current_user.folders.order(created_at: :desc).page(params[:page]).per(10)
   end
 
   def show
     @folder = current_user.folders.find(params[:id])
-    @cvs = @folder.cvs.order(created_at: :desc)
+    @cvs = @folder.cvs.order(created_at: :desc).page(params[:page]).per(10)
   end
 
   def new

@@ -1,20 +1,25 @@
-<h1>Shared Folder: <%= @folder.name %></h1>
+<div class="dashboard-page">
+  <div class="breadcrumb-bar">
+    <button class="btn secondary" onclick="window.history.back()">← Back</button>
+    <span>Shared Folder: <%= @folder.name %></span>
+  </div>
 
-<table class="table">
-  <thead>
-    <tr>
-      <th>CV Title</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @cvs.each do |cv| %>
+  <table class="table">
+    <thead>
       <tr>
-        <td><%= cv.title %></td>
-        <td>
-          <%= link_to "Download", rails_blob_path(cv.file, disposition: "attachment"), class: "button" %>
-        </td>
+        <th>CV Title</th>
+        <th>Actions</th>
       </tr>
-    <% end %>
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      <% @cvs.each do |cv| %>
+        <tr>
+          <td><%= cv.title %></td>
+          <td>
+            <%= link_to "Download", rails_blob_path(cv.file, disposition: "attachment"), class: "button" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

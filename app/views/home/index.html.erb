@@ -1,12 +1,12 @@
 <div class="auth-page">
   <div class="auth-card">
     <h2>Welcome to CV Share</h2>
-    <p class="mb-6" style="text-align:center; color:#6b7280;">
+    <p class="mb-6">
       Upload, share, and manage your CVs easily.
     </p>
 
-    <div class="actions" style="display:flex; justify-content:center; gap:12px;">
-      <% if current_user %>
+    <div class="actions">
+      <% if logged_in? %>
         <%= link_to "Go to Dashboard", dashboard_path, class: "btn primary" %>
       <% else %>
         <%= link_to "Sign Up", signup_path, class: "btn primary" %>

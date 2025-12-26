@@ -1,28 +1,36 @@
 <h1 class="page-title">CV Ratings Dashboard</h1>
 
-<table class="dashboard-table">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>CV</th>
-      <th>User</th>
-      <th>Stars</th>
-      <th>Created At</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @ratings.each do |rating| %>
+<% if @ratings.any? %>
+  <table class="dashboard-table">
+    <thead>
       <tr>
-        <td><%= rating.id %></td>
-        <td><%= rating.cv.title if rating.cv %></td>
-        <td><%= rating.user.email if rating.user %></td>
-        <td><%= "★" * rating.stars %></td>
-        <td><%= rating.created_at.strftime("%b %d, %Y") %></td>
-        <td>
-          <%= link_to "Delete", rating_path(rating), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-delete" %>
-        </td>
+        <th>ID</th>
+        <th>CV</th>
+        <th>User</th>
+        <th>Stars</th>
+        <th>Created At</th>
+        <th>Actions</th>
       </tr>
-    <% end %>
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      <% @ratings.each do |rating| %>
+        <tr>
+          <td><%= rating.id %></td>
+          <td><%= rating.cv.title if rating.cv %></td>
+          <td><%= rating.user.email if rating.user %></td>
+          <td><%= "★" * rating.stars %></td>
+          <td><%= rating.created_at.strftime("%b %d, %Y") %></td>
+          <td>
+            <%= link_to "Delete", rating_path(rating), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-delete" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <div class="pagination" style="text-align:center; margin-top:20px;">
+    <%= paginate @ratings %>
+  </div>
+<% else %>
+  <p class="empty-message">No ratings yet.</p>
+<% end %>

@@ -1,35 +1,41 @@
-<h1 class="page-title">Share Links Dashboard</h1>
+<div class="dashboard-page">
+  <h1>Share Links Dashboard</h1>
 
-<div class="actions">
-  <%= link_to "Create Share Link", new_share_link_path, class: "btn btn-primary" %>
+  <div class="actions" style="margin-bottom: 20px; text-align:center;">
+    <%= link_to "Create Share Link", new_share_link_path, class: "btn primary" %>
+  </div>
+
+  <% if @share_links.any? %>
+    <table class="dashboard-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Folder</th>
+          <th>Share URL</th>
+          <th>Created At</th>
+          <th>Expires At</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @share_links.each do |link| %>
+          <tr>
+            <td><%= link.id %></td>
+            <td><%= link.folder.name if link.folder %></td>
+            <td>
+              <%= link_to link_url(link), link_url(link), target: "_blank" %>
+            </td>
+            <td><%= link.created_at.strftime("%b %d, %Y") %></td>
+            <td><%= link.expires_at.strftime("%b %d, %Y") if link.expires_at %></td>
+            <td>
+              <%= link_to "View", share_link_path(link), class: "btn secondary" %>
+              <%= link_to "Delete", share_link_path(link), method: :delete, data: { confirm: "Are you sure?" }, class: "btn delete" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="empty-message">No share links yet.</p>
+  <% end %>
 </div>
-
-<table class="dashboard-table">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Folder</th>
-      <th>Share URL</th>
-      <th>Created At</th>
-      <th>Expires At</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @share_links.each do |link| %>
-      <tr>
-        <td><%= link.id %></td>
-        <td><%= link.folder.name if link.folder %></td>
-        <td>
-          <%= link_to link_url(link), link_url(link), target: "_blank" %>
-        </td>
-        <td><%= link.created_at.strftime("%b %d, %Y") %></td>
-        <td><%= link.expires_at.strftime("%b %d, %Y") if link.expires_at %></td>
-        <td>
-          <%= link_to "View", share_link_path(link), class: "btn btn-view" %>
-          <%= link_to "Delete", share_link_path(link), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-delete" %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>

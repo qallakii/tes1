@@ -1,29 +1,36 @@
-<h2>Rate this CV</h2>
-
-<%= form_with(model: [@cv, @rating], local: true) do |f| %>
-  <div class="rating-form">
-    <%= f.label :stars, "Stars (1-5):" %>
-    <%= f.number_field :stars, in: 1..5, class: "input-field" %>
-    <%= f.submit "Submit Rating", class: "btn btn-primary" %>
+<div class="dashboard-page">
+  <div class="breadcrumb-bar">
+    <button class="btn secondary" onclick="window.history.back()">← Back</button>
+    <span>CV: <%= @cv.title %></span>
   </div>
-<% end %>
 
-<h3>Existing Ratings</h3>
-<table class="dashboard-table">
-  <thead>
-    <tr>
-      <th>User</th>
-      <th>Stars</th>
-      <th>Created At</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @ratings.each do |r| %>
+  <h2>Rate this CV</h2>
+
+  <%= form_with(model: [@cv, @rating], local: true) do |f| %>
+    <div class="rating-form">
+      <%= f.label :stars, "Stars (1-5):" %>
+      <%= f.number_field :stars, in: 1..5, class: "input-field" %>
+      <%= f.submit "Submit Rating", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+
+  <h3>Existing Ratings</h3>
+  <table class="dashboard-table">
+    <thead>
       <tr>
-        <td><%= r.user.email %></td>
-        <td><%= "★" * r.stars %></td>
-        <td><%= r.created_at.strftime("%b %d, %Y") %></td>
+        <th>User</th>
+        <th>Stars</th>
+        <th>Created At</th>
       </tr>
-    <% end %>
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      <% @ratings.each do |r| %>
+        <tr>
+          <td><%= r.user.email %></td>
+          <td><%= "★" * r.stars %></td>
+          <td><%= r.created_at.strftime("%b %d, %Y") %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

@@ -1,13 +1,32 @@
 class RatingsController < ApplicationController
-  before_action :authenticate_user!
+  before_action :require_login
   before_action :set_rating, only: [:edit, :update, :destroy]
 
-  # List all ratings
   def index
-    @ratings = Rating.all
+    @ratings = Rating.order(created_at: :desc).page(params[:page]).per(10)
   end
 
-  # Create a new rating for a CV
+
+    # Filter by stars
+    if params[:stars].present?
+      @ratings = @ratings.where(stars: params[:stars])
+    end
+
+    # Sort ratings
+    case params[:sort]
+    when "newest"
+      @ratings = @ratings.order(created_at: :desc)
+    when "oldest"
+      @ratings = @ratings.order(created_at: :asc)
+    when "highest"
+      @ratings = @ratings.order(stars: :desc)
+    when "lowest"
+      @ratings = @ratings.order(stars: :asc)
+    else
+      @ratings = @ratings.order(created_at: :desc)
+    end
+  end
+
   def create
     @cv = Cv.find(params[:cv_id])
     @rating = @cv.ratings.new(stars: params[:stars], comment: params[:comment], user: current_user)
@@ -19,7 +38,6 @@ class RatingsController < ApplicationController
     end
   end
 
-  # Optional: edit/update/destroy actions
   def edit; end
 
   def update

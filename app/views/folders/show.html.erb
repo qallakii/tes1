@@ -1,4 +1,9 @@
 <div class="dashboard-page">
+  <div class="breadcrumb-bar">
+    <button class="btn secondary" onclick="window.history.back()">← Back</button>
+    <span><%= @folder.name %></span>
+  </div>
+
   <h1><%= @folder.name %> - CVs</h1>
 
   <% if @cvs.any? %>
@@ -18,8 +23,13 @@
     <p class="empty-message">No CVs yet. <%= link_to "Upload one", new_folder_cv_path(@folder) %></p>
   <% end %>
 
-  <div style="text-align:center; margin-top:20px;">
-    <%= link_to "Back to Dashboard", dashboard_path, class: "btn secondary" %>
-    <%= link_to "Upload CV", new_folder_cv_path(@folder), class: "btn primary" %>
-  </div>
+  <div style="text-align:center; margin-top:20px; display:flex; justify-content:center; gap:12px;">
+  <%= link_to "Upload CV", new_folder_cv_path(@folder), class: "btn primary" %>
+
+  <%= button_to "Share Folder",
+        share_links_path(folder_id: @folder.id),
+        method: :post,
+        class: "btn primary" %>
+</div>
+
 </div>

@@ -1,21 +1,18 @@
 Rails.application.routes.draw do
-  root "folders#index"
+  root "sessions#new"
 
-  # User authentication
-  get  "/signup", to: "users#new"
-  post "/signup", to: "users#create"
   get    "/login",  to: "sessions#new"
   post   "/login",  to: "sessions#create"
+  delete "/logout", to: "sessions#destroy", as: :logout
 
-  # Logout: DELETE preferred, GET fallback
-  delete "/logout", to: "sessions#destroy"
-  get    "/logout", to: "sessions#destroy"
+  get "/signup", to: "users#new"
+  resources :users, only: [:create]
 
-  get "/dashboard", to: "folders#index", as: :dashboard
+  get "/dashboard", to: "folders#index"
 
-  resources :users, only: [:new, :create]
-
-  resources :folders, only: [:index, :show, :new, :create] do
-    resources :cvs, only: [:index, :new, :create, :show, :destroy]
+  resources :folders do
+    resources :cvs, only: [:new, :create, :destroy]
   end
+
+  resources :share_links, only: [:index, :new, :create, :destroy, :show]
 end

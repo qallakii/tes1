@@ -1,32 +1,38 @@
 class ShareLinksController < ApplicationController
+  before_action :require_login
   before_action :set_folder, only: [:create]
-  before_action :set_share_link, only: [:show]
+  before_action :set_share_link, only: [:show, :destroy]
 
-  # List all share links
   def index
-    @share_links = ShareLink.all
+    @share_links = ShareLink.all.includes(:folder)
   end
 
-  # Create a new share link
   def create
     @share_link = @folder.share_links.create
-    redirect_to share_link_path(@share_link), notice: "Share link created! Copy the URL below."
+    flash[:notice] = "Share link created! Copy the URL below."
+    redirect_to share_link_path(@share_link)
   end
 
-  # Access shared folder
   def show
     if @share_link.expired?
-      redirect_to root_path, alert: "This share link has expired."
+      flash[:alert] = "This share link has expired."
+      redirect_to root_path
     else
       @folder = @share_link.folder
       @cvs = @folder.cvs
     end
   end
 
+  def destroy
+    @share_link.destroy
+    flash[:notice] = "Share link deleted."
+    redirect_to share_links_path
+  end
+
   private
 
   def set_folder
-    @folder = Folder.find(params[:folder_id])
+    @folder = current_user.folders.find(params[:folder_id])
   end
 
   def set_share_link
