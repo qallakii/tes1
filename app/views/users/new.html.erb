@@ -3,6 +3,7 @@
     <h2>Sign Up</h2>
 
     <%= form_with(model: @user, local: true) do |form| %>
+
       <div class="field">
         <%= form.label :name %>
         <%= form.text_field :name, placeholder: "Full Name" %>
@@ -18,14 +19,10 @@
         <%= form.password_field :password, placeholder: "Enter your password" %>
       </div>
 
-      <div class="field">
-        <%= form.label :password_confirmation %>
-        <%= form.password_field :password_confirmation, placeholder: "Confirm password" %>
-      </div>
-
-      <div class="actions">
+      <div class="actions" style="text-align:center;">
         <%= form.submit "Sign Up", class: "btn primary" %>
       </div>
+
     <% end %>
 
     <div class="auth-footer">

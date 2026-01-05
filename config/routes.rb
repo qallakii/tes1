@@ -11,7 +11,7 @@ Rails.application.routes.draw do
   get "/dashboard", to: "folders#index"
 
   resources :folders do
-    resources :cvs, only: [:new, :create, :destroy]
+    resources :cvs, only: [:new, :create, :destroy, :show, :index]
   end
 
   resources :share_links, only: [:index, :new, :create, :destroy, :show]

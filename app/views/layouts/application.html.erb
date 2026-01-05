@@ -1,44 +1,80 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>CvShareApp</title>
+    <title>CV Share</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
-    <%= javascript_include_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
   </head>
 
   <body>
-    <% if current_user %>
-      <header class="topbar">
-        <div class="logo">
-          CV Share
-        </div>
-
-        <nav class="nav-links">
-          <%= link_to "Dashboard", dashboard_path %>
-          <%= link_to "Shared Links", share_links_path %>
-
-          <div class="user-dropdown">
-            <button id="profileBtn" class="profile-btn">
-              <%= current_user.email %> ▼
-            </button>
-
-            <div id="profileMenu" class="dropdown-menu hidden">
-              <%= button_to "Logout",
-                    logout_path,
-                    method: :delete,
-                    class: "dropdown-item",
-                    form: { data: { turbo: false } } %>
-            </div>
+    <%# ================= HEADER ================= %>
+    <% unless controller_name.in?(%w[sessions users home]) %>
+      <header class="main-header">
+        <div class="container">
+          <div class="logo">
+            <%= link_to "CV Share", root_path %>
           </div>
-        </nav>
+
+          <% if current_user %>
+            <nav class="main-nav">
+              <div class="nav-left">
+                <%= link_to "Dashboard", dashboard_path, class: ("active" if controller_name == "folders") %>
+                <%= link_to "Shared Links", share_links_path, class: ("active" if controller_name == "share_links") %>
+              </div>
+
+              <div class="nav-right">
+                <div class="user-dropdown">
+                  <button class="profile-toggle" id="profileToggle">
+                    <div class="avatar"><%= current_user.first_name[0].upcase %></div>
+                    <span class="profile-name"><%= current_user.first_name.capitalize %></span>
+                  </button>
+
+                  <ul class="dropdown-menu" id="profileMenu">
+                    <li><%= link_to "Logout", logout_path, method: :delete %></li>
+                    <%# Add more menu items here if needed %>
+                  </ul>
+                </div>
+              </div>
+            </nav>
+          <% end %>
+        </div>
       </header>
     <% end %>
 
-    <main class="main-content">
-      <%= yield %>
-    </main>
+    <%# ================= FLASH MESSAGES ================= %>
+    <% if flash[:notice] %>
+      <p class="flash notice"><%= flash[:notice] %></p>
+    <% end %>
+
+    <% if flash[:alert] %>
+      <p class="flash alert"><%= flash[:alert] %></p>
+    <% end %>
+
+    <%# ================= PAGE CONTENT ================= %>
+    <%= yield %>
+
+    <%# ================= PROFILE DROPDOWN SCRIPT ================= %>
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        const toggle = document.getElementById("profileToggle");
+        const dropdown = document.getElementById("profileMenu");
+
+        if (toggle && dropdown) {
+          toggle.addEventListener("click", function(e) {
+            e.stopPropagation();
+            dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+          });
+
+          document.addEventListener("click", function(e) {
+            if (!toggle.contains(e.target) && !dropdown.contains(e.target)) {
+              dropdown.style.display = "none";
+            }
+          });
+        }
+      });
+    </script>
   </body>
 </html>

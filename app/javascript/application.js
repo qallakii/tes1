@@ -1,17 +1,25 @@
 import "@hotwired/turbo-rails"
+import "controllers"
+
+// Enable Rails UJS for method: :delete links
+import Rails from "@rails/ujs"
+Rails.start()
 
 document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("profileBtn")
-  const menu = document.getElementById("profileMenu")
+  const toggle = document.getElementById("profileToggle")
+  const dropdown = document.querySelector(".user-dropdown .dropdown-menu")
 
-  if (btn && menu) {
-    btn.addEventListener("click", () => {
-      menu.classList.toggle("hidden")
+  if (toggle && dropdown) {
+    // Toggle dropdown on click
+    toggle.addEventListener("click", (e) => {
+      e.stopPropagation()
+      dropdown.classList.toggle("open")
     })
 
+    // Close dropdown when clicking outside
     document.addEventListener("click", (e) => {
-      if (!btn.contains(e.target) && !menu.contains(e.target)) {
-        menu.classList.add("hidden")
+      if (!toggle.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.remove("open")
       }
     })
   }
