@@ -1,31 +1,38 @@
 class FoldersController < ApplicationController
-  before_action :require_login
+  before_action :authenticate_user!
+  before_action :set_folder, only: %i[show destroy]
 
   def index
-    @folders = current_user.folders.order(created_at: :desc).page(params[:page]).per(10)
+    @folders = current_user.folders
   end
 
   def show
-    @folder = current_user.folders.find(params[:id])
-    @cvs = @folder.cvs.order(created_at: :desc).page(params[:page]).per(10)
+    @cvs = @folder.cvs.page(params[:page]).per(10)
   end
 
   def new
-    @folder = Folder.new
+    @folder = current_user.folders.new
   end
 
   def create
-    @folder = current_user.folders.build(folder_params)
+    @folder = current_user.folders.new(folder_params)
     if @folder.save
-      flash[:notice] = "Folder created successfully."
-      redirect_to folders_path
+      redirect_to folders_path, notice: "Folder created successfully"
     else
-      flash.now[:alert] = @folder.errors.full_messages.join(", ")
-      render :new
+      render :new, status: :unprocessable_entity
     end
   end
 
+  def destroy
+    @folder.destroy
+    redirect_to folders_path, notice: "Folder deleted"
+  end
+
   private
+
+  def set_folder
+    @folder = current_user.folders.find(params[:id])
+  end
 
   def folder_params
     params.require(:folder).permit(:name)

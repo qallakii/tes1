@@ -18,9 +18,21 @@
 
           <!-- Action Buttons -->
           <div class="cv-actions">
-            <%= link_to "Preview", rails_blob_path(cv.file, disposition: "inline"), target: "_blank", class: "btn secondary" %>
-            <%= link_to "Download", rails_blob_path(cv.file, disposition: "attachment"), class: "btn secondary" %>
-            <%= link_to "Delete", folder_cv_path(@folder, cv), method: :delete, data: { confirm: "Are you sure?" }, class: "btn secondary" %>
+            <%= link_to "Preview",
+              rails_blob_path(cv.file, disposition: "inline"),
+              target: "_blank",
+              class: "btn secondary" %>
+
+            <%= link_to "Download",
+              rails_blob_path(cv.file, disposition: "attachment"),
+              class: "btn secondary" %>
+
+            <%= button_to "Delete",
+              folder_cv_path(@folder, cv),
+              method: :delete,
+              data: { confirm: "Are you sure?" },
+              class: "btn secondary",
+              form: { style: "display:inline-block" } %>
           </div>
 
         </div>
@@ -28,14 +40,83 @@
     </div>
   <% else %>
     <p class="empty-message">
-      No CVs uploaded yet. 
-      <%= link_to "Upload one", new_folder_cv_path(@folder), class: "btn primary" %>
+      No CVs uploaded yet.
+      <button id="open-upload-inline" type="button" class="btn primary">Upload one</button>
     </p>
   <% end %>
 
   <!-- Upload CV Button -->
   <div style="text-align:center; margin-top:20px;">
-    <%= link_to "Upload CV", new_folder_cv_path(@folder), class: "btn primary" %>
+    <button id="open-upload" type="button" class="btn primary">Upload CV</button>
   </div>
 
 </div>
+
+<!-- ===== Upload Modal (added, does NOT change your folder design) ===== -->
+<div id="upload-overlay" style="display:none;">
+  <div class="upload-modal">
+    <h3 style="margin-top:0;">Upload CV</h3>
+
+    <%= form_with model: [@folder, Cv.new], local: true do |f| %>
+      <%= f.hidden_field :title, value: "CV" %>
+
+      <div style="margin-bottom:12px;">
+        <%= f.file_field :file, required: true %>
+      </div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <%= f.submit "Upload", class: "btn primary" %>
+        <button id="close-upload" type="button" class="btn secondary">Cancel</button>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+  /* Modal styles ONLY (scoped). Does not touch your existing folder design. */
+  #upload-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 9999;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  #upload-overlay .upload-modal {
+    background: #fff;
+    border-radius: 10px;
+    padding: 18px;
+    width: 420px;
+    max-width: 92vw;
+    box-shadow: 0 16px 50px rgba(0,0,0,0.25);
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const overlay = document.getElementById("upload-overlay");
+    const closeBtn = document.getElementById("close-upload");
+    const openBtn = document.getElementById("open-upload");
+    const openInlineBtn = document.getElementById("open-upload-inline");
+
+    function openModal() {
+      overlay.style.display = "flex";
+    }
+
+    function closeModal() {
+      overlay.style.display = "none";
+    }
+
+    if (openBtn) openBtn.addEventListener("click", openModal);
+    if (openInlineBtn) openInlineBtn.addEventListener("click", openModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) closeModal();
+    });
+  });
+</script>

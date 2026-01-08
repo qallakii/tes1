@@ -1,0 +1,6 @@
+<h2>Create Share Link for "<%= @folder.name %>"</h2>
+
+<%= form_with(model: [@folder, @folder.share_links.new], local: true) do |f| %>
+  <p>Click "Create" to generate a unique share link for this folder:</p>
+  <%= f.submit "Create Share Link", class: "btn primary" %>
+<% end %>

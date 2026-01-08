@@ -1,19 +1,105 @@
-<div class="auth-page">
-  <div class="auth-card">
-    <div class="breadcrumb-bar">
-      <button class="btn secondary" onclick="window.history.back()">← Back</button>
-      <span>Upload CV to <%= @folder.name %></span>
-    </div>
+<h2>Upload CV</h2>
 
-    <%= form_with(model: [@folder, @cv], local: true) do |form| %>
-      <div class="field">
-        <%= form.label :file %>
-        <%= form.file_field :file %>
+<button id="open-upload" class="upload-btn">
+  Upload CV
+</button>
+
+<!-- Overlay -->
+<div id="upload-overlay" class="overlay" style="display:none;">
+  <div class="upload-modal">
+    <h3>Select PDF file</h3>
+
+    <%= form_with model: [@folder, @cv], local: true do |f| %>
+
+      <% if @cv.errors.any? %>
+        <ul>
+          <% @cv.errors.full_messages.each do |msg| %>
+            <li><%= msg %></li>
+          <% end %>
+        </ul>
+      <% end %>
+
+      <!-- hidden title to satisfy validation -->
+      <%= f.hidden_field :title, value: "CV" %>
+
+      <div>
+        <%= f.file_field :file, required: true %>
       </div>
 
-      <div class="actions" style="text-align:center;">
-        <%= form.submit "Upload CV", class: "btn primary" %>
+      <div class="actions">
+        <%= f.submit "Upload", class: "confirm-btn" %>
+        <button type="button" id="close-upload" class="cancel-btn">
+          Cancel
+        </button>
       </div>
+
     <% end %>
   </div>
 </div>
+
+<style>
+  .upload-btn {
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .upload-modal {
+    background: #fff;
+    padding: 20px;
+    border-radius: 6px;
+    min-width: 300px;
+  }
+
+  .upload-modal h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+  }
+
+  .actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .confirm-btn {
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+
+  .cancel-btn {
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const openBtn = document.getElementById("open-upload");
+    const closeBtn = document.getElementById("close-upload");
+    const overlay = document.getElementById("upload-overlay");
+
+    openBtn.addEventListener("click", () => {
+      overlay.style.display = "flex";
+    });
+
+    closeBtn.addEventListener("click", () => {
+      overlay.style.display = "none";
+    });
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) {
+        overlay.style.display = "none";
+      }
+    });
+  });
+</script>
