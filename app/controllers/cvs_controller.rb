@@ -1,6 +1,10 @@
 class CvsController < ApplicationController
-  before_action :authenticate_user!
+  before_action :require_login
   before_action :set_folder
+
+  def index
+    @cvs = @folder.cvs.order(created_at: :desc)
+  end
 
   def new
     @cv = @folder.cvs.new
@@ -8,28 +12,50 @@ class CvsController < ApplicationController
 
   def create
     @cv = @folder.cvs.new(cv_params)
-    @cv.user_id = current_user.id if @cv.respond_to?(:user_id=)
+    @cv.user = current_user
 
     if @cv.save
-      redirect_to folder_path(@folder), notice: "CV uploaded successfully"
+      flash[:notice] = "CV uploaded successfully."
+      redirect_to folder_path(@folder)
     else
-      redirect_to folder_path(@folder), alert: @cv.errors.full_messages.to_sentence
+      flash.now[:alert] = @cv.errors.full_messages.join(", ")
+      render :new, status: :unprocessable_entity
     end
+  end
+
+  def show
+    @cv = @folder.cvs.find(params[:id])
   end
 
   def update
-    cv = @folder.cvs.find(params[:id])
-    if cv.update(update_params)
-      redirect_to folder_path(@folder), notice: "CV renamed"
+    @cv = @folder.cvs.find(params[:id])
+
+    if @cv.update(cv_params.slice(:title))
+      flash[:notice] = "File renamed."
     else
-      redirect_to folder_path(@folder), alert: cv.errors.full_messages.to_sentence
+      flash[:alert] = @cv.errors.full_messages.join(", ")
     end
+
+    redirect_to folder_path(@folder)
   end
 
   def destroy
-    cv = @folder.cvs.find(params[:id])
-    cv.destroy
-    redirect_to folder_path(@folder), notice: "CV deleted"
+    @cv = @folder.cvs.find(params[:id])
+    @cv.destroy
+    flash[:notice] = "File deleted."
+    redirect_to folder_path(@folder)
+  end
+
+  # ✅ NEW: delete multiple selected files
+  def bulk_destroy
+    ids = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
+    if ids.any?
+      @folder.cvs.where(id: ids).destroy_all
+      flash[:notice] = "Selected files deleted."
+    else
+      flash[:alert] = "No files selected."
+    end
+    redirect_to folder_path(@folder)
   end
 
   private
@@ -39,10 +65,6 @@ class CvsController < ApplicationController
   end
 
   def cv_params
-    params.require(:cv).permit(:title, :description, :file)
-  end
-
-  def update_params
-    params.require(:cv).permit(:title)
+    params.require(:cv).permit(:file, :title)
   end
 end

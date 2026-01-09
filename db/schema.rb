@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_08_150721) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_09_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -76,6 +76,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_08_150721) do
     t.index ["cv_id"], name: "index_ratings_on_cv_id"
   end
 
+  create_table "share_link_cvs", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "cv_id", null: false
+    t.bigint "share_link_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["cv_id"], name: "index_share_link_cvs_on_cv_id"
+    t.index ["share_link_id", "cv_id"], name: "index_share_link_cvs_on_share_link_id_and_cv_id", unique: true
+    t.index ["share_link_id"], name: "index_share_link_cvs_on_share_link_id"
+  end
+
   create_table "share_links", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "expires_at"
@@ -105,5 +115,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_08_150721) do
   add_foreign_key "cvs", "users"
   add_foreign_key "folders", "users"
   add_foreign_key "ratings", "cvs"
+  add_foreign_key "share_link_cvs", "cvs"
+  add_foreign_key "share_link_cvs", "share_links"
   add_foreign_key "share_links", "folders"
 end

@@ -1,55 +1,39 @@
-<div class="dashboard-page folder-show-wide">
+<div class="dashboard-page">
 
-  <div class="breadcrumb-bar">
-    <button class="btn secondary" onclick="window.history.back()">← Back</button>
-    <span><%= @folder.name %></span>
-  </div>
-
-  <h1><%= @folder.name %></h1>
-
-  <!-- Top bar -->
-  <div class="drive-topbar">
-    <div class="drive-search">
-      <input id="drive-search" type="text" placeholder="Search files…" autocomplete="off" />
+  <div class="drive-page-head">
+    <div class="drive-head-left" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <button class="btn secondary" type="button" onclick="window.history.back()">← Back</button>
+      <div>
+        <h2 style="margin:0;"><%= @folder.name %></h2>
+        <div class="muted" style="margin-top:4px;">Click a file to preview. Select files for bulk actions.</div>
+      </div>
     </div>
 
-    <div class="drive-controls">
-      <select id="drive-sort" class="drive-sort">
-        <option value="name_asc">Sort: Name (A–Z)</option>
-        <option value="name_desc">Sort: Name (Z–A)</option>
-        <option value="updated_desc" selected>Sort: Last modified (newest)</option>
-        <option value="updated_asc">Sort: Last modified (oldest)</option>
-        <option value="size_desc">Sort: Size (largest)</option>
-        <option value="size_asc">Sort: Size (smallest)</option>
-      </select>
+    <div class="drive-head-right">
+      <button id="open-upload" class="btn primary" type="button">Upload</button>
 
-      <button id="open-upload" type="button" class="btn primary">Upload CV</button>
-    </div>
-  </div>
-
-  <!-- Bulk bar -->
-  <div id="bulk-bar" class="bulk-bar" style="display:none;">
-    <div class="bulk-left">
-      <strong><span id="selected-count">0</span></strong> selected
-    </div>
-    <div class="bulk-right">
-      <button id="bulk-delete" type="button" class="btn secondary xsmall">Delete selected</button>
-      <button id="bulk-clear" type="button" class="btn secondary xsmall">Clear</button>
+      <!-- Bulk actions appear only when selection exists -->
+      <div id="bulk-actions" style="display:none; align-items:center; gap:8px;">
+        <button id="bulk-share" class="btn secondary" type="button">Share</button>
+        <button id="bulk-download" class="btn secondary" type="button">Download</button>
+        <button id="bulk-delete" class="btn secondary" type="button">Delete</button>
+      </div>
     </div>
   </div>
 
   <% if @cvs.any? %>
     <div class="drive-card">
       <div class="drive-scroll">
-        <div class="drive-list">
+        <!-- ✅ IMPORTANT: use same style pattern as dashboard -->
+        <div class="drive-list cvs-list">
 
           <div class="drive-header">
-            <div class="col-check"><input id="select-all" type="checkbox" /></div>
-            <div class="col-name">Name</div>
-            <div class="col-type">Type</div>
-            <div class="col-size">Size</div>
-            <div class="col-modified">Last modified</div>
-            <div class="col-actions">Actions</div>
+            <div class="col-cv-check"><input type="checkbox" id="select-all" /></div>
+            <div class="col-cv-name">Name</div>
+            <div class="col-cv-type">Type</div>
+            <div class="col-cv-size">Size</div>
+            <div class="col-cv-modified">Last modified</div>
+            <div class="col-cv-actions">Actions</div>
           </div>
 
           <% @cvs.each do |cv| %>
@@ -59,23 +43,23 @@
             <% type_label = ext.present? ? ext : "PDF" %>
             <% size_bytes = blob&.byte_size.to_i %>
 
-            <div class="drive-row"
-                 data-id="<%= cv.id %>"
-                 data-name="<%= display_name.to_s.downcase %>"
-                 data-updated="<%= cv.updated_at.to_i %>"
-                 data-size="<%= size_bytes %>"
-                 data-type="<%= type_label.to_s.downcase %>">
+            <% preview_url = rails_blob_path(cv.file, disposition: "inline") %>
+            <% download_url = rails_blob_path(cv.file, disposition: "attachment") %>
 
-              <div class="col-check">
-                <input class="row-check" type="checkbox" data-row-id="<%= cv.id %>">
+            <div class="drive-row cv-row clickable-row"
+                 data-preview="<%= preview_url %>"
+                 data-download="<%= download_url %>">
+
+              <div class="col-cv-check">
+                <input class="cv-check" type="checkbox" value="<%= cv.id %>" />
               </div>
 
-              <div class="col-name">
+              <div class="col-cv-name">
                 <div class="file-line">
-                  <span class="file-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <path d="M14 2v6h6"/>
+                  <span class="folder-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <path d="M14 2v6h6"></path>
                     </svg>
                   </span>
 
@@ -84,53 +68,46 @@
                     <div class="file-sub"><%= cv.file.filename %></div>
                   </div>
                 </div>
-
-                <div id="rename-form-<%= cv.id %>" class="rename-wrap" style="display:none;">
-                  <%= form_with model: [@folder, cv], method: :patch, local: true do |f| %>
-                    <div class="rename-row">
-                      <%= f.text_field :title, value: cv.title, placeholder: "New name", class: "rename-input" %>
-                      <%= f.submit "Save", class: "btn primary xsmall" %>
-                      <button type="button" class="btn secondary xsmall" data-rename-cancel="<%= cv.id %>">Cancel</button>
-                    </div>
-                  <% end %>
-                </div>
               </div>
 
-              <div class="col-type">
+              <div class="col-cv-type">
                 <span class="pill"><%= type_label %></span>
               </div>
 
-              <div class="col-size">
-                <span class="muted size-num" data-size-text="<%= cv.id %>"><%= size_bytes %></span>
+              <div class="col-cv-size">
+                <span class="muted size-num" data-size-text><%= size_bytes %></span>
               </div>
 
-              <div class="col-modified">
+              <div class="col-cv-modified">
                 <span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span>
               </div>
 
-              <div class="col-actions">
-                <div class="action-group">
-                  <%= link_to "Preview",
-                    rails_blob_path(cv.file, disposition: "inline"),
-                    target: "_blank",
-                    class: "btn secondary xsmall" %>
-
-                  <%= link_to "Download",
-                    rails_blob_path(cv.file, disposition: "attachment"),
-                    class: "btn secondary xsmall" %>
-
-                  <button type="button"
-                    class="btn secondary xsmall"
-                    data-rename-toggle="<%= cv.id %>">
-                    Rename
+              <div class="col-cv-actions">
+                <!-- 3 dots per file -->
+                <div class="kebab-wrap">
+                  <button type="button" class="kebab-btn" data-kebab="file-<%= cv.id %>">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                      <circle cx="12" cy="5" r="1.8"></circle>
+                      <circle cx="12" cy="12" r="1.8"></circle>
+                      <circle cx="12" cy="19" r="1.8"></circle>
+                    </svg>
                   </button>
 
-                  <%= button_to "Delete",
-                    folder_cv_path(@folder, cv),
-                    method: :delete,
-                    data: { confirm: "Are you sure?" },
-                    class: "btn secondary xsmall",
-                    form: { class: "inline-form" } %>
+                  <div class="kebab-menu" data-kebab-menu="file-<%= cv.id %>">
+                    <a class="kebab-item" href="<%= preview_url %>" target="_blank">Preview</a>
+                    <a class="kebab-item" href="<%= download_url %>">Download</a>
+
+                    <button type="button" class="kebab-item share-one-btn" data-cv-id="<%= cv.id %>">
+                      Share
+                    </button>
+
+                    <%= button_to "Delete",
+                      folder_cv_path(@folder, cv),
+                      method: :delete,
+                      data: { confirm: "Delete this file?" },
+                      class: "kebab-item danger",
+                      form: { class: "inline-form" } %>
+                  </div>
                 </div>
               </div>
 
@@ -141,125 +118,157 @@
       </div>
     </div>
   <% else %>
-    <p class="empty-message">
-      No files yet.
-      <button id="open-upload-inline" type="button" class="btn primary">Upload one</button>
-    </p>
+    <p class="empty-message">No CVs uploaded yet.</p>
   <% end %>
+
+  <!-- Share selected -->
+  <%= form_with url: share_links_path, method: :post, local: true, id: "share-selected-form" do %>
+    <%= hidden_field_tag :folder_id, @folder.id %>
+    <%= hidden_field_tag :return_to, request.fullpath %>
+    <div id="selected-cv-ids"></div>
+  <% end %>
+
+  <!-- Share one -->
+  <%= form_with url: share_links_path, method: :post, local: true, id: "share-one-form" do %>
+    <%= hidden_field_tag :folder_id, @folder.id %>
+    <%= hidden_field_tag :return_to, request.fullpath %>
+    <div id="share-one-cv"></div>
+  <% end %>
+
+  <!-- Bulk delete -->
+  <%= form_with url: bulk_destroy_folder_cvs_path(@folder), method: :delete, local: true, id: "bulk-delete-form" do %>
+    <div id="bulk-delete-ids"></div>
+  <% end %>
+
+  <!-- Upload modal -->
+  <div id="upload-overlay" class="overlay" style="display:none;">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <h3 style="margin:0;">Upload PDF</h3>
+        <button type="button" id="close-upload" class="btn secondary xsmall">Close</button>
+      </div>
+
+      <div style="margin-top:12px;">
+        <%= form_with model: [@folder, Cv.new], local: true do |f| %>
+          <%= f.hidden_field :title, value: "CV" %>
+          <div style="margin-top:10px;"><%= f.file_field :file, required: true %></div>
+          <div style="margin-top:14px; display:flex; justify-content:flex-end;">
+            <%= f.submit "Upload", class: "btn primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
 
 </div>
 
 <style>
-  /* ✅ Make THIS page wider without changing the rest of the site */
-  .folder-show-wide{
-    max-width: 1400px;               /* increase container width */
-    width: calc(100% - 64px);        /* smaller left/right margins */
-    margin-left: auto;
-    margin-right: auto;
-  }
-  @media (max-width: 900px){
-    .folder-show-wide{
-      width: calc(100% - 24px);      /* tighter margins on mobile */
-    }
-  }
+  /* ✅ same "Drive table" strategy as index */
+  .cvs-list { min-width: 980px; }
 
-  .inline-form { display:inline-block; margin:0; }
-  .btn.xsmall { padding: 5px 9px; border-radius: 10px; line-height: 1; font-size: 12px; }
-
-  .drive-topbar { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin: 10px 0 16px 0; }
-  .drive-search input {
-    width: min(520px, 92vw);
-    padding: 9px 11px;
-    border: 1px solid rgba(0,0,0,0.12);
-    border-radius: 12px;
-    outline: none;
-    font-size: 13px;
-  }
-  .drive-controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .drive-sort {
-    padding: 9px 11px;
-    border: 1px solid rgba(0,0,0,0.12);
-    border-radius: 12px;
-    background: #fff;
-    font-size: 13px;
-  }
-
-  .bulk-bar {
-    margin: 10px 0 14px 0;
-    padding: 10px 12px;
-    border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.08);
-    background: rgba(0,0,0,0.02);
-    display:flex; align-items:center; justify-content:space-between;
-    gap:10px; flex-wrap:wrap;
-    font-size: 13px;
-  }
-  .bulk-right { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-
-  .drive-card {
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 12px;
-    background: #fff;
-    overflow: hidden;
-  }
-  .drive-scroll { overflow-x: auto; overflow-y: hidden; }
-
-  .drive-list { min-width: 980px; }
-  .drive-header, .drive-row {
-    display: grid;
-    grid-template-columns: 42px minmax(280px, 1fr) 90px 110px 190px 420px;
+  .cvs-list .drive-header,
+  .cvs-list .drive-row{
+    display:grid;
+    grid-template-columns: 52px minmax(320px, 1fr) 90px 110px 190px 120px;
     gap: 12px;
     padding: 10px 14px;
-    align-items: center;
+    align-items:center;
     font-size: 13px;
     line-height: 1.35;
   }
-  .drive-header {
+
+  .cvs-list .drive-header{
     font-size: 11.5px;
     font-weight: 600;
     letter-spacing: 0.02em;
     background: rgba(0,0,0,0.02);
     border-bottom: 1px solid rgba(0,0,0,0.08);
   }
-  .drive-row { border-bottom: 1px solid rgba(0,0,0,0.06); }
-  .drive-row:hover { background: rgba(0,0,0,0.02); }
 
-  .file-line { display:flex; align-items:flex-start; gap:10px; }
-  .file-icon { margin-top:2px; opacity:0.85; flex:0 0 auto; }
-  .file-text { min-width:0; }
-  .file-name { font-weight: 600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .file-sub { font-size: 11.5px; opacity:0.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px; }
-
-  .muted { opacity: 0.75; font-size: 12px; }
-  .size-num { font-variant-numeric: tabular-nums; }
-  .col-size { justify-self: end; }
-
-  .pill {
-    display:inline-flex; align-items:center; justify-content:center;
-    padding: 5px 9px;
-    border-radius: 999px;
-    font-size: 11.5px;
-    border: 1px solid rgba(0,0,0,0.10);
-    background: rgba(0,0,0,0.02);
-    white-space: nowrap;
+  .cvs-list .drive-row{
+    border-bottom: 1px solid rgba(0,0,0,0.06);
   }
+  .cvs-list .drive-row:hover{ background: rgba(0,0,0,0.02); }
 
-  .action-group { display:flex; gap: 8px; align-items:center; flex-wrap: wrap; padding-left: 6px; }
+  .clickable-row{ cursor:pointer; }
 
-  .rename-wrap { margin-top: 10px; }
-  .rename-row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
-  .rename-input {
-    min-width: 240px;
-    padding: 8px 10px;
-    border: 1px solid #ddd;
+  .file-line{ display:flex; align-items:flex-start; gap:10px; }
+  .file-text{ min-width:0; }
+  .file-name{
+    font-weight:600;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .file-sub{
+    font-size: 11.5px;
+    opacity: 0.7;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    margin-top:2px;
+  }
+  .col-cv-size{ justify-self:end; }
+  .size-num{ font-variant-numeric: tabular-nums; }
+
+  /* kebab menu */
+  .kebab-wrap{ position:relative; display:inline-block; }
+  .kebab-btn{
+    border: 1px solid rgba(0,0,0,0.12);
+    background:#fff;
+    border-radius: 12px;
+    padding: 6px 8px;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .kebab-menu{
+    position:absolute; right:0; top: calc(100% + 8px);
+    min-width: 180px;
+    background:#fff;
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+    padding: 6px;
+    display:none;
+    z-index: 5000;
+  }
+  .kebab-item{
+    width:100%;
+    display:block;
+    text-align:left;
+    padding: 9px 10px;
     border-radius: 10px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
     font-size: 13px;
+    color: inherit;
+    text-decoration: none;
+  }
+  .kebab-item:hover{ background: rgba(0,0,0,0.06); }
+  .kebab-item.danger{ color:#b91c1c; }
+
+  /* modals */
+  .overlay{
+    position: fixed; inset:0;
+    background: rgba(0,0,0,0.45);
+    display:flex; align-items:center; justify-content:center;
+    z-index: 8000;
+    padding: 18px;
+  }
+  .modal-card{
+    background:#fff;
+    border-radius: 14px;
+    padding: 16px;
+    width: min(560px, 92vw);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
   }
 </style>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    // Human readable sizes
+
+    // format sizes
     function humanSize(bytes) {
       const units = ["B","KB","MB","GB","TB"];
       let b = Number(bytes || 0);
@@ -272,20 +281,141 @@
       el.textContent = humanSize(raw);
     });
 
-    // Rename toggles
-    document.querySelectorAll("[data-rename-toggle]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-rename-toggle");
-        const el = document.getElementById(`rename-form-${id}`);
-        if (el) el.style.display = "block";
+    // upload modal
+    const uploadOverlay = document.getElementById("upload-overlay");
+    const openUpload = document.getElementById("open-upload");
+    const closeUpload = document.getElementById("close-upload");
+    if (openUpload && uploadOverlay) openUpload.addEventListener("click", () => uploadOverlay.style.display = "flex");
+    if (closeUpload && uploadOverlay) closeUpload.addEventListener("click", () => uploadOverlay.style.display = "none");
+    if (uploadOverlay) uploadOverlay.addEventListener("click", (e) => { if (e.target === uploadOverlay) uploadOverlay.style.display = "none"; });
+
+    // row click preview
+    document.querySelectorAll(".clickable-row").forEach((row) => {
+      row.addEventListener("click", (e) => {
+        if (e.target.closest(".col-cv-check")) return;
+        if (e.target.closest(".kebab-wrap")) return;
+        const url = row.getAttribute("data-preview");
+        if (url) window.open(url, "_blank");
       });
     });
-    document.querySelectorAll("[data-rename-cancel]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-rename-cancel");
-        const el = document.getElementById(`rename-form-${id}`);
-        if (el) el.style.display = "none";
+
+    // select + bulk actions
+    const selectAll = document.getElementById("select-all");
+    const checks = Array.from(document.querySelectorAll(".cv-check"));
+    const bulkBar = document.getElementById("bulk-actions");
+
+    function selectedIds() {
+      return checks.filter(c => c.checked).map(c => c.value);
+    }
+    function selectedRows() {
+      return checks.filter(c => c.checked).map(c => c.closest(".cv-row"));
+    }
+    function updateBulk() {
+      const any = selectedIds().length > 0;
+      if (bulkBar) bulkBar.style.display = any ? "flex" : "none";
+      if (selectAll) selectAll.checked = checks.length > 0 && checks.every(c => c.checked);
+    }
+
+    if (selectAll) {
+      selectAll.addEventListener("change", () => {
+        checks.forEach(c => c.checked = selectAll.checked);
+        updateBulk();
+      });
+    }
+    checks.forEach(c => c.addEventListener("change", updateBulk));
+    updateBulk();
+
+    // bulk share
+    const bulkShare = document.getElementById("bulk-share");
+    const shareForm = document.getElementById("share-selected-form");
+    const shareIds = document.getElementById("selected-cv-ids");
+    if (bulkShare && shareForm && shareIds) {
+      bulkShare.addEventListener("click", () => {
+        const ids = selectedIds();
+        shareIds.innerHTML = "";
+        ids.forEach((id) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "cv_ids[]";
+          input.value = id;
+          shareIds.appendChild(input);
+        });
+        shareForm.submit();
+      });
+    }
+
+    // bulk download
+    const bulkDownload = document.getElementById("bulk-download");
+    if (bulkDownload) {
+      bulkDownload.addEventListener("click", () => {
+        selectedRows().forEach((row, idx) => {
+          const url = row.getAttribute("data-download");
+          if (!url) return;
+          setTimeout(() => {
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }, idx * 150);
+        });
+      });
+    }
+
+    // bulk delete
+    const bulkDelete = document.getElementById("bulk-delete");
+    const bulkDeleteForm = document.getElementById("bulk-delete-form");
+    const bulkDeleteIds = document.getElementById("bulk-delete-ids");
+    if (bulkDelete && bulkDeleteForm && bulkDeleteIds) {
+      bulkDelete.addEventListener("click", () => {
+        if (!confirm("Delete selected files?")) return;
+        const ids = selectedIds();
+        bulkDeleteIds.innerHTML = "";
+        ids.forEach((id) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "cv_ids[]";
+          input.value = id;
+          bulkDeleteIds.appendChild(input);
+        });
+        bulkDeleteForm.submit();
+      });
+    }
+
+    // kebab
+    function closeAllMenus() {
+      document.querySelectorAll(".kebab-menu").forEach((m) => m.style.display = "none");
+    }
+    document.querySelectorAll("[data-kebab]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const key = btn.getAttribute("data-kebab");
+        const menu = document.querySelector('[data-kebab-menu="' + key + '"]');
+        if (!menu) return;
+        const isOpen = menu.style.display === "block";
+        closeAllMenus();
+        menu.style.display = isOpen ? "none" : "block";
       });
     });
+    document.addEventListener("click", () => closeAllMenus());
+
+    // share one
+    const shareOneForm = document.getElementById("share-one-form");
+    const shareOneContainer = document.getElementById("share-one-cv");
+    document.querySelectorAll(".share-one-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-cv-id");
+        if (!id || !shareOneForm || !shareOneContainer) return;
+        shareOneContainer.innerHTML = "";
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "cv_ids[]";
+        input.value = id;
+        shareOneContainer.appendChild(input);
+        shareOneForm.submit();
+      });
+    });
+
   });
 </script>

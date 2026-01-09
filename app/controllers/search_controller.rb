@@ -4,22 +4,20 @@ class SearchController < ApplicationController
   def index
     @query = params[:q].to_s.strip
 
-    if @query.blank?
-      @folders = Folder.none
-      @cvs = Cv.none
-      return
-    end
-
-    q = "%#{@query.downcase}%"
-
     @folders = current_user.folders
-      .where("LOWER(name) LIKE ?", q)
-      .order(updated_at: :desc)
+    @cvs = Cv.joins(:folder).where(folders: { user_id: current_user.id })
 
-    @cvs = current_user.cvs
-      .joins(file_attachment: :blob)
-      .with_attached_file
-      .where("LOWER(cvs.title) LIKE ? OR LOWER(active_storage_blobs.filename) LIKE ?", q, q)
-      .order(updated_at: :desc)
+    if @query.present?
+      q = "%#{@query.downcase}%"
+      @folders = @folders.where("LOWER(name) LIKE ?", q)
+
+      @cvs = @cvs.where(
+        "LOWER(cvs.title) LIKE ? OR LOWER(active_storage_blobs.filename) LIKE ?",
+        q, q
+      ).joins(file_attachment: :blob)
+    else
+      @folders = []
+      @cvs = []
+    end
   end
 end

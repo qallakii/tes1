@@ -1,6 +1,195 @@
-<h2>Create Share Link for "<%= @folder.name %>"</h2>
+<div class="dashboard-page">
 
-<%= form_with(model: [@folder, @folder.share_links.new], local: true) do |f| %>
-  <p>Click "Create" to generate a unique share link for this folder:</p>
-  <%= f.submit "Create Share Link", class: "btn primary" %>
-<% end %>
+  <div class="drive-page-head">
+    <div class="drive-head-left">
+      <h1 style="margin:0;">Create share link</h1>
+      <div class="muted" style="margin-top:4px;">
+        Share a whole folder or only selected files (expires in 24h)
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1: Pick folder -->
+  <div class="drive-card" style="padding:16px;">
+    <form action="<%= new_share_link_path %>" method="get" style="margin:0;">
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <select name="folder_id" class="drive-select" required>
+          <option value="">Select a folder…</option>
+          <% @folders.each do |f| %>
+            <option value="<%= f.id %>" <%= "selected" if defined?(@folder) && @folder&.id == f.id %>><%= f.name %></option>
+          <% end %>
+        </select>
+
+        <button type="submit" class="btn secondary">Load files</button>
+        <%= link_to "Back", share_links_path, class: "btn secondary" %>
+      </div>
+    </form>
+  </div>
+
+  <% if defined?(@folder) && @folder.present? %>
+
+    <!-- Option A: Share whole folder -->
+    <div style="margin-top:14px;">
+      <div class="drive-card" style="padding:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:600;">Share whole folder</div>
+            <div class="muted">Anyone with the link can view all files in “<%= @folder.name %>”.</div>
+          </div>
+
+          <%= form_with url: share_links_path, method: :post, local: true do %>
+            <%= hidden_field_tag :folder_id, @folder.id %>
+            <button type="submit" class="btn primary">Create folder link</button>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option B: Share selected files -->
+    <div style="margin-top:14px; font-weight:600;">Or share selected files</div>
+
+    <div class="drive-card" style="margin-top:10px;">
+      <div class="drive-scroll">
+        <div class="drive-list select-files-list">
+
+          <div class="drive-header">
+            <div class="col-check">
+              <input type="checkbox" id="select-all" />
+            </div>
+            <div class="col-name">Name</div>
+            <div class="col-type">Type</div>
+            <div class="col-size">Size</div>
+            <div class="col-modified">Last modified</div>
+          </div>
+
+          <%= form_with url: share_links_path, method: :post, local: true, id: "share-selected-form" do %>
+            <%= hidden_field_tag :folder_id, @folder.id %>
+
+            <% @cvs.each do |cv| %>
+              <% blob = cv.file&.blob %>
+              <% display_name = cv.title.presence || cv.file.filename.to_s %>
+              <% ext = cv.file.filename.extension.to_s.upcase %>
+              <% type_label = ext.present? ? ext : "PDF" %>
+              <% size_bytes = blob&.byte_size.to_i %>
+
+              <div class="drive-row file-row">
+                <div class="col-check">
+                  <input class="cv-check" type="checkbox" name="cv_ids[]" value="<%= cv.id %>" />
+                </div>
+
+                <div class="col-name">
+                  <div class="file-line">
+                    <span class="file-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6"/>
+                      </svg>
+                    </span>
+
+                    <div class="file-text">
+                      <div class="file-name"><%= display_name %></div>
+                      <div class="file-sub"><%= cv.file.filename %></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-type">
+                  <span class="pill"><%= type_label %></span>
+                </div>
+
+                <div class="col-size">
+                  <span class="muted size-num" data-size-text><%= size_bytes %></span>
+                </div>
+
+                <div class="col-modified">
+                  <span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span>
+                </div>
+              </div>
+            <% end %>
+
+            <div style="padding:14px; display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+              <button type="submit" class="btn primary" id="share-selected-btn" disabled>
+                Create link for selected
+              </button>
+            </div>
+          <% end %>
+
+        </div>
+      </div>
+    </div>
+
+  <% end %>
+
+</div>
+
+<style>
+  .drive-select{
+    padding: 9px 11px;
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 12px;
+    background:#fff;
+    font-size: 13px;
+    min-width: min(520px, 80vw);
+  }
+
+  .select-files-list { min-width: 860px; }
+  .select-files-list .drive-header,
+  .select-files-list .drive-row{
+    display:grid;
+    grid-template-columns: 52px minmax(320px, 1fr) 90px 110px 190px;
+    gap: 12px;
+    padding: 10px 14px;
+    align-items:center;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .col-size { justify-self: end; }
+  .size-num { font-variant-numeric: tabular-nums; }
+
+  .file-line { display:flex; align-items:flex-start; gap:10px; }
+  .file-icon { margin-top:2px; opacity:0.85; flex:0 0 auto; }
+  .file-text { min-width:0; }
+  .file-name { font-weight: 600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .file-sub  { font-size: 11.5px; opacity:0.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px; }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // size formatting
+    function humanSize(bytes) {
+      const units = ["B","KB","MB","GB","TB"];
+      let b = Number(bytes || 0);
+      let i = 0;
+      while (b >= 1024 && i < units.length - 1) { b = b / 1024; i++; }
+      return (i === 0 ? b.toFixed(0) : b.toFixed(1)) + " " + units[i];
+    }
+    document.querySelectorAll("[data-size-text]").forEach((el) => {
+      const raw = parseInt(el.textContent || "0", 10);
+      el.textContent = humanSize(raw);
+    });
+
+    const selectAll = document.getElementById("select-all");
+    const checks = Array.from(document.querySelectorAll(".cv-check"));
+    const btn = document.getElementById("share-selected-btn");
+
+    function updateBtn() {
+      const any = checks.some(c => c.checked);
+      if (btn) btn.disabled = !any;
+    }
+
+    if (selectAll) {
+      selectAll.addEventListener("change", () => {
+        checks.forEach(c => c.checked = selectAll.checked);
+        updateBtn();
+      });
+    }
+
+    checks.forEach(c => c.addEventListener("change", () => {
+      if (selectAll) selectAll.checked = checks.length > 0 && checks.every(x => x.checked);
+      updateBtn();
+    }));
+
+    updateBtn();
+  });
+</script>
