@@ -10,53 +10,113 @@
   </head>
 
   <body>
-    <%# ================= HEADER ================= %>
-    <% unless controller_name.in?(%w[sessions users home]) %>
-      <header class="main-header">
-        <div class="container">
-          <div class="logo">
-            <%= link_to "CV Share", root_path %>
+    <% auth_pages = controller_name.in?(%w[sessions users home]) %>
+
+    <% if !auth_pages && current_user %>
+      <div class="drive-shell">
+        <!-- Top bar -->
+        <header class="drive-topbar">
+          <div class="drive-top-left">
+            <%= link_to root_path, class: "drive-logo" do %>
+              <span class="drive-logo-mark">CV</span>
+              <span class="drive-logo-text">Share</span>
+            <% end %>
           </div>
 
-          <% if current_user %>
-            <nav class="main-nav">
-              <div class="nav-left">
-                <%= link_to "Dashboard", dashboard_path, class: ("active" if controller_name == "folders") %>
-                <%= link_to "Shared Links", share_links_path, class: ("active" if controller_name == "share_links") %>
-              </div>
+          <div class="drive-top-center">
+            <div class="drive-searchbar">
+              <span class="drive-search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <path d="M21 21l-4.3-4.3"></path>
+                </svg>
+              </span>
 
-              <div class="nav-right">
-                <div class="user-dropdown">
-                  <button class="profile-toggle" id="profileToggle">
-                    <div class="avatar"><%= current_user.first_name[0].upcase %></div>
-                    <span class="profile-name"><%= current_user.first_name.capitalize %></span>
-                  </button>
+              <!-- ✅ REAL GLOBAL SEARCH -->
+              <%= form_with url: search_path, method: :get, local: true, class: "drive-search-form" do %>
+                <%= text_field_tag :q, params[:q], placeholder: "Search in CV Share", class: "drive-search-input" %>
+              <% end %>
+            </div>
+          </div>
 
-                  <ul class="dropdown-menu" id="profileMenu">
-                    <li><%= link_to "Logout", logout_path, method: :delete %></li>
-                    <%# Add more menu items here if needed %>
-                  </ul>
-                </div>
-              </div>
-            </nav>
-          <% end %>
+          <div class="drive-top-right">
+            <div class="user-dropdown">
+              <button class="profile-toggle" id="profileToggle" type="button">
+                <div class="avatar"><%= current_user.first_name[0].upcase %></div>
+                <span class="profile-name"><%= current_user.first_name.capitalize %></span>
+              </button>
+
+              <ul class="dropdown-menu" id="profileMenu">
+                <li><%= link_to "Logout", logout_path, method: :delete %></li>
+              </ul>
+            </div>
+          </div>
+        </header>
+
+        <div class="drive-body">
+          <!-- Sidebar -->
+          <aside class="drive-sidebar">
+            <div class="drive-side-section">
+              <%= link_to dashboard_path, class: "drive-side-link #{'active' if controller_name == 'folders' && action_name == 'index'}" do %>
+                <span class="drive-side-ic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path>
+                  </svg>
+                </span>
+                <span>Home</span>
+              <% end %>
+
+              <%= link_to recents_path, class: "drive-side-link #{'active' if controller_name == 'recents'}" do %>
+                <span class="drive-side-ic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 8v5l3 2"></path>
+                    <circle cx="12" cy="12" r="9"></circle>
+                  </svg>
+                </span>
+                <span>Recents</span>
+              <% end %>
+
+              <%= link_to share_links_path, class: "drive-side-link #{'active' if controller_name == 'share_links'}" do %>
+                <span class="drive-side-ic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"></path>
+                    <path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"></path>
+                  </svg>
+                </span>
+                <span>Shared Links</span>
+              <% end %>
+            </div>
+          </aside>
+
+          <!-- Main content -->
+          <main class="drive-main">
+            <% if flash[:notice] %>
+              <p class="flash notice"><%= flash[:notice] %></p>
+            <% end %>
+
+            <% if flash[:alert] %>
+              <p class="flash alert"><%= flash[:alert] %></p>
+            <% end %>
+
+            <%= yield %>
+          </main>
         </div>
-      </header>
+      </div>
+
+    <% else %>
+      <%# auth pages / public pages keep simple %>
+
+      <% if flash[:notice] %>
+        <p class="flash notice"><%= flash[:notice] %></p>
+      <% end %>
+
+      <% if flash[:alert] %>
+        <p class="flash alert"><%= flash[:alert] %></p>
+      <% end %>
+
+      <%= yield %>
     <% end %>
 
-    <%# ================= FLASH MESSAGES ================= %>
-    <% if flash[:notice] %>
-      <p class="flash notice"><%= flash[:notice] %></p>
-    <% end %>
-
-    <% if flash[:alert] %>
-      <p class="flash alert"><%= flash[:alert] %></p>
-    <% end %>
-
-    <%# ================= PAGE CONTENT ================= %>
-    <%= yield %>
-
-    <%# ================= PROFILE DROPDOWN SCRIPT ================= %>
     <script>
       document.addEventListener("DOMContentLoaded", function() {
         const toggle = document.getElementById("profileToggle");

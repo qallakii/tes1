@@ -1,13 +1,14 @@
 class FoldersController < ApplicationController
-  before_action :authenticate_user!
+  before_action :require_login
   before_action :set_folder, only: %i[show destroy]
 
   def index
-    @folders = current_user.folders
+    @folders = current_user.folders.order(updated_at: :desc)
   end
 
   def show
-    @cvs = @folder.cvs.page(params[:page]).per(10)
+    # preload ActiveStorage to avoid N+1 and enable size/type in view
+    @cvs = @folder.cvs.with_attached_file.order(updated_at: :desc)
   end
 
   def new
@@ -16,6 +17,7 @@ class FoldersController < ApplicationController
 
   def create
     @folder = current_user.folders.new(folder_params)
+
     if @folder.save
       redirect_to folders_path, notice: "Folder created successfully"
     else

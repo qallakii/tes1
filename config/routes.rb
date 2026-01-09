@@ -10,6 +10,11 @@ Rails.application.routes.draw do
 
   get "/dashboard", to: "folders#index"
 
+  # ✅ NEW: Recents
+  get "/recents", to: "recents#index", as: :recents
+
+  get "/search", to: "search#index", as: :search
+
   resources :folders do
     resources :cvs, only: [:new, :create, :destroy, :show, :index]
   end

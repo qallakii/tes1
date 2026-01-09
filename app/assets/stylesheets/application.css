@@ -17,26 +17,133 @@ a { text-decoration: none; color: inherit; }
 .container { max-width: 1000px; margin: 0 auto; padding: 0 20px; }
 
 /* ===============================
-   HEADER / NAVBAR
+   DRIVE-LIKE APP LAYOUT
 =============================== */
-.main-header {
-  background: #2563eb;
-  padding: 15px 0;
-  color: white;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+.drive-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-.main-header .container { display: flex; justify-content: space-between; align-items: center; }
-.main-header .logo a { color: white; font-size: 22px; font-weight: 600; }
-.nav-links a, .nav-links form { margin-left: 12px; color: white; }
+.drive-topbar {
+  height: 64px;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  display: grid;
+  grid-template-columns: 240px 1fr 240px;
+  align-items: center;
+  padding: 0 16px;
+}
 
-.nav-links .btn { color: white; border: 1px solid white; padding: 6px 12px; border-radius: 6px; }
-.nav-links .btn.primary { background: white; color: #2563eb; }
-.nav-links .btn.primary:hover { background: #e0e7ff; }
-.nav-links .btn.secondary:hover { background: rgba(255,255,255,0.2); }
+.drive-top-left { display:flex; align-items:center; }
+.drive-logo {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight: 600;
+}
+.drive-logo-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size: 14px;
+}
+.drive-logo-text { font-size: 16px; color: #111827; }
+
+.drive-top-center { display:flex; justify-content:center; }
+.drive-searchbar {
+  width: min(720px, 78vw);
+  height: 42px;
+  background: #eef2ff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 999px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding: 0 14px;
+}
+.drive-searchbar input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 14px;
+}
+.drive-search-icon { opacity: 0.7; display:flex; }
+
+.drive-top-right {
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+}
+
+/* Sidebar + main */
+.drive-body {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: calc(100vh - 64px);
+}
+
+.drive-sidebar {
+  background: #ffffff;
+  border-right: 1px solid rgba(0,0,0,0.08);
+  padding: 14px 10px;
+}
+
+.drive-side-section { display:flex; flex-direction:column; gap:6px; }
+
+.drive-side-link {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: #111827;
+  font-weight: 500;
+}
+.drive-side-link:hover { background: rgba(37,99,235,0.08); }
+.drive-side-link.active {
+  background: rgba(37,99,235,0.12);
+  color: #2563eb;
+}
+.drive-side-ic { display:flex; opacity: 0.85; }
+
+.drive-main {
+  padding: 18px 18px 60px;
+}
+
+/* IMPORTANT: remove the big centered margins INSIDE drive layout */
+.drive-main .dashboard-page {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+.drive-main .dashboard-page h1 {
+  text-align: left;
+  font-size: 28px;
+  margin: 10px 0 18px 0;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .drive-topbar {
+    grid-template-columns: 160px 1fr 160px;
+  }
+  .drive-body {
+    grid-template-columns: 1fr;
+  }
+  .drive-sidebar {
+    display: none;
+  }
+}
 
 /* ===============================
-   PROFILE DROPDOWN
+   PROFILE DROPDOWN (existing)
 =============================== */
 .user-dropdown {
   position: relative;
@@ -50,9 +157,11 @@ a { text-decoration: none; color: inherit; }
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 5px 10px;
-  color: white;
+  padding: 6px 10px;
+  color: #111827;
+  border-radius: 10px;
 }
+.profile-toggle:hover { background: rgba(0,0,0,0.04); }
 
 .profile-toggle .avatar {
   width: 32px;
@@ -72,49 +181,42 @@ a { text-decoration: none; color: inherit; }
   display: none;
   position: absolute;
   right: 0;
-  margin-top: 5px;
+  margin-top: 8px;
   background: white;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  min-width: 120px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  border-radius: 10px;
+  min-width: 140px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.10);
   z-index: 100;
+  padding: 6px 0;
 }
 
-.dropdown-menu li {
-  list-style: none;
-}
-
+.dropdown-menu li { list-style: none; }
 .dropdown-menu li a {
   display: block;
-  padding: 8px 12px;
+  padding: 9px 12px;
   text-decoration: none;
   color: #111827;
   font-size: 14px;
 }
-
-.dropdown-menu li a:hover {
-  background: #f3f4f6;
-}
+.dropdown-menu li a:hover { background: #f3f4f6; }
 
 /* ===============================
    FLASH MESSAGES
 =============================== */
 .flash {
   text-align: center;
-  margin: 15px auto;
+  margin: 10px auto 14px;
   font-size: 14px;
   padding: 10px;
-  border-radius: 5px;
-  max-width: 800px;
+  border-radius: 10px;
+  max-width: 900px;
   opacity: 0;
   transform: translateY(-10px);
   animation: flashIn 0.4s forwards;
 }
-
 .flash.notice { background-color: #d1fae5; color: #065f46; }
 .flash.alert  { background-color: #fee2e2; color: #b91c1c; }
-
 @keyframes flashIn { to { opacity: 1; transform: translateY(0); } }
 
 /* ===============================
@@ -144,7 +246,11 @@ a { text-decoration: none; color: inherit; }
 .field { margin-bottom: 18px; }
 .field label { display: block; font-size: 13px; margin-bottom: 6px; color: #374151; }
 .field input {
-  width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .field input:focus {
@@ -157,7 +263,7 @@ a { text-decoration: none; color: inherit; }
 .auth-footer a { color: #2563eb; font-weight: 500; }
 
 /* ===============================
-   DASHBOARD / FOLDERS / CVS
+   DASHBOARD / FOLDERS / CVS (existing)
 =============================== */
 .dashboard-page { max-width: 1000px; margin: 50px auto; padding: 0 20px; }
 .dashboard-page h1 { text-align: center; font-size: 30px; margin-bottom: 30px; color: #111827; }
@@ -180,23 +286,6 @@ a { text-decoration: none; color: inherit; }
 .cv-actions a, .cv-actions form { font-size: 13px; }
 
 .empty-message { text-align: center; font-size: 16px; color: #6b7280; }
-
-/* Tables */
-.dashboard-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-.dashboard-table th, .dashboard-table td {
-  border: 1px solid #e5e7eb;
-  padding: 10px;
-  text-align: left;
-}
-
-.dashboard-table th {
-  background-color: #f3f4f6;
-}
 
 /* Buttons */
 .btn {
@@ -224,29 +313,11 @@ a { text-decoration: none; color: inherit; }
 }
 .btn.secondary:hover { background: #e0e7ff; transform: translateY(-2px); }
 
-/* CV IFRAME (Preview) */
-.cv-card iframe {
-  max-height: 400px;
+.drive-search-form { width: 100%; }
+.drive-search-input {
+  border: none;
+  outline: none;
+  background: transparent;
   width: 100%;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-}
-
-/* ===============================
-   NAVIGATION LINKS
-=============================== */
-.main-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #2563eb;
-  padding: 10px 20px;
-  color: white;
-}
-
-.main-nav a {
-  color: white;
-  margin-right: 15px;
-  text-decoration: none;
-  font-weight: 500;
+  font-size: 14px;
 }

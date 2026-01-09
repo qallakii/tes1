@@ -4,16 +4,23 @@ class ApplicationController < ActionController::Base
   private
 
   def current_user
-    @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id]
+    return @current_user if defined?(@current_user)
+
+    if session[:user_id]
+      @current_user = User.find_by(id: session[:user_id])
+    else
+      @current_user = nil
+    end
   end
 
   def logged_in?
     current_user.present?
   end
 
-  def authenticate_user!
+  # ✅ Use this everywhere to protect authenticated pages
+  def require_login
     return if logged_in?
 
-    redirect_to login_path, alert: "You must be logged in to access this page"
+    redirect_to login_path, alert: "Please log in to continue."
   end
 end
