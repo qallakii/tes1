@@ -326,5 +326,5 @@ a { text-decoration: none; color: inherit; }
     border: 1px solid rgba(0,0,0,0.08);
     border-radius: 12px;
     background: #fff;
-    overflow: hidden;
+    overflow: visible;
   }
