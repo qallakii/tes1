@@ -349,3 +349,33 @@ a { text-decoration: none; color: inherit; }
   display: block;
   margin-left: 20px;
 }
+
+.drive-body.no-sidebar {
+  grid-template-columns: 1fr;
+}
+
+
+/* ===== Brand logo in top bar ===== */
+.drive-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.drive-logo:hover {
+  background: rgba(0,0,0,0.04);
+  transform: translateY(-1px);
+}
+
+.app-logo {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+.drive-logo-text {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
