@@ -21,5 +21,6 @@ Rails.application.routes.draw do
   end
 
   resources :share_links, only: [:index, :new, :create, :destroy, :show]
+  
   resources :recents, only: [:index]
 end

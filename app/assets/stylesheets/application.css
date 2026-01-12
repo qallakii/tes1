@@ -337,3 +337,12 @@ a { text-decoration: none; color: inherit; }
   background: #fff;
   overflow: visible;
 }
+
+
+/* Logo Style */
+.app-logo {
+  height: 32px;
+  width: auto;
+  display: block;
+  margin-left: 20px;
+}

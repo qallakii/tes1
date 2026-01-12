@@ -41,13 +41,21 @@
 
               <div class="col-url">
                 <div class="url-line">
-                  <a class="url-text" href="<%= url %>" target="_blank"><%= url %></a>
+                  <a class="url-text" href="<%= url %>" target="_blank" rel="noopener"><%= url %></a>
                 </div>
               </div>
 
-              <span class="muted">
-                <%= link.expires_at ? link.expires_at.strftime("%b %d, %Y %H:%M") : "Never" %>
-              </span>
+              <div class="col-expires">
+                <span class="muted">
+                  <% if link.expires_at.nil? %>
+                    Never
+                  <% elsif link.expires_at < Time.current %>
+                    Expired
+                  <% else %>
+                    <%= link.expires_at.strftime("%b %d, %Y %H:%M") %>
+                  <% end %>
+                </span>
+              </div>
 
               <div class="col-created">
                 <span class="muted"><%= link.created_at.strftime("%b %d, %Y %H:%M") %></span>
@@ -65,6 +73,7 @@
                   <%= link_to "Open",
                     share_link_path(link.token),
                     target: "_blank",
+                    rel: "noopener",
                     class: "btn secondary xsmall" %>
 
                   <%= button_to "Delete",
@@ -91,7 +100,7 @@
 </div>
 
 <style>
-  .share-links-list { min-width: 980px; }
+  .share-links-list { min-width: 620px; }
 
   .share-links-list .drive-header,
   .share-links-list .drive-row{
@@ -125,28 +134,30 @@
 </style>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
+  function initShareLinksIndex() {
     document.querySelectorAll(".copy-btn").forEach((btn) => {
+      if (btn.dataset.bound === "1") return;
+      btn.dataset.bound = "1";
+
       btn.addEventListener("click", async () => {
         const text = btn.getAttribute("data-copy");
         try {
           await navigator.clipboard.writeText(text);
-          const old = btn.textContent;
-          btn.textContent = "Copied";
-          setTimeout(() => (btn.textContent = old), 900);
         } catch (e) {
-          // fallback
           const ta = document.createElement("textarea");
           ta.value = text;
           document.body.appendChild(ta);
           ta.select();
           document.execCommand("copy");
           document.body.removeChild(ta);
-          const old = btn.textContent;
-          btn.textContent = "Copied";
-          setTimeout(() => (btn.textContent = old), 900);
         }
+        const old = btn.textContent;
+        btn.textContent = "Copied";
+        setTimeout(() => (btn.textContent = old), 900);
       });
     });
-  });
+  }
+
+  document.addEventListener("turbo:load", initShareLinksIndex);
+  document.addEventListener("DOMContentLoaded", initShareLinksIndex);
 </script>

@@ -124,6 +124,7 @@
 
   <!-- Share selected -->
   <%= form_with url: share_links_path, method: :post, local: true, id: "share-selected-form" do %>
+    <%= hidden_field_tag :expires_at, "", id: "share-expires-at" %>
     <%= hidden_field_tag :folder_id, @folder.id %>
     <%= hidden_field_tag :return_to, request.fullpath %>
     <div id="selected-cv-ids"></div>
@@ -131,6 +132,7 @@
 
   <!-- Share one -->
   <%= form_with url: share_links_path, method: :post, local: true, id: "share-one-form" do %>
+    <%= hidden_field_tag :expires_at, "", id: "share-expires-at-one" %>
     <%= hidden_field_tag :folder_id, @folder.id %>
     <%= hidden_field_tag :return_to, request.fullpath %>
     <div id="share-one-cv"></div>
@@ -140,6 +142,36 @@
   <%= form_with url: bulk_destroy_folder_cvs_path(@folder), method: :delete, local: true, id: "bulk-delete-form" do %>
     <div id="bulk-delete-ids"></div>
   <% end %>
+
+  <!-- Expiry modal for share -->
+    <div id="expiry-overlay" class="overlay" style="display:none;">
+      <div class="modal-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+          <h3 style="margin:0;">Share settings</h3>
+          <button type="button" id="close-expiry" class="btn secondary xsmall">Close</button>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label style="display:block; font-size:13px; color:#374151; margin-bottom:6px;">
+            Expire link (optional)
+          </label>
+
+          <input id="expiry-datetime"
+                type="datetime-local"
+                style=" padding:10px; border:1px solid #d1d5db; border-radius:8px;">
+
+          <div style="margin-top:10px; display:flex; gap:10px; justify-content:space-between;">
+            <button type="button" id="expiry-never" class="btn secondary">Never</button>
+
+            <div style="display:flex; gap:10px;">
+              <button type="button" id="expiry-cancel" class="btn secondary">Cancel</button>
+              <button type="button" id="expiry-confirm" class="btn primary">Create link</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
   <!-- Upload modal -->
   <div id="upload-overlay" class="overlay" style="display:none;">
@@ -268,7 +300,6 @@
 
 <script>
   function initFolderShow() {
-    // Prevent double-binding when Turbo visits back/forward
     if (window.__folderShowInitDone) return;
     window.__folderShowInitDone = true;
 
@@ -290,17 +321,9 @@
     const openUpload = document.getElementById("open-upload");
     const closeUpload = document.getElementById("close-upload");
 
-    if (openUpload && uploadOverlay) {
-      openUpload.addEventListener("click", () => uploadOverlay.style.display = "flex");
-    }
-    if (closeUpload && uploadOverlay) {
-      closeUpload.addEventListener("click", () => uploadOverlay.style.display = "none");
-    }
-    if (uploadOverlay) {
-      uploadOverlay.addEventListener("click", (e) => {
-        if (e.target === uploadOverlay) uploadOverlay.style.display = "none";
-      });
-    }
+    if (openUpload && uploadOverlay) openUpload.addEventListener("click", () => uploadOverlay.style.display = "flex");
+    if (closeUpload && uploadOverlay) closeUpload.addEventListener("click", () => uploadOverlay.style.display = "none");
+    if (uploadOverlay) uploadOverlay.addEventListener("click", (e) => { if (e.target === uploadOverlay) uploadOverlay.style.display = "none"; });
 
     // selection
     const selectAll = document.getElementById("select-all");
@@ -313,7 +336,6 @@
     function selectedRows() {
       return checks.filter(c => c.checked).map(c => c.closest(".cv-row"));
     }
-
     function updateBulk() {
       const any = selectedIds().length > 0;
       if (bulkBar) bulkBar.style.display = any ? "flex" : "none";
@@ -330,7 +352,7 @@
     checks.forEach(c => c.addEventListener("change", updateBulk));
     updateBulk();
 
-    // ✅ Drive-like click behavior
+    // single click select, double click preview
     const CLICK_DELAY = 220;
     let clickTimer = null;
 
@@ -360,22 +382,95 @@
       });
     });
 
-    // bulk share
-    const bulkShare = document.getElementById("bulk-share");
+    // ===== Expiry modal =====
+    const expiryOverlay = document.getElementById("expiry-overlay");
+    const closeExpiry = document.getElementById("close-expiry");
+    const cancelExpiry = document.getElementById("expiry-cancel");
+    const neverExpiry = document.getElementById("expiry-never");
+    const confirmExpiry = document.getElementById("expiry-confirm");
+    const expiryInput = document.getElementById("expiry-datetime");
+
+    let pendingShareMode = null; // "bulk" or "one"
+    let pendingOneId = null;
+
+    function openExpiryModal(mode, oneId = null) {
+      pendingShareMode = mode;
+      pendingOneId = oneId;
+      if (expiryInput) expiryInput.value = ""; // empty means Never
+      if (expiryOverlay) expiryOverlay.style.display = "flex";
+    }
+    function closeExpiryModal() {
+      if (expiryOverlay) expiryOverlay.style.display = "none";
+      pendingShareMode = null;
+      pendingOneId = null;
+    }
+
+    if (closeExpiry) closeExpiry.addEventListener("click", closeExpiryModal);
+    if (cancelExpiry) cancelExpiry.addEventListener("click", closeExpiryModal);
+    if (expiryOverlay) expiryOverlay.addEventListener("click", (e) => { if (e.target === expiryOverlay) closeExpiryModal(); });
+    if (neverExpiry) neverExpiry.addEventListener("click", () => { if (expiryInput) expiryInput.value = ""; });
+
+    // share forms + hidden expiry fields
     const shareForm = document.getElementById("share-selected-form");
     const shareIds = document.getElementById("selected-cv-ids");
+    const shareExpiresBulk = document.getElementById("share-expires-at");
+
+    const shareOneForm = document.getElementById("share-one-form");
+    const shareOneContainer = document.getElementById("share-one-cv");
+    const shareExpiresOne = document.getElementById("share-expires-at-one");
+
+    // bulk share opens modal
+    const bulkShare = document.getElementById("bulk-share");
     if (bulkShare && shareForm && shareIds) {
       bulkShare.addEventListener("click", () => {
-        const ids = selectedIds();
-        shareIds.innerHTML = "";
-        ids.forEach((id) => {
+        if (selectedIds().length === 0) return;
+        openExpiryModal("bulk");
+      });
+    }
+
+    // share one opens modal
+    document.querySelectorAll(".share-one-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-cv-id");
+        if (!id) return;
+        openExpiryModal("one", id);
+      });
+    });
+
+    // confirm creates link (bulk or one)
+    if (confirmExpiry) {
+      confirmExpiry.addEventListener("click", () => {
+        const expiresAt = expiryInput ? expiryInput.value : "";
+
+        if (pendingShareMode === "bulk") {
+          if (shareExpiresBulk) shareExpiresBulk.value = expiresAt;
+
+          shareIds.innerHTML = "";
+          selectedIds().forEach((id) => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "cv_ids[]";
+            input.value = id;
+            shareIds.appendChild(input);
+          });
+
+          closeExpiryModal();
+          shareForm.submit();
+        }
+
+        if (pendingShareMode === "one") {
+          if (shareExpiresOne) shareExpiresOne.value = expiresAt;
+
+          shareOneContainer.innerHTML = "";
           const input = document.createElement("input");
           input.type = "hidden";
           input.name = "cv_ids[]";
-          input.value = id;
-          shareIds.appendChild(input);
-        });
-        shareForm.submit();
+          input.value = pendingOneId;
+          shareOneContainer.appendChild(input);
+
+          closeExpiryModal();
+          shareOneForm.submit();
+        }
       });
     }
 
@@ -434,30 +529,13 @@
       });
     });
     document.addEventListener("click", () => closeAllMenus());
-
-    // share one
-    const shareOneForm = document.getElementById("share-one-form");
-    const shareOneContainer = document.getElementById("share-one-cv");
-    document.querySelectorAll(".share-one-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-cv-id");
-        if (!id || !shareOneForm || !shareOneContainer) return;
-        shareOneContainer.innerHTML = "";
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = "cv_ids[]";
-        input.value = id;
-        shareOneContainer.appendChild(input);
-        shareOneForm.submit();
-      });
-    });
   }
 
-  // ✅ Works with Turbo navigation + normal loads
   document.addEventListener("turbo:load", () => {
     window.__folderShowInitDone = false;
     initFolderShow();
   });
   document.addEventListener("DOMContentLoaded", () => initFolderShow());
 </script>
+
 

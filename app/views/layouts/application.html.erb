@@ -14,14 +14,15 @@
 
     <% if !auth_pages && current_user %>
       <div class="drive-shell">
+
         <!-- Top bar -->
         <header class="drive-topbar">
           <div class="drive-top-left">
-            <%= link_to root_path, class: "drive-logo" do %>
-              <span class="drive-logo-mark">CV</span>
-              <span class="drive-logo-text">Share</span>
+            <%= link_to dashboard_path, class: "drive-logo" do %>
+              <%= image_tag "image.png", alt: "My App", class: "app-logo" %>
             <% end %>
           </div>
+
 
           <div class="drive-top-center">
             <div class="drive-searchbar">
