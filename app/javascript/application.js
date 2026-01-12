@@ -1,5 +1,7 @@
 import "@hotwired/turbo-rails"
 import "controllers"
+import "./folder_show"
+
 
 // Enable Rails UJS for method: :delete links
 import Rails from "@rails/ujs"

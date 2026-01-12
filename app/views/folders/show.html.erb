@@ -267,7 +267,10 @@
 </style>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
+  function initFolderShow() {
+    // Prevent double-binding when Turbo visits back/forward
+    if (window.__folderShowInitDone) return;
+    window.__folderShowInitDone = true;
 
     // format sizes
     function humanSize(bytes) {
@@ -286,21 +289,20 @@
     const uploadOverlay = document.getElementById("upload-overlay");
     const openUpload = document.getElementById("open-upload");
     const closeUpload = document.getElementById("close-upload");
-    if (openUpload && uploadOverlay) openUpload.addEventListener("click", () => uploadOverlay.style.display = "flex");
-    if (closeUpload && uploadOverlay) closeUpload.addEventListener("click", () => uploadOverlay.style.display = "none");
-    if (uploadOverlay) uploadOverlay.addEventListener("click", (e) => { if (e.target === uploadOverlay) uploadOverlay.style.display = "none"; });
 
-    // row click preview
-    document.querySelectorAll(".clickable-row").forEach((row) => {
-      row.addEventListener("click", (e) => {
-        if (e.target.closest(".col-cv-check")) return;
-        if (e.target.closest(".kebab-wrap")) return;
-        const url = row.getAttribute("data-preview");
-        if (url) window.open(url, "_blank");
+    if (openUpload && uploadOverlay) {
+      openUpload.addEventListener("click", () => uploadOverlay.style.display = "flex");
+    }
+    if (closeUpload && uploadOverlay) {
+      closeUpload.addEventListener("click", () => uploadOverlay.style.display = "none");
+    }
+    if (uploadOverlay) {
+      uploadOverlay.addEventListener("click", (e) => {
+        if (e.target === uploadOverlay) uploadOverlay.style.display = "none";
       });
-    });
+    }
 
-    // select + bulk actions
+    // selection
     const selectAll = document.getElementById("select-all");
     const checks = Array.from(document.querySelectorAll(".cv-check"));
     const bulkBar = document.getElementById("bulk-actions");
@@ -311,9 +313,11 @@
     function selectedRows() {
       return checks.filter(c => c.checked).map(c => c.closest(".cv-row"));
     }
+
     function updateBulk() {
       const any = selectedIds().length > 0;
       if (bulkBar) bulkBar.style.display = any ? "flex" : "none";
+      if (openUpload) openUpload.style.display = any ? "none" : "";
       if (selectAll) selectAll.checked = checks.length > 0 && checks.every(c => c.checked);
     }
 
@@ -325,6 +329,36 @@
     }
     checks.forEach(c => c.addEventListener("change", updateBulk));
     updateBulk();
+
+    // ✅ Drive-like click behavior
+    const CLICK_DELAY = 220;
+    let clickTimer = null;
+
+    document.querySelectorAll(".clickable-row").forEach((row) => {
+      const checkbox = row.querySelector(".cv-check");
+      if (!checkbox) return;
+
+      row.addEventListener("click", (e) => {
+        if (e.target.closest(".col-cv-check")) return;
+        if (e.target.closest(".kebab-wrap")) return;
+
+        clearTimeout(clickTimer);
+        clickTimer = setTimeout(() => {
+          checkbox.checked = !checkbox.checked;
+          checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+          updateBulk();
+        }, CLICK_DELAY);
+      });
+
+      row.addEventListener("dblclick", (e) => {
+        if (e.target.closest(".col-cv-check")) return;
+        if (e.target.closest(".kebab-wrap")) return;
+
+        clearTimeout(clickTimer);
+        const url = row.getAttribute("data-preview");
+        if (url) window.open(url, "_blank", "noopener");
+      });
+    });
 
     // bulk share
     const bulkShare = document.getElementById("bulk-share");
@@ -384,7 +418,7 @@
       });
     }
 
-    // kebab
+    // kebab menu
     function closeAllMenus() {
       document.querySelectorAll(".kebab-menu").forEach((m) => m.style.display = "none");
     }
@@ -417,6 +451,13 @@
         shareOneForm.submit();
       });
     });
+  }
 
+  // ✅ Works with Turbo navigation + normal loads
+  document.addEventListener("turbo:load", () => {
+    window.__folderShowInitDone = false;
+    initFolderShow();
   });
+  document.addEventListener("DOMContentLoaded", () => initFolderShow());
 </script>
+
