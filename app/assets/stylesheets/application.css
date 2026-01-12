@@ -1,3 +1,12 @@
+:root{
+  --brand: #c8102e;                 /* Crewit red */
+  --brand-hover: #a30d25;           /* darker hover */
+  --brand-soft: rgba(200,16,46,0.10);
+  --brand-soft-2: rgba(200,16,46,0.14);
+  --brand-ring: rgba(200,16,46,0.20);
+  --brand-search-bg: rgba(200,16,46,0.08);
+}
+
 /* ===============================
    GLOBAL STYLES
 =============================== */
@@ -46,7 +55,7 @@ a { text-decoration: none; color: inherit; }
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: #2563eb;
+  background: var(--brand);
   color: #fff;
   display:flex;
   align-items:center;
@@ -59,7 +68,7 @@ a { text-decoration: none; color: inherit; }
 .drive-searchbar {
   width: min(720px, 78vw);
   height: 42px;
-  background: #eef2ff;
+  background: var(--brand-search-bg);
   border: 1px solid rgba(0,0,0,0.06);
   border-radius: 999px;
   display:flex;
@@ -106,10 +115,10 @@ a { text-decoration: none; color: inherit; }
   color: #111827;
   font-weight: 500;
 }
-.drive-side-link:hover { background: rgba(37,99,235,0.08); }
+.drive-side-link:hover { background: var(--brand-soft); }
 .drive-side-link.active {
-  background: rgba(37,99,235,0.12);
-  color: #2563eb;
+  background: var(--brand-soft-2);
+  color: var(--brand);
 }
 .drive-side-ic { display:flex; opacity: 0.85; }
 
@@ -143,7 +152,7 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* ===============================
-   PROFILE DROPDOWN (existing)
+   PROFILE DROPDOWN
 =============================== */
 .user-dropdown {
   position: relative;
@@ -254,16 +263,16 @@ a { text-decoration: none; color: inherit; }
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .field input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-ring);
 }
 
 .actions { margin-top: 10px; }
 .auth-footer { text-align: center; margin-top: 20px; font-size: 13px; color: #6b7280; }
-.auth-footer a { color: #2563eb; font-weight: 500; }
+.auth-footer a { color: var(--brand); font-weight: 500; }
 
 /* ===============================
-   DASHBOARD / FOLDERS / CVS (existing)
+   DASHBOARD / FOLDERS / CVS
 =============================== */
 .dashboard-page { max-width: 1000px; margin: 50px auto; padding: 0 20px; }
 .dashboard-page h1 { text-align: center; font-size: 30px; margin-bottom: 30px; color: #111827; }
@@ -279,7 +288,7 @@ a { text-decoration: none; color: inherit; }
   transform: translateY(-4px) scale(1.02);
 }
 
-.folder-card h2, .cv-card h2 { font-size: 18px; color: #2563eb; margin-bottom: 10px; }
+.folder-card h2, .cv-card h2 { font-size: 18px; color: var(--brand); margin-bottom: 10px; }
 .folder-card p, .cv-card p { font-size: 14px; color: #6b7280; margin: 0; }
 
 .cv-actions { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
@@ -300,18 +309,18 @@ a { text-decoration: none; color: inherit; }
 }
 
 .btn.primary {
-  background: #2563eb;
+  background: var(--brand);
   color: white;
   font-weight: 500;
 }
-.btn.primary:hover { background: #1d4ed8; transform: translateY(-2px) scale(1.02); }
+.btn.primary:hover { background: var(--brand-hover); transform: translateY(-2px) scale(1.02); }
 
 .btn.secondary {
   background: transparent;
-  color: #2563eb;
-  border: 1px solid #2563eb;
+  color: var(--brand);
+  border: 1px solid var(--brand);
 }
-.btn.secondary:hover { background: #e0e7ff; transform: translateY(-2px); }
+.btn.secondary:hover { background: var(--brand-soft); transform: translateY(-2px); }
 
 .drive-search-form { width: 100%; }
 .drive-search-input {
@@ -323,8 +332,8 @@ a { text-decoration: none; color: inherit; }
 }
 
 .drive-card {
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 12px;
-    background: #fff;
-    overflow: visible;
-  }
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  background: #fff;
+  overflow: visible;
+}

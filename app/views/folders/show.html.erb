@@ -4,8 +4,8 @@
     <div class="drive-head-left" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
       <button class="btn secondary" type="button" onclick="window.history.back()">← Back</button>
       <div>
-        <h2 style="margin:0;"><%= @folder.name %></h2>
-        <div class="muted" style="margin-top:4px;">Click a file to preview. Select files for bulk actions.</div>
+        <h2 style="margin-bottom:5px;"><%= @folder.name %></h2>
+        
       </div>
     </div>
 
@@ -13,7 +13,8 @@
       <button id="open-upload" class="btn primary" type="button">Upload</button>
 
       <!-- Bulk actions appear only when selection exists -->
-      <div id="bulk-actions" style="display:none; align-items:center; gap:8px;">
+
+      <div id="bulk-actions" style="display:none; margin-top:5px; align-items:center; gap:8px;">
         <button id="bulk-share" class="btn secondary" type="button">Share</button>
         <button id="bulk-download" class="btn secondary" type="button">Download</button>
         <button id="bulk-delete" class="btn secondary" type="button">Delete</button>
