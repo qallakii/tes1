@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_09_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_12_101330) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -90,9 +90,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_09_090000) do
     t.datetime "created_at", null: false
     t.datetime "expires_at"
     t.bigint "folder_id", null: false
-    t.string "token"
+    t.string "token", null: false
     t.datetime "updated_at", null: false
     t.index ["folder_id"], name: "index_share_links_on_folder_id"
+    t.index ["token"], name: "index_share_links_on_token", unique: true
   end
 
   create_table "users", force: :cascade do |t|

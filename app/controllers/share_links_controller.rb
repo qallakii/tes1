@@ -32,7 +32,7 @@ class ShareLinksController < ApplicationController
 
     url = share_link_url(share_link.token)
 
-    # ✅ if created from folder page, go back there
+    # if created from folder page, go back there
     if params[:return_to].present?
       redirect_to params[:return_to], notice: "Share link created: #{url}"
     else

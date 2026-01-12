@@ -3,10 +3,10 @@
   <div class="drive-page-head">
     <div class="drive-head-left">
       <h1 style="margin:0;">Shared Links</h1>
-      <div class="muted" style="margin-top:4px;">Links you created to share folders</div>
+      <div class="muted" style="margin-top:4px; margin-bottom:8px;">Links you created for sharing</div>
     </div>
 
-    <div class="drive-head-right">
+    <div class="drive-head-right" style="margin-bottom:8px;">
       <%= link_to "Create link", new_share_link_path, class: "btn primary" %>
     </div>
   </div>
@@ -45,9 +45,9 @@
                 </div>
               </div>
 
-              <div class="col-expires">
-                <span class="muted"><%= link.expires_at.strftime("%b %d, %Y %H:%M") %></span>
-              </div>
+              <span class="muted">
+                <%= link.expires_at ? link.expires_at.strftime("%b %d, %Y %H:%M") : "Never" %>
+              </span>
 
               <div class="col-created">
                 <span class="muted"><%= link.created_at.strftime("%b %d, %Y %H:%M") %></span>
