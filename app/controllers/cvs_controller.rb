@@ -18,9 +18,9 @@ class CvsController < ApplicationController
       flash[:notice] = "CV uploaded successfully."
       redirect_to folder_path(@folder)
     else
-      flash.now[:alert] = @cv.errors.full_messages.join(", ")
-      render :new, status: :unprocessable_entity
+      redirect_to folder_path(@folder), alert: @cv.errors.full_messages.to_sentence
     end
+
   end
 
   def show

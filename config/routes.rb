@@ -13,7 +13,7 @@ Rails.application.routes.draw do
   get "/search", to: "search#index", as: :search
 
   resources :folders do
-    resources :cvs, only: [:new, :create, :destroy, :show, :index, :update] do
+    resources :cvs, only: [:new, :create, :destroy, :show, :update] do
       collection do
         delete :bulk_destroy
       end

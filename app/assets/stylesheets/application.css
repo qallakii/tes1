@@ -223,6 +223,9 @@ a { text-decoration: none; color: inherit; }
   opacity: 0;
   transform: translateY(-10px);
   animation: flashIn 0.4s forwards;
+  pointer-events: none;
+  position: relative;
+  z-index: 1;
 }
 .flash.notice { background-color: #d1fae5; color: #065f46; }
 .flash.alert  { background-color: #fee2e2; color: #b91c1c; }

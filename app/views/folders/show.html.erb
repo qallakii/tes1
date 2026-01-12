@@ -2,7 +2,7 @@
 
   <div class="drive-page-head">
     <div class="drive-head-left" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <button class="btn secondary" type="button" onclick="window.history.back()">← Back</button>
+      <%= link_to "← Back", dashboard_path, class: "btn secondary" %>
       <div>
         <h2 style="margin-bottom:5px;"><%= @folder.name %></h2>
         
@@ -184,7 +184,7 @@
       <div style="margin-top:12px;">
         <%= form_with model: [@folder, Cv.new], local: true do |f| %>
           <%= f.hidden_field :title, value: "CV" %>
-          <div style="margin-top:10px;"><%= f.file_field :file, required: true %></div>
+          <div style="margin-top:10px;"><%= f.file_field :file, required: true, accept: "application/pdf" %></div>
           <div style="margin-top:14px; display:flex; justify-content:flex-end;">
             <%= f.submit "Upload", class: "btn primary" %>
           </div>
