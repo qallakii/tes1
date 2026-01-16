@@ -1,0 +1,37 @@
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Admin</h1>
+    <div class="page-sub">Overview and management</div>
+  </div>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <%= link_to "Manage users", admin_users_path, class: "btn primary" %>
+  </div>
+</div>
+
+<div class="admin-grid">
+  <div class="card stat">
+    <div class="k">Users</div>
+    <div class="v"><%= @users_count %></div>
+  </div>
+
+  <div class="card stat">
+    <div class="k">Folders</div>
+    <div class="v"><%= @folders_count %></div>
+  </div>
+
+  <div class="card stat">
+    <div class="k">Files</div>
+    <div class="v"><%= @files_count %></div>
+  </div>
+
+  <div class="card stat">
+    <div class="k">Share links</div>
+    <div class="v"><%= @share_links_count %></div>
+  </div>
+
+  <div class="card stat">
+    <div class="k">Storage used</div>
+    <div class="v"><%= format_bytes(@storage_bytes) %></div>
+  </div>
+</div>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_12_101330) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_15_124000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -57,8 +57,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_12_101330) do
   create_table "folders", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
+    t.bigint "parent_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["parent_id"], name: "index_folders_on_parent_id"
     t.index ["user_id"], name: "index_folders_on_user_id"
   end
 
@@ -76,6 +78,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_12_101330) do
     t.index ["cv_id"], name: "index_ratings_on_cv_id"
   end
 
+  create_table "share_link_accesses", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "share_link_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["share_link_id", "user_id"], name: "index_share_link_accesses_on_share_link_id_and_user_id", unique: true
+    t.index ["share_link_id"], name: "index_share_link_accesses_on_share_link_id"
+    t.index ["user_id"], name: "index_share_link_accesses_on_user_id"
+  end
+
   create_table "share_link_cvs", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "cv_id", null: false
@@ -86,17 +98,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_12_101330) do
     t.index ["share_link_id"], name: "index_share_link_cvs_on_share_link_id"
   end
 
+  create_table "share_link_folders", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "folder_id", null: false
+    t.bigint "share_link_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["folder_id"], name: "index_share_link_folders_on_folder_id"
+    t.index ["share_link_id", "folder_id"], name: "index_share_link_folders_on_share_link_id_and_folder_id", unique: true
+    t.index ["share_link_id"], name: "index_share_link_folders_on_share_link_id"
+  end
+
   create_table "share_links", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "expires_at"
-    t.bigint "folder_id", null: false
+    t.bigint "folder_id"
     t.string "token", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id"
     t.index ["folder_id"], name: "index_share_links_on_folder_id"
     t.index ["token"], name: "index_share_links_on_token", unique: true
+    t.index ["user_id"], name: "index_share_links_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
+    t.boolean "admin", default: false, null: false
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -106,6 +131,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_12_101330) do
     t.datetime "reset_password_sent_at"
     t.string "reset_password_token"
     t.datetime "updated_at", null: false
+    t.index ["admin"], name: "index_users_on_admin"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
@@ -114,9 +140,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_12_101330) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "cvs", "folders"
   add_foreign_key "cvs", "users"
+  add_foreign_key "folders", "folders", column: "parent_id"
   add_foreign_key "folders", "users"
   add_foreign_key "ratings", "cvs"
+  add_foreign_key "share_link_accesses", "share_links"
+  add_foreign_key "share_link_accesses", "users"
   add_foreign_key "share_link_cvs", "cvs"
   add_foreign_key "share_link_cvs", "share_links"
+  add_foreign_key "share_link_folders", "folders"
+  add_foreign_key "share_link_folders", "share_links"
   add_foreign_key "share_links", "folders"
+  add_foreign_key "share_links", "users"
 end

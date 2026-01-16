@@ -3,21 +3,19 @@ class ShareLinksController < ApplicationController
 
   def index
     @share_links = ShareLink
-      .joins(:folder)
-      .where(folders: { user_id: current_user.id })
-      .includes(:folder)
+      .left_joins(:folder)
+      .where("folders.user_id = ? OR share_links.user_id = ?", current_user.id, current_user.id)
+      .distinct
       .order(created_at: :desc)
   end
 
   def new
     @folders = current_user.folders.order(updated_at: :desc)
-
     if params[:folder_id].present?
       @folder = current_user.folders.find(params[:folder_id])
       @cvs = @folder.cvs.with_attached_file.order(updated_at: :desc)
     end
   end
-
 
   def create
     folder = current_user.folders.find(params[:folder_id])
@@ -29,50 +27,106 @@ class ShareLinksController < ApplicationController
         nil
       end
 
-    share_link = folder.share_links.create!(
-      expires_at: expires_at
-    )
+    share_link = ShareLink.new(expires_at: expires_at, folder: folder)
+    share_link.user_id = current_user.id if ShareLink.column_names.include?("user_id")
+    share_link.save!
 
-    cv_ids = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
-    if cv_ids.any?
-      allowed_ids = folder.cvs.where(id: cv_ids).pluck(:id)
-      allowed_ids.each do |id|
-        ShareLinkCv.create!(share_link: share_link, cv_id: id)
-      end
-    end
-
-    url = share_link_url(share_link.token)
-
-    redirect_to(params[:return_to].presence || share_links_path,
-      notice: "Share link created: #{url}"
-    )
+    redirect_to share_links_path, notice: "Share link created."
   end
 
-  def destroy
-    share_link = ShareLink
-      .joins(:folder)
-      .where(folders: { user_id: current_user.id })
-      .find(params[:id])
+  # ONE link -> MANY folders
+  def bulk_create
+    folder_ids = Array(params[:folder_ids]).map(&:to_s).reject(&:blank?)
+    if folder_ids.empty?
+      redirect_to dashboard_path, alert: "Select at least one folder to share."
+      return
+    end
 
-    share_link.destroy
-    redirect_to share_links_path, notice: "Share link deleted."
+    folders = current_user.folders.where(id: folder_ids)
+
+    share_link = ShareLink.new(expires_at: nil)
+    share_link.user_id = current_user.id if ShareLink.column_names.include?("user_id")
+    share_link.save!
+
+    folders.each do |f|
+      ShareLinkFolder.find_or_create_by!(share_link: share_link, folder: f)
+    end
+
+    redirect_to share_links_path, notice: "Share link created."
+  end
+
+  def bulk_create_files
+    cv_ids = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
+    if cv_ids.empty?
+      redirect_back fallback_location: dashboard_path, alert: "Select at least one file to share."
+      return
+    end
+
+    expires_at =
+      if params[:expires_at].present?
+        Time.zone.parse(params[:expires_at])
+      else
+        nil
+      end
+
+    cvs = Cv.joins(:folder).where(id: cv_ids, folders: { user_id: current_user.id }).with_attached_file
+
+    share_link = ShareLink.new(expires_at: expires_at)
+    share_link.user_id = current_user.id if ShareLink.column_names.include?("user_id")
+    share_link.save!
+
+    cvs.each do |cv|
+      ShareLinkCv.find_or_create_by!(share_link: share_link, cv: cv)
+    end
+
+    redirect_to share_links_path, notice: "Share link created."
+  end
+
+
+
+  def destroy
+    share_link = ShareLink.find(params[:id])
+
+    # allow delete only if it belongs to current user (either user_id or folder owner)
+    if (share_link.respond_to?(:user_id) && share_link.user_id == current_user.id) ||
+       (share_link.folder && share_link.folder.user_id == current_user.id) ||
+       (share_link.all_folders.any? { |f| f.user_id == current_user.id })
+      share_link.destroy
+      redirect_to share_links_path, notice: "Share link deleted."
+    else
+      redirect_to share_links_path, alert: "Not allowed."
+    end
   end
 
   def show
-    @share_link = ShareLink.includes(:folder, :cvs).find_by!(token: params[:id])
+    @share_link = ShareLink
+      .includes(:cvs, :folders)
+      .find_by!(token: params[:id])
 
-    if @share_link.expires_at.present? && @share_link.expires_at < Time.current
+    if @share_link.expired?
       render plain: "This share link has expired.", status: :gone
       return
     end
 
-    @folder = @share_link.folder
+    # ✅ FILE-ONLY SHARE: if link has selected CVs, show ONLY those files
+    if @share_link.cvs.any?
+      @files_only = true
+      @folders = []
+      @folder = nil
+      @cvs = @share_link.cvs.with_attached_file.order(updated_at: :desc)
+      return
+    end
 
-    @cvs =
-      if @share_link.cvs.any?
-        @share_link.cvs.with_attached_file.order(updated_at: :desc)
-      else
-        @folder.cvs.with_attached_file.order(updated_at: :desc)
-      end
+    # ✅ FOLDER SHARE (single or multiple)
+    @files_only = false
+    @folders = @share_link.all_folders
+
+    if params[:folder_id].present?
+      @folder = @folders.find { |f| f.id.to_s == params[:folder_id].to_s }
+    else
+      @folder = nil
+    end
+
+    @cvs = @folder ? @folder.cvs.with_attached_file.order(updated_at: :desc) : []
   end
 end

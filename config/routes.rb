@@ -20,7 +20,13 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :share_links, only: [:index, :new, :create, :destroy, :show]
-  
+  resources :share_links, only: [:index, :new, :create, :destroy, :show] do
+    collection do
+      post :bulk_create
+      post :bulk_create_files
+    end
+  end
+
+  get "/recents", to: "recents#index", as: :recents
   resources :recents, only: [:index]
 end

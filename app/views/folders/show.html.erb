@@ -123,20 +123,22 @@
   <% end %>
 
   <!-- Share selected -->
-  <%= form_with url: share_links_path, method: :post, local: true, id: "share-selected-form" do %>
+  <!-- Share selected FILES -->
+  <%= form_with url: bulk_create_files_share_links_path, method: :post, local: true, id: "share-selected-form" do %>
     <%= hidden_field_tag :expires_at, "", id: "share-expires-at" %>
-    <%= hidden_field_tag :folder_id, @folder.id %>
     <%= hidden_field_tag :return_to, request.fullpath %>
     <div id="selected-cv-ids"></div>
   <% end %>
 
+
   <!-- Share one -->
-  <%= form_with url: share_links_path, method: :post, local: true, id: "share-one-form" do %>
+  <!-- Share ONE FILE -->
+  <%= form_with url: bulk_create_files_share_links_path, method: :post, local: true, id: "share-one-form" do %>
     <%= hidden_field_tag :expires_at, "", id: "share-expires-at-one" %>
-    <%= hidden_field_tag :folder_id, @folder.id %>
     <%= hidden_field_tag :return_to, request.fullpath %>
     <div id="share-one-cv"></div>
   <% end %>
+
 
   <!-- Bulk delete -->
   <%= form_with url: bulk_destroy_folder_cvs_path(@folder), method: :delete, local: true, id: "bulk-delete-form" do %>

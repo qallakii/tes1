@@ -1,4 +1,4 @@
-class CreateShareLinkFolders < ActiveRecord::Migration[8.1]
+class CreateShareLinkFolders < ActiveRecord::Migration[7.0]
   def change
     create_table :share_link_folders do |t|
       t.references :share_link, null: false, foreign_key: true

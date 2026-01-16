@@ -1,5 +1,6 @@
 class User < ApplicationRecord
   has_secure_password
+  has_many :share_links, dependent: :destroy
 
   has_many :folders, dependent: :destroy
   has_many :cvs, dependent: :destroy

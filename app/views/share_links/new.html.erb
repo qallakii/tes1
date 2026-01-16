@@ -38,7 +38,7 @@
           </div>
 
           <%= form_with url: share_links_path, method: :post, local: true do %>
-            <%= hidden_field_tag :folder_id, @folder.id %>
+            
             <button type="submit" class="btn primary">Create folder link</button>
           <% end %>
         </div>
@@ -63,7 +63,7 @@
           </div>
 
           <%= form_with url: share_links_path, method: :post, local: true, id: "share-selected-form" do %>
-            <%= hidden_field_tag :folder_id, @folder.id %>
+            
 
             <% @cvs.each do |cv| %>
               <% blob = cv.file&.blob %>

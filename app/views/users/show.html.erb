@@ -1,0 +1,34 @@
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Profile</h1>
+    <div class="page-sub">Manage your account details.</div>
+  </div>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <%= link_to "Edit settings", settings_path, class: "btn primary" %>
+  </div>
+</div>
+
+<div class="card card-pad" style="max-width:640px;">
+  <div class="form-row">
+    <div class="label">Name</div>
+    <div><strong><%= @user.name.presence || "—" %></strong></div>
+  </div>
+
+  <div class="form-row">
+    <div class="label">Email</div>
+    <div><strong><%= @user.email %></strong></div>
+  </div>
+
+  <div class="form-row">
+    <div class="label">Storage used</div>
+    <div><strong><%= format_bytes(@storage_bytes) %></strong></div>
+  </div>
+
+  <% if @user.respond_to?(:admin) && @user.admin? %>
+    <div class="form-row">
+      <div class="label">Role</div>
+      <div><strong>Admin</strong></div>
+    </div>
+  <% end %>
+</div>

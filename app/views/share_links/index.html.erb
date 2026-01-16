@@ -1,23 +1,12 @@
 <div class="dashboard-page">
 
-  <div class="drive-page-head">
-    <div class="drive-head-left">
-      <h1 style="margin:0;">Shared Links</h1>
-      <div class="muted" style="margin-top:4px; margin-bottom:8px;">Links you created for sharing</div>
-    </div>
-
-    <div class="drive-head-right" style="margin-bottom:8px;">
-      <%= link_to "Create link", new_share_link_path, class: "btn primary" %>
-    </div>
-  </div>
-
   <% if @share_links.any? %>
     <div class="drive-card">
       <div class="drive-scroll">
         <div class="drive-list share-links-list">
 
           <div class="drive-header">
-            <div class="col-folder">Folder</div>
+            <div class="col-folder">Folders</div>
             <div class="col-url">Share link</div>
             <div class="col-expires">Expires</div>
             <div class="col-created">Created</div>
@@ -25,23 +14,35 @@
           </div>
 
           <% @share_links.each do |link| %>
-            <% url = share_link_url(link.token) %>
+            <% folders = link.respond_to?(:all_folders) ? link.all_folders : [] %>
+            <% first_folder = folders.first || link.folder %>
+            <% folder_count = folders.size %>
+            <% share_url = share_link_url(link.token) %>
 
             <div class="drive-row share-row">
               <div class="col-folder">
-                <%= link_to folder_path(link.folder), class: "folder-link" do %>
-                  <span class="folder-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    </svg>
-                  </span>
-                  <span class="folder-name"><%= link.folder.name %></span>
+                <% if first_folder %>
+                  <%= link_to folder_path(first_folder), class: "folder-link" do %>
+                    <span class="folder-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                      </svg>
+                    </span>
+                    <span class="folder-name">
+                      <%= first_folder.name %>
+                      <% if folder_count > 1 %>
+                        <span class="muted" style="font-weight:500;">(+<%= folder_count - 1 %>)</span>
+                      <% end %>
+                    </span>
+                  <% end %>
+                <% else %>
+                  <span class="muted">No folder</span>
                 <% end %>
               </div>
 
               <div class="col-url">
                 <div class="url-line">
-                  <a class="url-text" href="<%= url %>" target="_blank" rel="noopener"><%= url %></a>
+                  <a class="url-text" href="<%= share_url %>" target="_blank" rel="noopener"><%= share_url %></a>
                 </div>
               </div>
 
@@ -63,12 +64,7 @@
 
               <div class="col-actions">
                 <div class="action-group">
-                  <button
-                    type="button"
-                    class="btn secondary xsmall copy-btn"
-                    data-copy="<%= url %>">
-                    Copy
-                  </button>
+                  <button type="button" class="btn secondary xsmall copy-btn" data-copy="<%= share_url %>">Copy</button>
 
                   <%= link_to "Open",
                     share_link_path(link.token),
@@ -90,10 +86,9 @@
         </div>
       </div>
     </div>
-
   <% else %>
     <div class="drive-card" style="padding:16px;">
-      <div class="muted">No share links yet. Create one from a folder, or click “Create link”.</div>
+      <div class="muted">No share links yet.</div>
     </div>
   <% end %>
 
@@ -105,7 +100,7 @@
   .share-links-list .drive-header,
   .share-links-list .drive-row{
     display:grid;
-    grid-template-columns: 180px 380px 150px 150px 190px;
+    grid-template-columns: 220px 380px 150px 150px 190px;
     gap: 12px;
     padding: 10px 14px;
     align-items:center;
@@ -113,9 +108,29 @@
     line-height: 1.35;
   }
 
-  .folder-link{ display:flex; align-items:center; gap:10px; }
+  .share-links-list .drive-header{
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background: rgba(0,0,0,0.02);
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+  }
+
+  .share-row{
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    transition: background 0.15s ease;
+  }
+  .share-row:hover{ background: rgba(0,0,0,0.02); }
+
+  .folder-link{ display:flex; align-items:center; gap:10px; min-width:0; }
   .folder-icon{ opacity:0.85; display:flex; }
-  .folder-name{ font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .folder-name{
+    font-weight:600;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    min-width:0;
+  }
 
   .url-line{ min-width:0; }
   .url-text{
@@ -128,8 +143,8 @@
   }
   .url-text:hover{ text-decoration: underline; }
 
-  .inline-form { display:inline-block; margin:0; }
   .action-group{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .inline-form { display:inline-block; margin:0; }
   .btn.xsmall { padding: 5px 9px; border-radius: 10px; line-height: 1; font-size: 12px; }
 </style>
 

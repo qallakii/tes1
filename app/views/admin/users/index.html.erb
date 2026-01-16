@@ -1,0 +1,34 @@
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Users</h1>
+    <div class="page-sub">Toggle admin access.</div>
+  </div>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <%= link_to "Back", admin_root_path, class: "btn" %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="list">
+    <div class="list-head" style="grid-template-columns: 1fr 1fr 120px 120px;">
+      <div>Name</div>
+      <div>Email</div>
+      <div class="col-hide-sm">Admin</div>
+      <div>Actions</div>
+    </div>
+
+    <% @users.each do |u| %>
+      <div class="list-row" style="grid-template-columns: 1fr 1fr 120px 120px;">
+        <div>
+          <span class="item-title"><%= u.name.presence || "—" %></span>
+        </div>
+        <div class="cell-muted"><%= u.email %></div>
+        <div class="cell-muted col-hide-sm"><%= u.admin? ? "Yes" : "No" %></div>
+        <div>
+          <%= link_to "Edit", edit_admin_user_path(u), class: "btn small" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

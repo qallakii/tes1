@@ -3,6 +3,12 @@
   <div class="drive-page-head">
     <div class="drive-head-left">
       <%= link_to "Create Folder", new_folder_path, class: "btn primary" %>
+
+      <%= form_with url: bulk_create_share_links_path, method: :post, local: true, id: "bulk-share-form", style: "display:inline;" do %>
+        <button id="bulk-share-btn" type="submit" class="btn secondary" style="display:none; margin-left:8px;">
+          Share
+        </button>
+      <% end %>
     </div>
 
     <div class="drive-head-right">
@@ -22,6 +28,9 @@
         <div class="drive-list folders-list">
 
           <div class="drive-header">
+            <div class="col-folder-check">
+              <input id="select-all-folders" type="checkbox" />
+            </div>
             <div class="col-folder-name">Name</div>
             <div class="col-folder-modified">Last modified</div>
             <div class="col-folder-actions">Actions</div>
@@ -31,6 +40,15 @@
             <div class="drive-row folder-row"
                  data-name="<%= folder.name.to_s.downcase %>"
                  data-updated="<%= folder.updated_at.to_i %>">
+
+              <div class="col-folder-check">
+                <input
+                  class="folder-select"
+                  type="checkbox"
+                  name="folder_ids[]"
+                  value="<%= folder.id %>"
+                  form="bulk-share-form" />
+              </div>
 
               <div class="col-folder-name">
                 <%= link_to folder_path(folder), class: "folder-link" do %>
@@ -126,7 +144,7 @@
   .folders-list .drive-header,
   .folders-list .drive-row{
     display:grid;
-    grid-template-columns: minmax(320px, 1fr) 220px 240px;
+    grid-template-columns: 44px minmax(320px, 1fr) 220px 240px;
     gap: 12px;
     padding: 10px 14px;
     align-items:center;
@@ -145,6 +163,17 @@
     border-bottom: 1px solid rgba(0,0,0,0.06);
   }
   .folders-list .drive-row:hover{ background: rgba(0,0,0,0.02); }
+
+  .col-folder-check{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .col-folder-check input[type="checkbox"]{
+    width:16px;
+    height:16px;
+    cursor:pointer;
+  }
 
   .folder-link{
     display:flex;
@@ -188,6 +217,33 @@
     const rows = Array.from(document.querySelectorAll(".folder-row"));
     const list = document.querySelector(".folders-list");
     const noResults = document.getElementById("folder-no-results");
+
+    // Bulk share (show button only when something is selected)
+    const bulkShareBtn = document.getElementById("bulk-share-btn");
+    const selectAll = document.getElementById("select-all-folders");
+    const checks = Array.from(document.querySelectorAll(".folder-select"));
+
+    function updateBulkUI() {
+      const any = checks.some((c) => c.checked);
+      if (bulkShareBtn) bulkShareBtn.style.display = any ? "inline-flex" : "none";
+
+      if (selectAll) {
+        const all = checks.length > 0 && checks.every((c) => c.checked);
+        const none = checks.every((c) => !c.checked);
+        selectAll.checked = all;
+        selectAll.indeterminate = !all && !none;
+      }
+    }
+
+    if (selectAll) {
+      selectAll.addEventListener("change", () => {
+        checks.forEach((c) => (c.checked = selectAll.checked));
+        updateBulkUI();
+      });
+    }
+
+    checks.forEach((c) => c.addEventListener("change", updateBulkUI));
+    updateBulkUI();
 
     function sortRows(visibleRows) {
       const mode = sort?.value || "updated_desc";
