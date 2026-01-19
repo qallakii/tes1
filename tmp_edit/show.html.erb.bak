@@ -2,28 +2,17 @@
 
   <div class="drive-page-head">
     <div class="drive-head-left" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <% back_path = @folder.parent_id.present? ? folder_path(@folder.parent_id) : dashboard_path %>
-      <%= link_to "← Back", back_path, class: "btn secondary" %>
-
+      <%= link_to "← Back", dashboard_path, class: "btn secondary" %>
       <div>
         <h2 style="margin-bottom:5px;"><%= @folder.name %></h2>
-
-        <div class="muted" style="font-size:13px;">
-          <%= link_to "Home", dashboard_path, class: "muted" %>
-          <% @folder.ancestors.each do |anc| %>
-            <span aria-hidden="true"> / </span>
-            <%= link_to anc.name, folder_path(anc), class: "muted" %>
-          <% end %>
-          <span aria-hidden="true"> / </span>
-          <span><%= @folder.name %></span>
-        </div>
+        
       </div>
     </div>
 
     <div class="drive-head-right" style="margin-bottom:5px;">
-      <%= link_to "New Folder", new_folder_path(parent_id: @folder.id), class: "btn secondary" %>
-
       <button id="open-upload" class="btn primary" type="button">Upload</button>
+
+      <!-- Bulk actions appear only when selection exists -->
 
       <div id="bulk-actions" style="display:none; margin-top:5px; align-items:center; gap:8px;">
         <button id="bulk-share" class="btn secondary" type="button">Share</button>
@@ -33,9 +22,10 @@
     </div>
   </div>
 
-  <% if (@subfolders || []).any? || (@cvs || []).any? %>
+  <% if @cvs.any? %>
     <div class="drive-card">
       <div class="drive-scroll">
+        <!-- ✅ IMPORTANT: use same style pattern as dashboard -->
         <div class="drive-list cvs-list">
 
           <div class="drive-header">
@@ -47,74 +37,11 @@
             <div class="col-cv-actions">Actions</div>
           </div>
 
-          <!-- ✅ FOLDERS -->
-          <% (@subfolders || []).each do |sf| %>
-            <div class="drive-row folder-row clickable-folder"
-                 data-folder-url="<%= folder_path(sf) %>">
-
-              <div class="col-cv-check">
-                <input class="folder-check" type="checkbox" />
-              </div>
-
-              <div class="col-cv-name">
-                <div class="file-line">
-                  <span class="folder-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    </svg>
-                  </span>
-
-                  <div class="file-text">
-                    <div class="file-name"><%= sf.name %></div>
-                    <div class="file-sub">Folder</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-cv-type">
-                <span class="pill">FOLDER</span>
-              </div>
-
-              <div class="col-cv-size">
-                <span class="muted">—</span>
-              </div>
-
-              <div class="col-cv-modified">
-                <span class="muted"><%= sf.updated_at.strftime("%b %d, %Y %H:%M") %></span>
-              </div>
-
-              <div class="col-cv-actions" onclick="event.stopPropagation();">
-                <div class="kebab-wrap">
-                  <button type="button" class="kebab-btn" data-kebab="folder-<%= sf.id %>">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-                      <circle cx="12" cy="5" r="1.8"></circle>
-                      <circle cx="12" cy="12" r="1.8"></circle>
-                      <circle cx="12" cy="19" r="1.8"></circle>
-                    </svg>
-                  </button>
-
-                  <div class="kebab-menu" data-kebab-menu="folder-<%= sf.id %>">
-                    <a class="kebab-item" href="<%= folder_path(sf) %>">Open</a>
-
-                    <%= button_to "Delete",
-                      folder_path(sf),
-                      method: :delete,
-                      data: { confirm: "Delete this folder and everything inside?" },
-                      class: "kebab-item danger",
-                      form: { class: "inline-form" } %>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          <% end %>
-
-          <!-- ✅ FILES -->
-          <% (@cvs || []).each do |cv| %>
+          <% @cvs.each do |cv| %>
             <% blob = cv.file&.blob %>
             <% display_name = cv.title.presence || cv.file.filename.to_s %>
             <% ext = cv.file.filename.extension.to_s.upcase %>
-            <% type_label = ext.present? ? ext : "FILE" %>
+            <% type_label = ext.present? ? ext : "PDF" %>
             <% size_bytes = blob&.byte_size.to_i %>
 
             <% preview_url = rails_blob_path(cv.file, disposition: "inline") %>
@@ -156,7 +83,8 @@
                 <span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span>
               </div>
 
-              <div class="col-cv-actions" onclick="event.stopPropagation();">
+              <div class="col-cv-actions">
+                <!-- 3 dots per file -->
                 <div class="kebab-wrap">
                   <button type="button" class="kebab-btn" data-kebab="file-<%= cv.id %>">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
@@ -170,7 +98,9 @@
                     <a class="kebab-item" href="<%= preview_url %>" target="_blank">Preview</a>
                     <a class="kebab-item" href="<%= download_url %>">Download</a>
 
-                    <button type="button" class="kebab-item share-one-btn" data-cv-id="<%= cv.id %>">Share</button>
+                    <button type="button" class="kebab-item share-one-btn" data-cv-id="<%= cv.id %>">
+                      Share
+                    </button>
 
                     <%= button_to "Delete",
                       folder_cv_path(@folder, cv),
@@ -189,9 +119,10 @@
       </div>
     </div>
   <% else %>
-    <p class="empty-message">This folder is empty.</p>
+    <p class="empty-message">No CVs uploaded yet.</p>
   <% end %>
 
+  <!-- Share selected -->
   <!-- Share selected FILES -->
   <%= form_with url: bulk_create_files_share_links_path, method: :post, local: true, id: "share-selected-form" do %>
     <%= hidden_field_tag :expires_at, "", id: "share-expires-at" %>
@@ -199,6 +130,8 @@
     <div id="selected-cv-ids"></div>
   <% end %>
 
+
+  <!-- Share one -->
   <!-- Share ONE FILE -->
   <%= form_with url: bulk_create_files_share_links_path, method: :post, local: true, id: "share-one-form" do %>
     <%= hidden_field_tag :expires_at, "", id: "share-expires-at-one" %>
@@ -206,15 +139,66 @@
     <div id="share-one-cv"></div>
   <% end %>
 
+
   <!-- Bulk delete -->
   <%= form_with url: bulk_destroy_folder_cvs_path(@folder), method: :delete, local: true, id: "bulk-delete-form" do %>
     <div id="bulk-delete-ids"></div>
   <% end %>
 
-  <!-- ✅ Keep your expiry modal + upload modal below exactly as you already have -->
+  <!-- Expiry modal for share -->
+    <div id="expiry-overlay" class="overlay" style="display:none;">
+      <div class="modal-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+          <h3 style="margin:0;">Share settings</h3>
+          <button type="button" id="close-expiry" class="btn secondary xsmall">Close</button>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label style="display:block; font-size:13px; color:#374151; margin-bottom:6px;">
+            Expire link (optional)
+          </label>
+
+          <input id="expiry-datetime"
+                type="datetime-local"
+                style=" padding:10px; border:1px solid #d1d5db; border-radius:8px;">
+
+          <div style="margin-top:10px; display:flex; gap:10px; justify-content:space-between;">
+            <button type="button" id="expiry-never" class="btn secondary">Never</button>
+
+            <div style="display:flex; gap:10px;">
+              <button type="button" id="expiry-cancel" class="btn secondary">Cancel</button>
+              <button type="button" id="expiry-confirm" class="btn primary">Create link</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  <!-- Upload modal -->
+  <div id="upload-overlay" class="overlay" style="display:none;">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <h3 style="margin:0;">Upload PDF</h3>
+        <button type="button" id="close-upload" class="btn secondary xsmall">Close</button>
+      </div>
+
+      <div style="margin-top:12px;">
+        <%= form_with model: [@folder, Cv.new], local: true do |f| %>
+          <%= f.hidden_field :title, value: "CV" %>
+          <div style="margin-top:10px;"><%= f.file_field :file, required: true, accept: "application/pdf" %></div>
+          <div style="margin-top:14px; display:flex; justify-content:flex-end;">
+            <%= f.submit "Upload", class: "btn primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <style>
+  /* ✅ same "Drive table" strategy as index */
   .cvs-list { min-width: 980px; }
 
   .cvs-list .drive-header,
@@ -236,27 +220,33 @@
     border-bottom: 1px solid rgba(0,0,0,0.08);
   }
 
-  .cvs-list .drive-row{ border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .cvs-list .drive-row{
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
   .cvs-list .drive-row:hover{ background: rgba(0,0,0,0.02); }
+
+  .clickable-row{ cursor:pointer; }
 
   .file-line{ display:flex; align-items:flex-start; gap:10px; }
   .file-text{ min-width:0; }
-  .file-name{ font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .file-sub{ font-size: 11.5px; opacity: 0.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px; }
-
+  .file-name{
+    font-weight:600;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .file-sub{
+    font-size: 11.5px;
+    opacity: 0.7;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    margin-top:2px;
+  }
   .col-cv-size{ justify-self:end; }
   .size-num{ font-variant-numeric: tabular-nums; }
 
-  /* folder selection checkbox */
-  .folder-check{
-    width:13px;
-    height:13px;
-    cursor:pointer;
-  }
-
-  /* kebab menu (FIXED so it doesn't show as plain links) */
-  .col-cv-actions{ justify-self:end; }
-
+  /* kebab menu */
   .kebab-wrap{ position:relative; display:inline-block; }
   .kebab-btn{
     border: 1px solid rgba(0,0,0,0.12);
@@ -264,21 +254,17 @@
     border-radius: 12px;
     padding: 6px 8px;
     cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    display:flex; align-items:center; justify-content:center;
   }
   .kebab-menu{
-    position:absolute;
-    right:0;
-    top: calc(100% + 8px);
+    position:absolute; right:0; top: calc(100% + 8px);
     min-width: 180px;
     background:#fff;
     border: 1px solid rgba(0,0,0,0.12);
     border-radius: 12px;
     box-shadow: 0 16px 40px rgba(0,0,0,0.18);
     padding: 6px;
-    display:none; /* ✅ important */
+    display:none;
     z-index: 5000;
   }
   .kebab-item{
@@ -287,23 +273,35 @@
     text-align:left;
     padding: 9px 10px;
     border-radius: 10px;
-    border:none;
+    border: none;
     background: transparent;
-    cursor:pointer;
+    cursor: pointer;
     font-size: 13px;
     color: inherit;
-    text-decoration:none; /* ✅ remove underline */
+    text-decoration: none;
   }
   .kebab-item:hover{ background: rgba(0,0,0,0.06); }
   .kebab-item.danger{ color:#b91c1c; }
 
-  .inline-form{ display:block; margin:0; }
-  .inline-form button{ width:100%; }
+  /* modals */
+  .overlay{
+    position: fixed; inset:0;
+    background: rgba(0,0,0,0.45);
+    display:flex; align-items:center; justify-content:center;
+    z-index: 8000;
+    padding: 18px;
+  }
+  .modal-card{
+    background:#fff;
+    border-radius: 14px;
+    padding: 16px;
+    width: min(560px, 92vw);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
 </style>
 
 <script>
-  function initFolderShowPage() {
-    // prevent double-init with Turbo
+  function initFolderShow() {
     if (window.__folderShowInitDone) return;
     window.__folderShowInitDone = true;
 
@@ -320,43 +318,28 @@
       el.textContent = humanSize(raw);
     });
 
-    // ===== Kebab menus (folders + files) =====
-    function closeAllMenus() {
-      document.querySelectorAll(".kebab-menu").forEach((m) => m.style.display = "none");
-    }
-    document.querySelectorAll("[data-kebab]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const key = btn.getAttribute("data-kebab");
-        const menu = document.querySelector('[data-kebab-menu="' + key + '"]');
-        if (!menu) return;
-
-        const isOpen = menu.style.display === "block";
-        closeAllMenus();
-        menu.style.display = isOpen ? "none" : "block";
-      });
-    });
-    document.addEventListener("click", () => closeAllMenus());
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllMenus(); });
-
-    // upload modal (only if present in your page)
+    // upload modal
     const uploadOverlay = document.getElementById("upload-overlay");
     const openUpload = document.getElementById("open-upload");
     const closeUpload = document.getElementById("close-upload");
+
     if (openUpload && uploadOverlay) openUpload.addEventListener("click", () => uploadOverlay.style.display = "flex");
     if (closeUpload && uploadOverlay) closeUpload.addEventListener("click", () => uploadOverlay.style.display = "none");
     if (uploadOverlay) uploadOverlay.addEventListener("click", (e) => { if (e.target === uploadOverlay) uploadOverlay.style.display = "none"; });
 
-    // ===== File selection logic (bulk actions apply to files only) =====
+    // selection
     const selectAll = document.getElementById("select-all");
     const checks = Array.from(document.querySelectorAll(".cv-check"));
     const bulkBar = document.getElementById("bulk-actions");
 
-    function selectedFileIds() {
+    function selectedIds() {
       return checks.filter(c => c.checked).map(c => c.value);
     }
+    function selectedRows() {
+      return checks.filter(c => c.checked).map(c => c.closest(".cv-row"));
+    }
     function updateBulk() {
-      const any = selectedFileIds().length > 0;
+      const any = selectedIds().length > 0;
       if (bulkBar) bulkBar.style.display = any ? "flex" : "none";
       if (openUpload) openUpload.style.display = any ? "none" : "";
       if (selectAll) selectAll.checked = checks.length > 0 && checks.every(c => c.checked);
@@ -371,48 +354,20 @@
     checks.forEach(c => c.addEventListener("change", updateBulk));
     updateBulk();
 
-    // ===== Folder: single click selects, double click opens =====
-    const folderRows = Array.from(document.querySelectorAll(".clickable-folder"));
+    // single click select, double click preview
     const CLICK_DELAY = 220;
     let clickTimer = null;
 
-    folderRows.forEach((row) => {
-      const checkbox = row.querySelector(".folder-check");
-      const url = row.getAttribute("data-folder-url");
-
-      row.addEventListener("click", (e) => {
-        if (e.target.closest(".kebab-wrap")) return;
-        if (e.target.closest(".col-cv-actions")) return;
-
-        clearTimeout(clickTimer);
-        clickTimer = setTimeout(() => {
-          if (checkbox) checkbox.checked = !checkbox.checked;
-          // folders do not affect bulk bar
-        }, CLICK_DELAY);
-      });
-
-      row.addEventListener("dblclick", (e) => {
-        if (e.target.closest(".kebab-wrap")) return;
-        if (e.target.closest(".col-cv-actions")) return;
-
-        clearTimeout(clickTimer);
-        if (url) window.location = url;
-      });
-    });
-
-    // ===== Files: single click selects, double click previews =====
-    let fileClickTimer = null;
-    document.querySelectorAll(".cv-row.clickable-row").forEach((row) => {
+    document.querySelectorAll(".clickable-row").forEach((row) => {
       const checkbox = row.querySelector(".cv-check");
       if (!checkbox) return;
 
       row.addEventListener("click", (e) => {
         if (e.target.closest(".col-cv-check")) return;
         if (e.target.closest(".kebab-wrap")) return;
-        if (e.target.closest(".col-cv-actions")) return;
 
-        clearTimeout(fileClickTimer);
-        fileClickTimer = setTimeout(() => {
+        clearTimeout(clickTimer);
+        clickTimer = setTimeout(() => {
           checkbox.checked = !checkbox.checked;
           checkbox.dispatchEvent(new Event("change", { bubbles: true }));
           updateBulk();
@@ -422,15 +377,14 @@
       row.addEventListener("dblclick", (e) => {
         if (e.target.closest(".col-cv-check")) return;
         if (e.target.closest(".kebab-wrap")) return;
-        if (e.target.closest(".col-cv-actions")) return;
 
-        clearTimeout(fileClickTimer);
+        clearTimeout(clickTimer);
         const url = row.getAttribute("data-preview");
         if (url) window.open(url, "_blank", "noopener");
       });
     });
 
-    // ===== Share ONE (keep working) =====
+    // ===== Expiry modal =====
     const expiryOverlay = document.getElementById("expiry-overlay");
     const closeExpiry = document.getElementById("close-expiry");
     const cancelExpiry = document.getElementById("expiry-cancel");
@@ -438,13 +392,13 @@
     const confirmExpiry = document.getElementById("expiry-confirm");
     const expiryInput = document.getElementById("expiry-datetime");
 
-    let pendingShareMode = null;
+    let pendingShareMode = null; // "bulk" or "one"
     let pendingOneId = null;
 
     function openExpiryModal(mode, oneId = null) {
       pendingShareMode = mode;
       pendingOneId = oneId;
-      if (expiryInput) expiryInput.value = "";
+      if (expiryInput) expiryInput.value = ""; // empty means Never
       if (expiryOverlay) expiryOverlay.style.display = "flex";
     }
     function closeExpiryModal() {
@@ -458,10 +412,25 @@
     if (expiryOverlay) expiryOverlay.addEventListener("click", (e) => { if (e.target === expiryOverlay) closeExpiryModal(); });
     if (neverExpiry) neverExpiry.addEventListener("click", () => { if (expiryInput) expiryInput.value = ""; });
 
+    // share forms + hidden expiry fields
+    const shareForm = document.getElementById("share-selected-form");
+    const shareIds = document.getElementById("selected-cv-ids");
+    const shareExpiresBulk = document.getElementById("share-expires-at");
+
     const shareOneForm = document.getElementById("share-one-form");
     const shareOneContainer = document.getElementById("share-one-cv");
     const shareExpiresOne = document.getElementById("share-expires-at-one");
 
+    // bulk share opens modal
+    const bulkShare = document.getElementById("bulk-share");
+    if (bulkShare && shareForm && shareIds) {
+      bulkShare.addEventListener("click", () => {
+        if (selectedIds().length === 0) return;
+        openExpiryModal("bulk");
+      });
+    }
+
+    // share one opens modal
     document.querySelectorAll(".share-one-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-cv-id");
@@ -470,96 +439,49 @@
       });
     });
 
+    // confirm creates link (bulk or one)
     if (confirmExpiry) {
       confirmExpiry.addEventListener("click", () => {
         const expiresAt = expiryInput ? expiryInput.value : "";
+
+        if (pendingShareMode === "bulk") {
+          if (shareExpiresBulk) shareExpiresBulk.value = expiresAt;
+
+          shareIds.innerHTML = "";
+          selectedIds().forEach((id) => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "cv_ids[]";
+            input.value = id;
+            shareIds.appendChild(input);
+          });
+
+          closeExpiryModal();
+          shareForm.submit();
+        }
 
         if (pendingShareMode === "one") {
           if (shareExpiresOne) shareExpiresOne.value = expiresAt;
 
-          if (shareOneContainer) {
-            shareOneContainer.innerHTML = "";
-            const input = document.createElement("input");
-            input.type = "hidden";
-            input.name = "cv_ids[]";
-            input.value = pendingOneId;
-            shareOneContainer.appendChild(input);
-          }
+          shareOneContainer.innerHTML = "";
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "cv_ids[]";
+          input.value = pendingOneId;
+          shareOneContainer.appendChild(input);
 
           closeExpiryModal();
-          if (shareOneForm) shareOneForm.submit();
+          shareOneForm.submit();
         }
       });
     }
 
-    // ===== Bulk Share (FILES) =====
-    const bulkShareBtn = document.getElementById("bulk-share");
-    const shareForm = document.getElementById("share-selected-form");
-    const shareIds = document.getElementById("selected-cv-ids");
-    const shareExpiresBulk = document.getElementById("share-expires-at");
-
-    if (bulkShareBtn && shareForm && shareIds) {
-      bulkShareBtn.addEventListener("click", () => {
-        if (selectedFileIds().length === 0) return;
-        pendingShareMode = "bulk";
-        pendingOneId = null;
-        if (expiryInput) expiryInput.value = "";
-        if (expiryOverlay) expiryOverlay.style.display = "flex";
-      });
-    }
-
-    if (confirmExpiry) {
-      confirmExpiry.addEventListener("click", () => {
-        if (pendingShareMode !== "bulk") return;
-
-        const expiresAt = expiryInput ? expiryInput.value : "";
-        if (shareExpiresBulk) shareExpiresBulk.value = expiresAt;
-
-        shareIds.innerHTML = "";
-        selectedFileIds().forEach((id) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = "cv_ids[]";
-          input.value = id;
-          shareIds.appendChild(input);
-        });
-
-        closeExpiryModal();
-        shareForm.submit();
-      });
-    }
-
-    // ===== Bulk Delete (FILES) =====
-    const bulkDelete = document.getElementById("bulk-delete");
-    const bulkDeleteForm = document.getElementById("bulk-delete-form");
-    const bulkDeleteIds = document.getElementById("bulk-delete-ids");
-
-    if (bulkDelete && bulkDeleteForm && bulkDeleteIds) {
-      bulkDelete.addEventListener("click", () => {
-        const ids = selectedFileIds();
-        if (ids.length === 0) return;
-        if (!confirm("Delete selected files?")) return;
-
-        bulkDeleteIds.innerHTML = "";
-        ids.forEach((id) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = "cv_ids[]";
-          input.value = id;
-          bulkDeleteIds.appendChild(input);
-        });
-
-        bulkDeleteForm.submit();
-      });
-    }
-
-    // ===== Bulk Download (FILES) =====
+    // bulk download
     const bulkDownload = document.getElementById("bulk-download");
     if (bulkDownload) {
       bulkDownload.addEventListener("click", () => {
-        const selectedRows = checks.filter(c => c.checked).map(c => c.closest(".cv-row"));
-        selectedRows.forEach((row, idx) => {
-          const url = row?.getAttribute("data-download");
+        selectedRows().forEach((row, idx) => {
+          const url = row.getAttribute("data-download");
           if (!url) return;
           setTimeout(() => {
             const a = document.createElement("a");
@@ -572,11 +494,50 @@
         });
       });
     }
+
+    // bulk delete
+    const bulkDelete = document.getElementById("bulk-delete");
+    const bulkDeleteForm = document.getElementById("bulk-delete-form");
+    const bulkDeleteIds = document.getElementById("bulk-delete-ids");
+    if (bulkDelete && bulkDeleteForm && bulkDeleteIds) {
+      bulkDelete.addEventListener("click", () => {
+        if (!confirm("Delete selected files?")) return;
+        const ids = selectedIds();
+        bulkDeleteIds.innerHTML = "";
+        ids.forEach((id) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "cv_ids[]";
+          input.value = id;
+          bulkDeleteIds.appendChild(input);
+        });
+        bulkDeleteForm.submit();
+      });
+    }
+
+    // kebab menu
+    function closeAllMenus() {
+      document.querySelectorAll(".kebab-menu").forEach((m) => m.style.display = "none");
+    }
+    document.querySelectorAll("[data-kebab]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const key = btn.getAttribute("data-kebab");
+        const menu = document.querySelector('[data-kebab-menu="' + key + '"]');
+        if (!menu) return;
+        const isOpen = menu.style.display === "block";
+        closeAllMenus();
+        menu.style.display = isOpen ? "none" : "block";
+      });
+    });
+    document.addEventListener("click", () => closeAllMenus());
   }
 
   document.addEventListener("turbo:load", () => {
     window.__folderShowInitDone = false;
-    initFolderShowPage();
+    initFolderShow();
   });
-  document.addEventListener("DOMContentLoaded", () => initFolderShowPage());
+  document.addEventListener("DOMContentLoaded", () => initFolderShow());
 </script>
+
+

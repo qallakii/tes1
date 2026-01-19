@@ -256,7 +256,7 @@
         if (mode === "name_asc") return an.localeCompare(bn);
         if (mode === "name_desc") return bn.localeCompare(an);
         if (mode === "updated_asc") return au - bu;
-        return bu - au; // updated_desc
+        return bu - au;
       });
 
       visibleRows.forEach(r => list.appendChild(r));

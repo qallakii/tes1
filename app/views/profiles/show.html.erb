@@ -1,0 +1,18 @@
+<div class="dashboard-page">
+  <div class="drive-page-head">
+    <div class="drive-head-left">
+      <h2 style="margin:0;">Profile</h2>
+    </div>
+    <div class="drive-head-right">
+      <%= link_to "Edit", edit_profile_path, class: "btn secondary" %>
+    </div>
+  </div>
+
+  <div class="drive-card" style="padding:16px;">
+    <div style="display:grid; gap:10px; max-width:640px;">
+      <div><strong>Name:</strong> <%= @user.name %></div>
+      <div><strong>Email:</strong> <%= @user.email %></div>
+      <div><strong>Role:</strong> <%= @user.admin? ? "Admin" : "User" %></div>
+    </div>
+  </div>
+</div>

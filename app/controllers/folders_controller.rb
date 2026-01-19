@@ -3,31 +3,48 @@ class FoldersController < ApplicationController
   before_action :set_folder, only: %i[show destroy]
 
   def index
-    @folders = current_user.folders.order(updated_at: :desc)
+    @folders = current_user.folders.where(parent_id: nil).order(updated_at: :desc)
   end
 
   def show
-    # preload ActiveStorage to avoid N+1 and enable size/type in view
-    @cvs = @folder.cvs.with_attached_file.order(updated_at: :desc)
+    @folder = current_user.folders.find(params[:id])
+
+    @subfolders = @folder.subfolders.order(updated_at: :desc)
+    @cvs = @folder.cvs.includes(file_attachment: :blob).order(updated_at: :desc)
+
+    # ✅ one combined list like Google Drive
+    @items = (@subfolders.to_a + @cvs.to_a).sort_by do |item|
+      type_rank = item.is_a?(Folder) ? 0 : 1
+      name =
+        if item.is_a?(Folder)
+          item.name.to_s.downcase
+        else
+          (item.title.presence || item.file.filename.to_s).downcase
+        end
+      [type_rank, name]
+    end
   end
 
   def new
-    @folder = current_user.folders.new
+    # parent_id passed from link: new_folder_path(parent_id: @folder.id)
+    @folder = current_user.folders.new(parent_id: params[:parent_id])
   end
 
   def create
     @folder = current_user.folders.new(folder_params)
 
     if @folder.save
-      redirect_to folders_path, notice: "Folder created successfully"
+      redirect_to(@folder.parent_id.present? ? folder_path(@folder.parent_id) : folders_path,
+                  notice: "Folder created successfully")
     else
       render :new, status: :unprocessable_entity
     end
   end
 
   def destroy
+    parent_id = @folder.parent_id
     @folder.destroy
-    redirect_to folders_path, notice: "Folder deleted"
+    redirect_to(parent_id.present? ? folder_path(parent_id) : folders_path, notice: "Folder deleted")
   end
 
   private
@@ -37,6 +54,6 @@ class FoldersController < ApplicationController
   end
 
   def folder_params
-    params.require(:folder).permit(:name)
+    params.require(:folder).permit(:name, :parent_id)
   end
 end

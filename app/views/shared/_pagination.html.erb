@@ -1,0 +1,47 @@
+<%# Simple pagination (no gems).
+    Locals:
+      total_count: Integer
+      page: Integer
+      per_page: Integer
+      base_params: Hash (keeps other query params)
+%>
+<% total_pages = (total_count.to_f / per_page).ceil %>
+<% return if total_pages <= 1 %>
+
+<div class="pager" style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:14px;">
+  <div class="muted" style="font-size:13px;">
+    Page <strong><%= page %></strong> of <strong><%= total_pages %></strong>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+    <form method="get" style="display:flex; align-items:center; gap:8px;">
+      <% base_params.each do |k, v| %>
+        <% next if k.to_s.in?(["page", "per_page"]) %>
+        <input type="hidden" name="<%= k %>" value="<%= v %>">
+      <% end %>
+      <label class="muted" style="font-size:13px;">Rows:</label>
+      <select name="per_page" class="drive-select" onchange="this.form.submit()">
+        <% [10, 25, 80].each do |n| %>
+          <option value="<%= n %>" <%= "selected" if per_page == n %>><%= n %></option>
+        <% end %>
+      </select>
+    </form>
+
+    <div style="display:flex; gap:8px; align-items:center;">
+      <% prev_page = page > 1 ? page - 1 : nil %>
+      <% next_page = page < total_pages ? page + 1 : nil %>
+
+      <% if prev_page %>
+        <%= link_to "Prev", url_for(base_params.merge(page: prev_page, per_page: per_page)), class: "btn secondary xsmall" %>
+      <% else %>
+        <span class="btn secondary xsmall" style="opacity:0.5; pointer-events:none;">Prev</span>
+      <% end %>
+
+      <% if next_page %>
+        <%= link_to "Next", url_for(base_params.merge(page: next_page, per_page: per_page)), class: "btn secondary xsmall" %>
+      <% else %>
+        <span class="btn secondary xsmall" style="opacity:0.5; pointer-events:none;">Next</span>
+      <% end %>
+    </div>
+  </div>
+</div>

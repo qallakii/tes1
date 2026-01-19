@@ -3,6 +3,9 @@
     <h2>Create New Folder</h2>
 
     <%= form_with(model: @folder, local: true) do |form| %>
+      <!-- ✅ keeps nesting working -->
+      <%= form.hidden_field :parent_id %>
+
       <div class="field">
         <%= form.label :name %>
         <%= form.text_field :name, placeholder: "Folder Name" %>
@@ -14,7 +17,8 @@
     <% end %>
 
     <div class="auth-footer">
-      <%= link_to "Back to Dashboard", dashboard_path, class: "btn secondary" %>
+      <% back_path = @folder.parent_id.present? ? folder_path(@folder.parent_id) : dashboard_path %>
+      <%= link_to "Back", back_path, class: "btn secondary" %>
     </div>
   </div>
 </div>
