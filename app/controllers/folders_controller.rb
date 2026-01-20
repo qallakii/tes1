@@ -1,32 +1,20 @@
 class FoldersController < ApplicationController
   before_action :require_login
-  before_action :set_folder, only: %i[show destroy]
+  before_action :set_folder, only: %i[show destroy rename]
 
   def index
     @folders = current_user.folders.where(parent_id: nil).order(updated_at: :desc)
   end
 
   def show
-    @folder = current_user.folders.find(params[:id])
-
     @subfolders = @folder.subfolders.order(updated_at: :desc)
     @cvs = @folder.cvs.includes(file_attachment: :blob).order(updated_at: :desc)
 
-    # ✅ one combined list like Google Drive
-    @items = (@subfolders.to_a + @cvs.to_a).sort_by do |item|
-      type_rank = item.is_a?(Folder) ? 0 : 1
-      name =
-        if item.is_a?(Folder)
-          item.name.to_s.downcase
-        else
-          (item.title.presence || item.file.filename.to_s).downcase
-        end
-      [type_rank, name]
-    end
+    # ✅ used for Move Tree modal
+    @all_folders_for_tree = current_user.folders.select(:id, :name, :parent_id).order(:name)
   end
 
   def new
-    # parent_id passed from link: new_folder_path(parent_id: @folder.id)
     @folder = current_user.folders.new(parent_id: params[:parent_id])
   end
 
@@ -38,6 +26,15 @@ class FoldersController < ApplicationController
                   notice: "Folder created successfully")
     else
       render :new, status: :unprocessable_entity
+    end
+  end
+
+  # ✅ rename from kebab menu (modal)
+  def rename
+    if @folder.update(params.require(:folder).permit(:name))
+      redirect_back fallback_location: folder_path(@folder), notice: "Folder renamed."
+    else
+      redirect_back fallback_location: folder_path(@folder), alert: @folder.errors.full_messages.to_sentence
     end
   end
 

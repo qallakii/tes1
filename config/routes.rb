@@ -13,12 +13,19 @@ Rails.application.routes.draw do
   get "/search", to: "search#index", as: :search
 
   resources :folders do
+    member do
+      patch :rename
+    end
+
     resources :cvs, only: [:new, :create, :destroy, :show, :update] do
       collection do
         delete :bulk_destroy
+        post :bulk_move
       end
     end
   end
+
+
 
   resources :share_links, only: [:index, :new, :create, :destroy, :show] do
     collection do
