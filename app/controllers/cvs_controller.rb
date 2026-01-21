@@ -12,39 +12,50 @@ class CvsController < ApplicationController
 
   # ✅ Updated: supports single + multiple files
   def create
-    files = Array(params.dig(:cv, :files)).reject(&:blank?)
-    single = params.dig(:cv, :file)
-
-    # Allow old single upload too
-    files << single if single.present?
+    files = Array(params.dig(:cv, :files)).compact
+    paths = Array(params.dig(:cv, :paths))
 
     if files.empty?
-      return redirect_to folder_path(@folder), alert: "Please select at least one file."
+      redirect_back fallback_location: folder_path(@folder), alert: "No files selected."
+      return
     end
 
-    errors = []
     created = 0
 
-    files.each do |uploaded|
-      cv = @folder.cvs.new
-      cv.user = current_user
+    files.each_with_index do |uploaded, idx|
+      rel = paths[idx].to_s
+
+      # If it came from folder picker, rel looks like: "MyFolder/sub1/sub2/file.pdf"
+      # We want only subfolders, not the top folder name:
+      parts = rel.split("/").reject(&:blank?)
+
+      # If rel is empty (normal file upload), treat it as current folder
+      dir_parts =
+        if parts.length >= 2
+          # remove first (picked folder name) and last (filename)
+          parts[1..-2] || []
+        else
+          []
+        end
+
+      target_folder = @folder
+
+      # Create/find nested folders under current folder
+      dir_parts.each do |name|
+        target_folder = current_user.folders.find_or_create_by!(parent_id: target_folder.id, name: name)
+      end
+
+      cv = current_user.cvs.new(folder_id: target_folder.id)
       cv.file.attach(uploaded)
 
-      unless cv.save
-        errors << (cv.errors.full_messages.to_sentence.presence || "Failed to upload #{uploaded.original_filename}")
-      else
+      if cv.save
         created += 1
       end
     end
 
-    if errors.any?
-      msg = "#{created} uploaded. " if created > 0
-      msg = "#{msg}#{errors.join(' | ')}"
-      redirect_to folder_path(@folder), alert: msg
-    else
-      redirect_to folder_path(@folder), notice: "#{created} file#{created == 1 ? '' : 's'} uploaded successfully."
-    end
+    redirect_to folder_path(@folder), notice: "Uploaded #{created} file(s)."
   end
+
 
   def show
     @cv = @folder.cvs.find(params[:id])

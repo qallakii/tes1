@@ -323,25 +323,29 @@
       <%= form_with url: folder_cvs_path(@folder), method: :post, local: true, html: { multipart: true }, id: "upload-form" do %>
         <div id="upload-dropzone" class="upload-dropzone" style="margin-top:12px;">
           <div class="upload-dropzone-inner">
-            <div style="font-weight:600;">Drop files to upload</div>
+            <div style="font-weight:600;">Drop files or a folder to upload</div>
             <div class="muted" style="font-size:13px; margin-top:4px;">or</div>
 
-            <button type="button" id="choose-files" class="btn secondary" style="margin-top:10px;">
-              Choose files
-            </button>
+            <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; justify-content:center;">
+              <button type="button" id="choose-files" class="btn secondary">
+                Choose files
+              </button>
 
-            <input
-              id="upload-file-input"
-              type="file"
-              name="cv[files][]"
-              multiple
-              style="display:none;"
-            />
+              <button type="button" id="choose-folder" class="btn secondary">
+                Choose folder
+              </button>
+            </div>
+
+            <input id="upload-file-input" type="file" name="cv[files][]" multiple style="display:none;" />
+
+            <input id="upload-folder-input" type="file" name="cv[files][]" multiple webkitdirectory directory style="display:none;" />
+
+            <div id="upload-paths"></div>
           </div>
         </div>
 
         <div id="upload-file-list-wrap" style="margin-top:12px; display:none;">
-          <div class="muted" style="font-size:13px; margin-bottom:6px;">Selected files</div>
+          <div class="muted" style="font-size:13px; margin-bottom:6px;">Selected</div>
           <ul id="upload-file-list" style="margin:0; padding-left:18px;"></ul>
         </div>
 
@@ -350,13 +354,13 @@
           <button type="submit" id="upload-submit" class="btn primary" disabled>Upload</button>
         </div>
       <% end %>
+
     </div>
   </div>
 </div>
 
 <style>
   .cvs-list { min-width: 980px; }
-
   .cvs-list .drive-header,
   .cvs-list .drive-row{
     display:grid;
@@ -367,7 +371,6 @@
     font-size: 13px;
     line-height: 1.35;
   }
-
   .cvs-list .drive-header{
     font-size: 11.5px;
     font-weight: 600;
@@ -375,18 +378,14 @@
     background: rgba(0,0,0,0.02);
     border-bottom: 1px solid rgba(0,0,0,0.08);
   }
-
   .cvs-list .drive-row{ border-bottom: 1px solid rgba(0,0,0,0.06); }
   .cvs-list .drive-row:hover{ background: rgba(0,0,0,0.02); }
-
   .file-line{ display:flex; align-items:flex-start; gap:10px; }
   .file-text{ min-width:0; }
   .file-name{ font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .file-sub{ font-size: 11.5px; opacity: 0.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px; }
-
   .col-cv-size{ justify-self:end; }
   .size-num{ font-variant-numeric: tabular-nums; }
-
   .folder-check{ width:13px; height:13px; cursor:pointer; }
 
   .col-cv-actions{ justify-self:end; }
@@ -429,7 +428,6 @@
   }
   .kebab-item:hover{ background: rgba(0,0,0,0.06); }
   .kebab-item.danger{ color:#b91c1c; }
-
   .inline-form{ display:block; margin:0; }
   .inline-form button{ width:100%; }
 
@@ -456,7 +454,6 @@
     border-radius:10px;
   }
   .tree-row:hover{ background: rgba(0,0,0,0.04); }
-
   .tree-toggle{
     width:28px;
     height:28px;
@@ -470,7 +467,6 @@
     font-size:14px;
     line-height:1;
   }
-
   .tree-pick{
     border:none;
     background:transparent;
@@ -482,7 +478,6 @@
     border-radius:10px;
   }
   .tree-pick:hover{ background: rgba(0,0,0,0.06); }
-
   .tree-name{
     font-weight:600;
     overflow:hidden;
@@ -490,7 +485,6 @@
     white-space:nowrap;
     max-width: 480px;
   }
-
   .tree-row.selected{
     background: rgba(0,0,0,0.06);
     outline: 1px solid rgba(0,0,0,0.10);
@@ -562,10 +556,13 @@
     const bulkBar = document.getElementById("bulk-actions");
     const openUploadBtn = document.getElementById("open-upload");
 
+    // IMPORTANT: stop checkbox clicks from triggering row click logic (prevents double-toggle)
+    folderChecks.forEach(cb => cb.addEventListener("click", (e) => e.stopPropagation()));
+    fileChecks.forEach(cb => cb.addEventListener("click", (e) => e.stopPropagation()));
+
     function selectedFileIds() {
       return fileChecks.filter(c => c.checked).map(c => c.value);
     }
-
     function selectedFolderIds() {
       return folderChecks.filter(c => c.checked).map(c => c.value).filter(Boolean);
     }
@@ -594,49 +591,43 @@
     folderChecks.forEach(c => c.addEventListener("change", updateBulk));
     updateBulk();
 
-    // Folder: single click select, double click open
+    // Folder rows: single click = select, double click = open
     const folderRows = Array.from(document.querySelectorAll(".clickable-folder"));
     const CLICK_DELAY = 220;
-    let clickTimer = null;
+    let folderClickTimer = null;
 
     folderRows.forEach((row) => {
       const checkbox = row.querySelector(".folder-check");
       const url = row.getAttribute("data-folder-url");
 
       row.addEventListener("click", (e) => {
-        // ✅ IMPORTANT: if user clicked the checkbox area, don't run row toggle
-        if (e.target.closest(".col-cv-check")) return;
-
         if (e.target.closest(".kebab-wrap")) return;
         if (e.target.closest(".col-cv-actions")) return;
 
-        clearTimeout(clickTimer);
-        clickTimer = setTimeout(() => {
-          if (checkbox) {
-            checkbox.checked = !checkbox.checked;
-            checkbox.dispatchEvent(new Event("change", { bubbles: true })); // ✅ updates bulk bar
-          }
+        clearTimeout(folderClickTimer);
+        folderClickTimer = setTimeout(() => {
+          if (!checkbox) return;
+          checkbox.checked = !checkbox.checked;
+          checkbox.dispatchEvent(new Event("change", { bubbles: true }));
         }, CLICK_DELAY);
       });
-
 
       row.addEventListener("dblclick", (e) => {
         if (e.target.closest(".kebab-wrap")) return;
         if (e.target.closest(".col-cv-actions")) return;
 
-        clearTimeout(clickTimer);
+        clearTimeout(folderClickTimer);
         if (url) window.location = url;
       });
     });
 
-    // Files: single click select, double click preview
+    // File rows: single click = select, double click = preview
     let fileClickTimer = null;
     document.querySelectorAll(".cv-row.clickable-row").forEach((row) => {
       const checkbox = row.querySelector(".cv-check");
       if (!checkbox) return;
 
       row.addEventListener("click", (e) => {
-        if (e.target.closest(".col-cv-check")) return;
         if (e.target.closest(".kebab-wrap")) return;
         if (e.target.closest(".col-cv-actions")) return;
 
@@ -644,12 +635,10 @@
         fileClickTimer = setTimeout(() => {
           checkbox.checked = !checkbox.checked;
           checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-          updateBulk();
         }, CLICK_DELAY);
       });
 
       row.addEventListener("dblclick", (e) => {
-        if (e.target.closest(".col-cv-check")) return;
         if (e.target.closest(".kebab-wrap")) return;
         if (e.target.closest(".col-cv-actions")) return;
 
@@ -659,7 +648,7 @@
       });
     });
 
-    // Rename folder modal (CSRF-safe)
+    // Rename folder modal
     const renameOverlay = document.getElementById("rename-folder-overlay");
     const closeRename = document.getElementById("close-rename-folder");
     const cancelRename = document.getElementById("cancel-rename-folder");
@@ -670,7 +659,6 @@
       if (!renameOverlay || !renameInput || !form) return;
 
       renameInput.value = folderName || "";
-
       const prefix = (form.dataset.renamePrefix || "").replace(/\/$/, "");
       form.action = prefix + "/" + folderId + "/rename";
 
@@ -678,7 +666,6 @@
       setTimeout(() => renameInput.focus(), 20);
       setTimeout(() => renameInput.select(), 30);
     }
-
     function closeRenameModal() {
       if (!renameOverlay) return;
       renameOverlay.style.display = "none";
@@ -876,16 +863,20 @@
     if (moveCancel) moveCancel.addEventListener("click", closeMoveModal);
     if (moveOverlay) moveOverlay.addEventListener("click", (e) => { if (e.target === moveOverlay) closeMoveModal(); });
 
-    // Upload modal + drag & drop
+    // ===== Upload modal (your existing logic kept) =====
     const uploadOverlay = document.getElementById("upload-overlay");
-    const openUpload = document.getElementById("open-upload");
-    const closeUpload = document.getElementById("close-upload");
-    const cancelUpload = document.getElementById("cancel-upload");
+    const openUploadBtn2 = document.getElementById("open-upload");
+    const closeUploadBtn = document.getElementById("close-upload");
+    const cancelUploadBtn = document.getElementById("cancel-upload");
 
     const chooseFilesBtn = document.getElementById("choose-files");
-    const fileInput = document.getElementById("upload-file-input");
+    const chooseFolderBtn = document.getElementById("choose-folder");
+
+    const filesInput = document.getElementById("upload-file-input");
+    const folderInput = document.getElementById("upload-folder-input");
     const dropzone = document.getElementById("upload-dropzone");
 
+    const pathsWrap = document.getElementById("upload-paths");
     const listWrap = document.getElementById("upload-file-list-wrap");
     const fileList = document.getElementById("upload-file-list");
     const uploadSubmit = document.getElementById("upload-submit");
@@ -895,20 +886,51 @@
       if (!uploadOverlay) return;
       uploadOverlay.style.display = "flex";
     }
+
+    function clearPaths() {
+      if (pathsWrap) pathsWrap.innerHTML = "";
+    }
+
+    function resetUploadUI() {
+      if (filesInput) filesInput.value = "";
+      if (folderInput) folderInput.value = "";
+      clearPaths();
+
+      if (fileList) fileList.innerHTML = "";
+      if (listWrap) listWrap.style.display = "none";
+      if (uploadSubmit) {
+        uploadSubmit.disabled = true;
+        uploadSubmit.textContent = "Upload";
+      }
+    }
+
     function closeUploadModal() {
       if (!uploadOverlay) return;
       uploadOverlay.style.display = "none";
+      resetUploadUI();
+    }
 
-      if (fileInput) fileInput.value = "";
-      if (fileList) fileList.innerHTML = "";
-      if (listWrap) listWrap.style.display = "none";
-      if (uploadSubmit) uploadSubmit.disabled = true;
-      if (uploadSubmit) uploadSubmit.textContent = "Upload";
+    function activeSelectedFiles() {
+      const folderFiles = folderInput && folderInput.files ? Array.from(folderInput.files) : [];
+      const normalFiles = filesInput && filesInput.files ? Array.from(filesInput.files) : [];
+      return folderFiles.length > 0 ? folderFiles : normalFiles;
+    }
+
+    function buildPathsFor(files) {
+      clearPaths();
+      if (!pathsWrap) return;
+
+      files.forEach((f) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "cv[paths][]";
+        input.value = f.webkitRelativePath || "";
+        pathsWrap.appendChild(input);
+      });
     }
 
     function renderSelectedFiles() {
-      if (!fileInput) return;
-      const files = Array.from(fileInput.files || []);
+      const files = activeSelectedFiles();
       if (!fileList || !listWrap || !uploadSubmit) return;
 
       if (files.length === 0) {
@@ -918,19 +940,23 @@
         return;
       }
 
+      buildPathsFor(files);
+
       fileList.innerHTML = "";
       files.forEach((f) => {
         const li = document.createElement("li");
-        li.textContent = `${f.name} (${humanSize(f.size)})`;
+        const label = f.webkitRelativePath && f.webkitRelativePath.length > 0 ? f.webkitRelativePath : f.name;
+        li.textContent = `${label} (${humanSize(f.size)})`;
         fileList.appendChild(li);
       });
+
       listWrap.style.display = "block";
       uploadSubmit.disabled = false;
     }
 
-    if (openUpload) openUpload.addEventListener("click", openUploadModal);
-    if (closeUpload) closeUpload.addEventListener("click", closeUploadModal);
-    if (cancelUpload) cancelUpload.addEventListener("click", closeUploadModal);
+    if (openUploadBtn2) openUploadBtn2.addEventListener("click", openUploadModal);
+    if (closeUploadBtn) closeUploadBtn.addEventListener("click", closeUploadModal);
+    if (cancelUploadBtn) cancelUploadBtn.addEventListener("click", closeUploadModal);
 
     if (uploadOverlay) {
       uploadOverlay.addEventListener("click", (e) => {
@@ -938,19 +964,38 @@
       });
     }
 
-    if (chooseFilesBtn && fileInput) {
-      chooseFilesBtn.addEventListener("click", () => fileInput.click());
+    if (chooseFilesBtn && filesInput) {
+      chooseFilesBtn.addEventListener("click", () => {
+        if (folderInput) folderInput.value = "";
+        clearPaths();
+        filesInput.click();
+      });
     }
-    if (fileInput) {
-      fileInput.addEventListener("change", renderSelectedFiles);
+
+    if (chooseFolderBtn && folderInput) {
+      chooseFolderBtn.addEventListener("click", () => {
+        if (filesInput) filesInput.value = "";
+        clearPaths();
+        folderInput.click();
+      });
     }
+
+    if (filesInput) filesInput.addEventListener("change", () => {
+      if (folderInput) folderInput.value = "";
+      renderSelectedFiles();
+    });
+
+    if (folderInput) folderInput.addEventListener("change", () => {
+      if (filesInput) filesInput.value = "";
+      renderSelectedFiles();
+    });
 
     function preventDefaults(e) {
       e.preventDefault();
       e.stopPropagation();
     }
 
-    if (dropzone && fileInput) {
+    if (dropzone) {
       ["dragenter","dragover","dragleave","drop"].forEach((ev) => {
         dropzone.addEventListener(ev, preventDefaults, false);
       });
@@ -958,16 +1003,20 @@
       ["dragenter","dragover"].forEach((ev) => {
         dropzone.addEventListener(ev, () => dropzone.classList.add("dragover"));
       });
+
       ["dragleave","drop"].forEach((ev) => {
         dropzone.addEventListener(ev, () => dropzone.classList.remove("dragover"));
       });
 
       dropzone.addEventListener("drop", (e) => {
         const dt = e.dataTransfer;
-        const files = dt ? dt.files : null;
-        if (!files || files.length === 0) return;
+        const files = dt ? Array.from(dt.files || []) : [];
+        if (files.length === 0) return;
 
-        fileInput.files = files;
+        if (folderInput) folderInput.value = "";
+        if (filesInput) {
+          try { filesInput.files = dt.files; } catch (_) {}
+        }
         renderSelectedFiles();
       });
     }

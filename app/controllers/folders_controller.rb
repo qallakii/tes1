@@ -1,6 +1,6 @@
 class FoldersController < ApplicationController
   before_action :require_login
-  before_action :set_folder, only: %i[show destroy update]
+  before_action :set_folder, only: %i[show destroy update rename bulk_move_items]
 
   def index
     @folders = current_user.folders.where(parent_id: nil).order(updated_at: :desc)
@@ -10,7 +10,7 @@ class FoldersController < ApplicationController
     @subfolders = @folder.subfolders.order(updated_at: :desc)
     @cvs = @folder.cvs.includes(file_attachment: :blob).order(updated_at: :desc)
 
-    # ✅ used by the Move modal tree
+    # if your move tree uses this, keep it:
     @all_folders_for_tree = current_user.folders.order(:name)
   end
 
@@ -38,75 +38,58 @@ class FoldersController < ApplicationController
   end
 
   def rename
-    folder = current_user.folders.find(params[:id])
-
-    if folder.update(params.require(:folder).permit(:name))
-      redirect_back fallback_location: folder_path(folder), notice: "Folder renamed."
+    if @folder.update(params.require(:folder).permit(:name))
+      redirect_back fallback_location: folder_path(@folder), notice: "Folder renamed."
     else
-      redirect_back fallback_location: folder_path(folder), alert: folder.errors.full_messages.to_sentence
+      redirect_back fallback_location: folder_path(@folder), alert: @folder.errors.full_messages.to_sentence
     end
   end
 
-  # ✅ NEW: move mixed selection (folders + files) to a target folder
+  # ✅ Moves BOTH folders and files + avoids "fake moved" when nothing changed
   def bulk_move_items
-    target_id = params[:target_folder_id].presence
-    return redirect_back(fallback_location: dashboard_path, alert: "Choose a destination folder.") unless target_id
-
-    target = current_user.folders.find_by(id: target_id)
-    return redirect_back(fallback_location: dashboard_path, alert: "Destination folder not found.") unless target
-
-    folder_ids = Array(params[:folder_ids]).map(&:to_s).reject(&:blank?).map(&:to_i)
-    cv_ids     = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?).map(&:to_i)
-
-    if folder_ids.empty? && cv_ids.empty?
-      return redirect_back(fallback_location: folder_path(params[:id]), alert: "Nothing selected to move.")
+    target_id = params[:target_folder_id].to_s
+    if target_id.blank?
+      redirect_back fallback_location: folder_path(@folder), alert: "Choose a destination folder."
+      return
     end
+
+    # If trying to move into the SAME folder → no-op
+    if target_id == @folder.id.to_s
+      redirect_back fallback_location: folder_path(@folder), alert: "You’re already in this folder. Pick a different destination."
+      return
+    end
+
+    target_folder = current_user.folders.find(target_id)
+
+    folder_ids = Array(params[:folder_ids]).map(&:to_s).reject(&:blank?)
+    cv_ids     = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
 
     moved_folders = 0
-    moved_files = 0
-    errors = []
+    moved_files   = 0
 
-    # ---- move folders (parent_id) ----
-    folders = current_user.folders.where(id: folder_ids)
-
-    folders.find_each do |f|
-      # Prevent moving a folder into itself or into its own descendants
-      target_ancestor_ids =
-        begin
-          target.ancestors.map(&:id)
-        rescue
-          []
-        end
-
-      if target.id == f.id || target_ancestor_ids.include?(f.id)
-        errors << "Can't move '#{f.name}' into itself / its subfolder."
-        next
+    if folder_ids.any?
+      if folder_ids.include?(target_folder.id.to_s)
+        redirect_back fallback_location: folder_path(@folder), alert: "You can’t move a folder into itself."
+        return
       end
 
-      if f.update(parent_id: target.id)
-        moved_folders += 1
-      else
-        errors << "Failed to move folder '#{f.name}'."
-      end
+      moved_folders = current_user.folders
+        .where(id: folder_ids)
+        .where.not(parent_id: target_folder.id)
+        .update_all(parent_id: target_folder.id, updated_at: Time.current)
     end
 
-    # ---- move files (folder_id) ----
     if cv_ids.any?
-      cvs = Cv.where(id: cv_ids, user_id: current_user.id)
-      moved_files = cvs.update_all(folder_id: target.id)
+      moved_files = current_user.cvs
+        .where(id: cv_ids)
+        .where.not(folder_id: target_folder.id)
+        .update_all(folder_id: target_folder.id, updated_at: Time.current)
     end
 
-    if errors.any?
-      notice = []
-      notice << "#{moved_folders} folder#{moved_folders == 1 ? '' : 's'} moved" if moved_folders > 0
-      notice << "#{moved_files} file#{moved_files == 1 ? '' : 's'} moved" if moved_files > 0
-      msg = (notice.join(", ").presence || "Move finished with errors.") + ". " + errors.join(" | ")
-      redirect_back fallback_location: folder_path(params[:id]), alert: msg
+    if moved_folders.zero? && moved_files.zero?
+      redirect_back fallback_location: folder_path(@folder), alert: "Nothing moved (items are already in that folder)."
     else
-      msg = []
-      msg << "#{moved_folders} folder#{moved_folders == 1 ? '' : 's'} moved" if moved_folders > 0
-      msg << "#{moved_files} file#{moved_files == 1 ? '' : 's'} moved" if moved_files > 0
-      redirect_back fallback_location: folder_path(params[:id]), notice: msg.join(", ")
+      redirect_to folder_path(@folder), notice: "Moved #{moved_folders} folder(s) and #{moved_files} file(s)."
     end
   end
 
