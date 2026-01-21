@@ -15,12 +15,12 @@ Rails.application.routes.draw do
   resources :folders do
     member do
       patch :rename
+      post :bulk_move_items
     end
 
     resources :cvs, only: [:new, :create, :destroy, :show, :update] do
       collection do
         delete :bulk_destroy
-        post :bulk_move
       end
     end
   end

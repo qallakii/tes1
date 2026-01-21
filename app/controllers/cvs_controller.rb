@@ -10,15 +10,39 @@ class CvsController < ApplicationController
     @cv = @folder.cvs.new
   end
 
+  # ✅ Updated: supports single + multiple files
   def create
-    @cv = @folder.cvs.new(cv_params)
-    @cv.user = current_user
+    files = Array(params.dig(:cv, :files)).reject(&:blank?)
+    single = params.dig(:cv, :file)
 
-    if @cv.save
-      flash[:notice] = "File uploaded successfully."
-      redirect_to folder_path(@folder)
+    # Allow old single upload too
+    files << single if single.present?
+
+    if files.empty?
+      return redirect_to folder_path(@folder), alert: "Please select at least one file."
+    end
+
+    errors = []
+    created = 0
+
+    files.each do |uploaded|
+      cv = @folder.cvs.new
+      cv.user = current_user
+      cv.file.attach(uploaded)
+
+      unless cv.save
+        errors << (cv.errors.full_messages.to_sentence.presence || "Failed to upload #{uploaded.original_filename}")
+      else
+        created += 1
+      end
+    end
+
+    if errors.any?
+      msg = "#{created} uploaded. " if created > 0
+      msg = "#{msg}#{errors.join(' | ')}"
+      redirect_to folder_path(@folder), alert: msg
     else
-      redirect_to folder_path(@folder), alert: @cv.errors.full_messages.to_sentence
+      redirect_to folder_path(@folder), notice: "#{created} file#{created == 1 ? '' : 's'} uploaded successfully."
     end
   end
 
@@ -45,7 +69,6 @@ class CvsController < ApplicationController
     redirect_to folder_path(@folder)
   end
 
-  # ✅ delete multiple selected files
   def bulk_destroy
     ids = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
     if ids.any?
@@ -57,19 +80,25 @@ class CvsController < ApplicationController
     redirect_to folder_path(@folder)
   end
 
-  # ✅ move selected files to another folder (same user)
+  # If you already implemented bulk_move elsewhere, keep it.
+  # If not, leave the route but don’t show the button yet.
   def bulk_move
     ids = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
     target_folder_id = params[:target_folder_id].presence
 
-    return redirect_to(folder_path(@folder), alert: "No files selected.") if ids.empty?
-    return redirect_to(folder_path(@folder), alert: "Choose a destination folder.") if target_folder_id.blank?
+    if ids.empty?
+      return redirect_to folder_path(@folder), alert: "No files selected."
+    end
 
-    target_folder = current_user.folders.find(target_folder_id)
+    unless target_folder_id
+      return redirect_to folder_path(@folder), alert: "Please choose a destination folder."
+    end
 
-    moved = @folder.cvs.where(id: ids).update_all(folder_id: target_folder.id)
-    flash[:notice] = "Moved #{moved} file(s)."
-    redirect_to folder_path(target_folder)
+    target = current_user.folders.find_by(id: target_folder_id)
+    return redirect_to folder_path(@folder), alert: "Destination folder not found." unless target
+
+    moved = @folder.cvs.where(id: ids).update_all(folder_id: target.id)
+    redirect_to folder_path(@folder), notice: "#{moved} file#{moved == 1 ? '' : 's'} moved."
   end
 
   private
@@ -79,6 +108,7 @@ class CvsController < ApplicationController
   end
 
   def cv_params
-    params.require(:cv).permit(:file, :title)
+    # keep both :file (single) and :files (multiple)
+    params.require(:cv).permit(:file, :title, files: [])
   end
 end
