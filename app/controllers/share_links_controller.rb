@@ -17,6 +17,7 @@ class ShareLinksController < ApplicationController
     end
   end
 
+  # ✅ Single folder share (now shares the whole subtree)
   def create
     folder = current_user.folders.find(params[:folder_id])
 
@@ -31,10 +32,13 @@ class ShareLinksController < ApplicationController
     share_link.user_id = current_user.id if ShareLink.column_names.include?("user_id")
     share_link.save!
 
+    # ✅ Attach folder + all subfolders
+    attach_subtree_folders!(share_link, [folder.id])
+
     redirect_to share_links_path, notice: "Share link created."
   end
 
-  # ONE link -> MANY folders
+  # ✅ ONE link -> MANY folders (now shares each selected folder subtree)
   def bulk_create
     folder_ids = Array(params[:folder_ids]).map(&:to_s).reject(&:blank?)
     if folder_ids.empty?
@@ -42,15 +46,11 @@ class ShareLinksController < ApplicationController
       return
     end
 
-    folders = current_user.folders.where(id: folder_ids)
-
     share_link = ShareLink.new(expires_at: nil)
     share_link.user_id = current_user.id if ShareLink.column_names.include?("user_id")
     share_link.save!
 
-    folders.each do |f|
-      ShareLinkFolder.find_or_create_by!(share_link: share_link, folder: f)
-    end
+    attach_subtree_folders!(share_link, folder_ids)
 
     redirect_to share_links_path, notice: "Share link created."
   end
@@ -82,12 +82,9 @@ class ShareLinksController < ApplicationController
     redirect_to share_links_path, notice: "Share link created."
   end
 
-
-
   def destroy
     share_link = ShareLink.find(params[:id])
 
-    # allow delete only if it belongs to current user (either user_id or folder owner)
     if (share_link.respond_to?(:user_id) && share_link.user_id == current_user.id) ||
        (share_link.folder && share_link.folder.user_id == current_user.id) ||
        (share_link.all_folders.any? { |f| f.user_id == current_user.id })
@@ -108,25 +105,79 @@ class ShareLinksController < ApplicationController
       return
     end
 
-    # ✅ FILE-ONLY SHARE: if link has selected CVs, show ONLY those files
+    # ✅ FILE-ONLY SHARE
     if @share_link.cvs.any?
       @files_only = true
       @folders = []
       @folder = nil
+      @subfolders = []
       @cvs = @share_link.cvs.with_attached_file.order(updated_at: :desc)
       return
     end
 
-    # ✅ FOLDER SHARE (single or multiple)
+    # ✅ FOLDER SHARE (NOW RECURSIVE + BROWSABLE)
     @files_only = false
-    @folders = @share_link.all_folders
+
+    # All folders allowed by this share link (will include descendants after our create/bulk_create changes)
+    allowed_folders = @share_link.all_folders.to_a
+    allowed_ids = allowed_folders.map(&:id)
+
+    # “Root” folders in this share-set = those whose parent is not also in the share-set
+    @folders = allowed_folders.select { |f| f.parent_id.nil? || !allowed_ids.include?(f.parent_id) }
 
     if params[:folder_id].present?
-      @folder = @folders.find { |f| f.id.to_s == params[:folder_id].to_s }
+      # ensure the requested folder is in the allowed set
+      @folder = allowed_folders.find { |f| f.id.to_s == params[:folder_id].to_s }
     else
       @folder = nil
     end
 
-    @cvs = @folder ? @folder.cvs.with_attached_file.order(updated_at: :desc) : []
+    if @folder
+      # subfolders that are allowed inside the selected folder
+      @subfolders = Folder.where(id: allowed_ids, parent_id: @folder.id).order(updated_at: :desc)
+
+      # files directly inside selected folder
+      @cvs = Cv.where(folder_id: @folder.id).with_attached_file.order(updated_at: :desc)
+    else
+      @subfolders = []
+      @cvs = []
+    end
+  end
+
+  private
+
+  # ✅ Add folder + all descendants to share_link_folders
+  def attach_subtree_folders!(share_link, folder_ids)
+    folder_ids = Array(folder_ids).map(&:to_s).reject(&:blank?)
+    return if folder_ids.empty?
+
+    roots = current_user.folders.where(id: folder_ids)
+
+    all_ids = []
+
+    roots.each do |root|
+      if root.respond_to?(:subtree_ids)
+        # ancestry gem: includes self + all descendants
+        all_ids.concat(root.subtree_ids)
+      else
+        # fallback recursion if you don’t use ancestry
+        all_ids.concat(recursive_desc_ids(root))
+      end
+    end
+
+    all_ids = all_ids.uniq
+
+    all_ids.each do |fid|
+      ShareLinkFolder.find_or_create_by!(share_link_id: share_link.id, folder_id: fid)
+    end
+  end
+
+  # Fallback only (if no ancestry)
+  def recursive_desc_ids(folder)
+    ids = [folder.id]
+    current_user.folders.where(parent_id: folder.id).find_each do |child|
+      ids.concat(recursive_desc_ids(child))
+    end
+    ids
   end
 end

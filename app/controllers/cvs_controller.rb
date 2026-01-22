@@ -21,18 +21,14 @@ class CvsController < ApplicationController
     end
 
     created = 0
+    skipped = 0
 
     files.each_with_index do |uploaded, idx|
       rel = paths[idx].to_s
-
-      # If it came from folder picker, rel looks like: "MyFolder/sub1/sub2/file.pdf"
-      # We want only subfolders, not the top folder name:
       parts = rel.split("/").reject(&:blank?)
 
-      # If rel is empty (normal file upload), treat it as current folder
       dir_parts =
         if parts.length >= 2
-          # remove first (picked folder name) and last (filename)
           parts[1..-2] || []
         else
           []
@@ -40,21 +36,27 @@ class CvsController < ApplicationController
 
       target_folder = @folder
 
-      # Create/find nested folders under current folder
       dir_parts.each do |name|
         target_folder = current_user.folders.find_or_create_by!(parent_id: target_folder.id, name: name)
       end
 
       cv = current_user.cvs.new(folder_id: target_folder.id)
       cv.file.attach(uploaded)
+      cv.title = uploaded.original_filename.to_s.sub(/\.[^.]+\z/, "") # ✅ safe default title
 
       if cv.save
         created += 1
+      else
+        skipped += 1
       end
     end
 
-    redirect_to folder_path(@folder), notice: "Uploaded #{created} file(s)."
+    notice = "Uploaded #{created} file(s)."
+    notice += " Skipped #{skipped} (not PDF / too big / invalid)." if skipped > 0
+
+    redirect_to folder_path(@folder), notice: notice
   end
+
 
 
   def show

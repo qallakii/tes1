@@ -22,6 +22,8 @@ gem "jbuilder"
 gem 'devise'
 
 gem "kaminari"
+# Handle ZIP files (for share link downloads) 
+gem "rubyzip", "~> 2.3"
 
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]

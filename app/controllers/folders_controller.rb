@@ -1,6 +1,6 @@
 class FoldersController < ApplicationController
   before_action :require_login
-  before_action :set_folder, only: %i[show destroy update rename bulk_move_items]
+  before_action :set_folder, only: %i[show destroy update rename bulk_move_items bulk_destroy_items]
 
   def index
     @folders = current_user.folders.where(parent_id: nil).order(updated_at: :desc)
@@ -90,6 +90,30 @@ class FoldersController < ApplicationController
       redirect_back fallback_location: folder_path(@folder), alert: "Nothing moved (items are already in that folder)."
     else
       redirect_to folder_path(@folder), notice: "Moved #{moved_folders} folder(s) and #{moved_files} file(s)."
+    end
+  end
+
+  # ✅ Deletes selected folders and/or files from the current view
+  def bulk_destroy_items
+    folder_ids = Array(params[:folder_ids]).map(&:to_s).reject(&:blank?)
+    cv_ids     = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
+
+    deleted_folders = 0
+    deleted_files   = 0
+
+    if folder_ids.any?
+      deleted_folders = current_user.folders.where(id: folder_ids).destroy_all.size
+    end
+
+    if cv_ids.any?
+      deleted_files = current_user.cvs.where(id: cv_ids).destroy_all.size
+    end
+
+    if deleted_folders.zero? && deleted_files.zero?
+      redirect_back fallback_location: folder_path(@folder), alert: "No items deleted."
+    else
+      redirect_back fallback_location: folder_path(@folder),
+                    notice: "Deleted #{deleted_folders} folder(s) and #{deleted_files} file(s)."
     end
   end
 

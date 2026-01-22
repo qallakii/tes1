@@ -3,11 +3,18 @@ class Cv < ApplicationRecord
   belongs_to :user, optional: true
   has_one_attached :file
 
-  validates :title, presence: true
+  # ✅ auto title so uploads never fail
+  before_validation :set_default_title, if: -> { title.blank? && file.attached? }
+
   validate :pdf_only
   validate :file_size_limit
 
   private
+
+  def set_default_title
+    # "MyFile.pdf" -> "MyFile"
+    self.title = file.filename.base.to_s
+  end
 
   def pdf_only
     return unless file.attached?

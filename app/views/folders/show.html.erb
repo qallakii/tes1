@@ -237,7 +237,7 @@
                  name="folder[name]"
                  type="text"
                  required
-                 style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px;">
+                 style="width:96%; padding:10px; border:1px solid #d1d5db; border-radius:8px;">
 
           <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:10px;">
             <button type="button" id="cancel-rename-folder" class="btn secondary">Cancel</button>
@@ -357,6 +357,13 @@
 
     </div>
   </div>
+
+  <!-- Bulk delete (FOLDERS + FILES) -->
+    <%= form_with url: bulk_destroy_items_folder_path(@folder), method: :delete, local: true, id: "bulk-delete-items-form" do %>
+      <div id="bulk-delete-folder-ids"></div>
+      <div id="bulk-delete-file-ids"></div>
+    <% end %>
+
 </div>
 
 <style>
@@ -556,7 +563,7 @@
     const bulkBar = document.getElementById("bulk-actions");
     const openUploadBtn = document.getElementById("open-upload");
 
-    // IMPORTANT: stop checkbox clicks from triggering row click logic (prevents double-toggle)
+    // Prevent checkbox clicks from triggering row click logic (prevents double-toggle)
     folderChecks.forEach(cb => cb.addEventListener("click", (e) => e.stopPropagation()));
     fileChecks.forEach(cb => cb.addEventListener("click", (e) => e.stopPropagation()));
 
@@ -683,33 +690,140 @@
 
     if (closeRename) closeRename.addEventListener("click", closeRenameModal);
     if (cancelRename) cancelRename.addEventListener("click", closeRenameModal);
-    if (renameOverlay) renameOverlay.addEventListener("click", (e) => { if (e.target === renameOverlay) closeRenameModal(); });
+    if (renameOverlay) renameOverlay.addEventListener("click", (e) => {
+      if (e.target === renameOverlay) closeRenameModal();
+    });
 
-    // Bulk delete (FILES ONLY)
+    // Bulk delete (FOLDERS + FILES)
     const bulkDelete = document.getElementById("bulk-delete");
-    const bulkDeleteForm = document.getElementById("bulk-delete-form");
-    const bulkDeleteIds = document.getElementById("bulk-delete-ids");
+    const bulkDeleteItemsForm = document.getElementById("bulk-delete-items-form");
+    const bulkDeleteFolderIds = document.getElementById("bulk-delete-folder-ids");
+    const bulkDeleteFileIds = document.getElementById("bulk-delete-file-ids");
 
-    if (bulkDelete && bulkDeleteForm && bulkDeleteIds) {
+    if (bulkDelete && bulkDeleteItemsForm && bulkDeleteFolderIds && bulkDeleteFileIds) {
       bulkDelete.addEventListener("click", () => {
+        const fids = selectedFolderIds();
         const ids = selectedFileIds();
-        if (!ids || ids.length === 0) return;
-        if (!confirm("Delete selected files?")) return;
+        if (fids.length === 0 && ids.length === 0) return;
 
-        bulkDeleteIds.innerHTML = "";
+        if (!confirm(`Delete ${fids.length} folder(s) and ${ids.length} file(s)?`)) return;
+
+        bulkDeleteFolderIds.innerHTML = "";
+        bulkDeleteFileIds.innerHTML = "";
+
+        fids.forEach((id) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "folder_ids[]";
+          input.value = id;
+          bulkDeleteFolderIds.appendChild(input);
+        });
+
         ids.forEach((id) => {
           const input = document.createElement("input");
           input.type = "hidden";
           input.name = "cv_ids[]";
           input.value = id;
-          bulkDeleteIds.appendChild(input);
+          bulkDeleteFileIds.appendChild(input);
         });
 
-        bulkDeleteForm.submit();
+        bulkDeleteItemsForm.submit();
       });
     }
 
-    // Move Tree modal (BULK: folders + files, ONE: file)
+
+    // ===== Bulk Download (FILES ONLY) =====
+    const bulkDownload = document.getElementById("bulk-download");
+    if (bulkDownload) {
+      bulkDownload.addEventListener("click", () => {
+        const ids = selectedFileIds();
+        const folderIds = selectedFolderIds();
+
+        if (folderIds.length > 0 && ids.length === 0) {
+          alert("Bulk download for folders isn’t implemented yet. Select files only.");
+          return;
+        }
+        if (ids.length === 0) return;
+
+        // Download each selected file using its row's data-download URL
+        ids.forEach((id) => {
+          const cb = document.querySelector('.cv-check[value="' + id + '"]');
+          const row = cb ? cb.closest(".cv-row") : null;
+          const url = row ? row.getAttribute("data-download") : null;
+          if (!url) return;
+
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        });
+      });
+    }
+
+    // ===== Bulk Share (folders OR files) =====
+    const bulkShare = document.getElementById("bulk-share");
+    function csrfToken() {
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      return meta ? meta.getAttribute("content") : "";
+    }
+    function postForm(action, fields) {
+      const form = document.createElement("form");
+      form.method = "post";
+      form.action = action;
+
+      const token = csrfToken();
+      if (token) {
+        const t = document.createElement("input");
+        t.type = "hidden";
+        t.name = "authenticity_token";
+        t.value = token;
+        form.appendChild(t);
+      }
+
+      fields.forEach(({ name, value }) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+      form.remove();
+    }
+
+    if (bulkShare) {
+      bulkShare.addEventListener("click", () => {
+        const fids = selectedFolderIds();
+        const ids = selectedFileIds();
+
+        if (fids.length === 0 && ids.length === 0) return;
+
+        // If both selected, keep it simple to avoid hitting wrong endpoint
+        if (fids.length > 0 && ids.length > 0) {
+          alert("Please share either folders OR files (not both at the same time).");
+          return;
+        }
+
+        if (fids.length > 0) {
+          // routes.rb: POST /share_links/bulk_create
+          const fields = fids.map((id) => ({ name: "folder_ids[]", value: id }));
+          postForm("/share_links/bulk_create", fields);
+          return;
+        }
+
+        if (ids.length > 0) {
+          // routes.rb: POST /share_links/bulk_create_files
+          const fields = ids.map((id) => ({ name: "cv_ids[]", value: id }));
+          postForm("/share_links/bulk_create_files", fields);
+        }
+      });
+    }
+
+    // ===== Move modal logic (unchanged) =====
     const moveOverlay = document.getElementById("move-overlay");
     const closeMove = document.getElementById("close-move");
     const moveCancel = document.getElementById("move-cancel");
@@ -861,11 +975,12 @@
 
     if (closeMove) closeMove.addEventListener("click", closeMoveModal);
     if (moveCancel) moveCancel.addEventListener("click", closeMoveModal);
-    if (moveOverlay) moveOverlay.addEventListener("click", (e) => { if (e.target === moveOverlay) closeMoveModal(); });
+    if (moveOverlay) moveOverlay.addEventListener("click", (e) => {
+      if (e.target === moveOverlay) closeMoveModal();
+    });
 
     // ===== Upload modal (your existing logic kept) =====
     const uploadOverlay = document.getElementById("upload-overlay");
-    const openUploadBtn2 = document.getElementById("open-upload");
     const closeUploadBtn = document.getElementById("close-upload");
     const cancelUploadBtn = document.getElementById("cancel-upload");
 
@@ -954,7 +1069,7 @@
       uploadSubmit.disabled = false;
     }
 
-    if (openUploadBtn2) openUploadBtn2.addEventListener("click", openUploadModal);
+    if (openUploadBtn) openUploadBtn.addEventListener("click", openUploadModal);
     if (closeUploadBtn) closeUploadBtn.addEventListener("click", closeUploadModal);
     if (cancelUploadBtn) cancelUploadBtn.addEventListener("click", closeUploadModal);
 

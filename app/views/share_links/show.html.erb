@@ -178,6 +178,38 @@
         <%= link_to "Back to folders", share_link_path(@share_link.token), class: "btn secondary" %>
       </div>
     </div>
+    <% if @subfolders.any? %>
+      <div class="drive-card" style="margin-bottom:12px;">
+        <div class="drive-scroll">
+          <div class="drive-list folders-pick-list" style="min-width:720px;">
+            <div class="drive-header folders-pick-header">
+              <div>Subfolder</div>
+              <div style="text-align:right;">Action</div>
+            </div>
+
+            <% @subfolders.each do |sf| %>
+              <% open_url = share_link_path(@share_link.token, folder_id: sf.id) %>
+              <div class="drive-row folder-pick-row clickable-folder-row" data-open="<%= open_url %>">
+                <div class="folder-cell">
+                  <span class="folder-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    </svg>
+                  </span>
+                  <div class="folder-name"><%= sf.name %></div>
+                </div>
+
+                <div style="text-align:right;">
+                  <%= link_to "Open", open_url, class: "btn secondary xsmall" %>
+                </div>
+              </div>
+            <% end %>
+
+          </div>
+        </div>
+      </div>
+    <% end %>
+
 
     <% if @cvs.any? %>
       <div class="drive-card">
