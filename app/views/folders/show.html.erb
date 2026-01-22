@@ -1,3 +1,4 @@
+<!-- app/views/folders/show.html.erb -->
 <div class="dashboard-page">
 
   <div class="drive-page-head">
@@ -201,9 +202,16 @@
     <p class="empty-message">This folder is empty.</p>
   <% end %>
 
-  <!-- Bulk delete (FILES ONLY) -->
-  <%= form_with url: bulk_destroy_folder_cvs_path(@folder), method: :delete, local: true, id: "bulk-delete-form" do %>
-    <div id="bulk-delete-ids"></div>
+  <!-- ✅ Bulk delete (FOLDERS + FILES) -->
+  <%= form_with url: bulk_destroy_items_folder_path(@folder), method: :delete, local: true, id: "bulk-destroy-items-form" do %>
+    <div id="bulk-destroy-folder-ids"></div>
+    <div id="bulk-destroy-file-ids"></div>
+  <% end %>
+
+  <!-- ✅ Bulk download (FOLDERS + FILES) -->
+  <%= form_with url: bulk_download_items_folder_path(@folder), method: :post, local: true, id: "bulk-download-form" do %>
+    <div id="bulk-download-folder-ids"></div>
+    <div id="bulk-download-file-ids"></div>
   <% end %>
 
   <!-- Bulk move (FOLDERS + FILES) -->
@@ -337,7 +345,6 @@
             </div>
 
             <input id="upload-file-input" type="file" name="cv[files][]" multiple style="display:none;" />
-
             <input id="upload-folder-input" type="file" name="cv[files][]" multiple webkitdirectory directory style="display:none;" />
 
             <div id="upload-paths"></div>
@@ -357,12 +364,6 @@
 
     </div>
   </div>
-
-  <!-- Bulk delete (FOLDERS + FILES) -->
-    <%= form_with url: bulk_destroy_items_folder_path(@folder), method: :delete, local: true, id: "bulk-delete-items-form" do %>
-      <div id="bulk-delete-folder-ids"></div>
-      <div id="bulk-delete-file-ids"></div>
-    <% end %>
 
 </div>
 
@@ -694,29 +695,29 @@
       if (e.target === renameOverlay) closeRenameModal();
     });
 
-    // Bulk delete (FOLDERS + FILES)
+    // ✅ Bulk delete (FOLDERS + FILES)
     const bulkDelete = document.getElementById("bulk-delete");
-    const bulkDeleteItemsForm = document.getElementById("bulk-delete-items-form");
-    const bulkDeleteFolderIds = document.getElementById("bulk-delete-folder-ids");
-    const bulkDeleteFileIds = document.getElementById("bulk-delete-file-ids");
+    const destroyForm = document.getElementById("bulk-destroy-items-form");
+    const destroyFolderIds = document.getElementById("bulk-destroy-folder-ids");
+    const destroyFileIds = document.getElementById("bulk-destroy-file-ids");
 
-    if (bulkDelete && bulkDeleteItemsForm && bulkDeleteFolderIds && bulkDeleteFileIds) {
+    if (bulkDelete && destroyForm && destroyFolderIds && destroyFileIds) {
       bulkDelete.addEventListener("click", () => {
         const fids = selectedFolderIds();
         const ids = selectedFileIds();
+
         if (fids.length === 0 && ids.length === 0) return;
+        if (!confirm(`Delete ${fids.length} folder(s) and ${ids.length} file(s)? This will delete subfolders too.`)) return;
 
-        if (!confirm(`Delete ${fids.length} folder(s) and ${ids.length} file(s)?`)) return;
-
-        bulkDeleteFolderIds.innerHTML = "";
-        bulkDeleteFileIds.innerHTML = "";
+        destroyFolderIds.innerHTML = "";
+        destroyFileIds.innerHTML = "";
 
         fids.forEach((id) => {
           const input = document.createElement("input");
           input.type = "hidden";
           input.name = "folder_ids[]";
           input.value = id;
-          bulkDeleteFolderIds.appendChild(input);
+          destroyFolderIds.appendChild(input);
         });
 
         ids.forEach((id) => {
@@ -724,41 +725,46 @@
           input.type = "hidden";
           input.name = "cv_ids[]";
           input.value = id;
-          bulkDeleteFileIds.appendChild(input);
+          destroyFileIds.appendChild(input);
         });
 
-        bulkDeleteItemsForm.submit();
+        destroyForm.submit();
       });
     }
 
+    // ✅ Bulk download (FOLDERS + FILES) => zip
+    const bulkDownloadBtn = document.getElementById("bulk-download");
+    const bulkDownloadForm = document.getElementById("bulk-download-form");
+    const bulkDownloadFolderIds = document.getElementById("bulk-download-folder-ids");
+    const bulkDownloadFileIds = document.getElementById("bulk-download-file-ids");
 
-    // ===== Bulk Download (FILES ONLY) =====
-    const bulkDownload = document.getElementById("bulk-download");
-    if (bulkDownload) {
-      bulkDownload.addEventListener("click", () => {
+    if (bulkDownloadBtn && bulkDownloadForm && bulkDownloadFolderIds && bulkDownloadFileIds) {
+      bulkDownloadBtn.addEventListener("click", () => {
+        const fids = selectedFolderIds();
         const ids = selectedFileIds();
-        const folderIds = selectedFolderIds();
 
-        if (folderIds.length > 0 && ids.length === 0) {
-          alert("Bulk download for folders isn’t implemented yet. Select files only.");
-          return;
-        }
-        if (ids.length === 0) return;
+        if (fids.length === 0 && ids.length === 0) return;
 
-        // Download each selected file using its row's data-download URL
-        ids.forEach((id) => {
-          const cb = document.querySelector('.cv-check[value="' + id + '"]');
-          const row = cb ? cb.closest(".cv-row") : null;
-          const url = row ? row.getAttribute("data-download") : null;
-          if (!url) return;
+        bulkDownloadFolderIds.innerHTML = "";
+        bulkDownloadFileIds.innerHTML = "";
 
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
+        fids.forEach((id) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "folder_ids[]";
+          input.value = id;
+          bulkDownloadFolderIds.appendChild(input);
         });
+
+        ids.forEach((id) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "cv_ids[]";
+          input.value = id;
+          bulkDownloadFileIds.appendChild(input);
+        });
+
+        bulkDownloadForm.submit();
       });
     }
 
@@ -802,21 +808,18 @@
 
         if (fids.length === 0 && ids.length === 0) return;
 
-        // If both selected, keep it simple to avoid hitting wrong endpoint
         if (fids.length > 0 && ids.length > 0) {
           alert("Please share either folders OR files (not both at the same time).");
           return;
         }
 
         if (fids.length > 0) {
-          // routes.rb: POST /share_links/bulk_create
           const fields = fids.map((id) => ({ name: "folder_ids[]", value: id }));
           postForm("/share_links/bulk_create", fields);
           return;
         }
 
         if (ids.length > 0) {
-          // routes.rb: POST /share_links/bulk_create_files
           const fields = ids.map((id) => ({ name: "cv_ids[]", value: id }));
           postForm("/share_links/bulk_create_files", fields);
         }
@@ -979,7 +982,7 @@
       if (e.target === moveOverlay) closeMoveModal();
     });
 
-    // ===== Upload modal (your existing logic kept) =====
+    // ===== Upload modal =====
     const uploadOverlay = document.getElementById("upload-overlay");
     const closeUploadBtn = document.getElementById("close-upload");
     const cancelUploadBtn = document.getElementById("cancel-upload");

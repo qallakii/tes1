@@ -16,7 +16,11 @@ Rails.application.routes.draw do
     member do
       patch :rename
       post :bulk_move_items
+
+        # ✅ NEW
       delete :bulk_destroy_items
+      post   :bulk_download_items
+      get    :download
     end
 
     resources :cvs, only: [:new, :create, :destroy, :show, :update] do

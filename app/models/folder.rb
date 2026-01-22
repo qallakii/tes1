@@ -36,6 +36,27 @@ class Folder < ApplicationRecord
     list
   end
 
+    # ✅ ids of self + all descendants (BFS; safe against deep chains)
+  def self_and_descendant_ids
+    ids = [id]
+    frontier = [id]
+
+    while frontier.any?
+      child_ids = Folder.where(parent_id: frontier).pluck(:id)
+      break if child_ids.empty?
+
+      ids.concat(child_ids)
+      frontier = child_ids
+    end
+
+    ids.uniq
+  end
+
+  def descendant_ids
+    self_and_descendant_ids - [id]
+  end
+
+
   private
 
   def nesting_depth_within_limit

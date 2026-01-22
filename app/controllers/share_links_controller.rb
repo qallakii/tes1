@@ -97,7 +97,7 @@ class ShareLinksController < ApplicationController
 
   def show
     @share_link = ShareLink
-      .includes(:cvs, :folders)
+      .includes(:cvs, :folders, :folder)
       .find_by!(token: params[:id])
 
     if @share_link.expired?
@@ -110,39 +110,37 @@ class ShareLinksController < ApplicationController
       @files_only = true
       @folders = []
       @folder = nil
-      @subfolders = []
       @cvs = @share_link.cvs.with_attached_file.order(updated_at: :desc)
       return
     end
 
-    # ✅ FOLDER SHARE (NOW RECURSIVE + BROWSABLE)
+    # ✅ FOLDER SHARE (single or many) — recursive + hardened
     @files_only = false
 
-    # All folders allowed by this share link (will include descendants after our create/bulk_create changes)
-    allowed_folders = @share_link.all_folders.to_a
-    allowed_ids = allowed_folders.map(&:id)
+    roots = @share_link.all_folders
+    @folders = roots
 
-    # “Root” folders in this share-set = those whose parent is not also in the share-set
-    @folders = allowed_folders.select { |f| f.parent_id.nil? || !allowed_ids.include?(f.parent_id) }
+    allowed_ids = roots.flat_map(&:self_and_descendant_ids).uniq
 
     if params[:folder_id].present?
-      # ensure the requested folder is in the allowed set
-      @folder = allowed_folders.find { |f| f.id.to_s == params[:folder_id].to_s }
+      @folder = Folder.where(id: allowed_ids).find_by(id: params[:folder_id])
+      unless @folder
+        render plain: "Not found", status: :not_found
+        return
+      end
     else
       @folder = nil
     end
 
     if @folder
-      # subfolders that are allowed inside the selected folder
-      @subfolders = Folder.where(id: allowed_ids, parent_id: @folder.id).order(updated_at: :desc)
-
-      # files directly inside selected folder
-      @cvs = Cv.where(folder_id: @folder.id).with_attached_file.order(updated_at: :desc)
+      @subfolders = @folder.subfolders.where(id: allowed_ids).order(updated_at: :desc)
+      @cvs = @folder.cvs.with_attached_file.order(updated_at: :desc)
     else
       @subfolders = []
       @cvs = []
     end
   end
+
 
   private
 
