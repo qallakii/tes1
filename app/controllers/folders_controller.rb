@@ -161,21 +161,75 @@ class FoldersController < ApplicationController
     folder_ids = Array(params[:folder_ids]).map(&:to_s).reject(&:blank?)
     cv_ids     = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
 
-    # Only user's folders/files
-    folder_ids = current_user.folders.where(id: folder_ids).pluck(:id)
-    cv_ids     = current_user.cvs.where(id: cv_ids).pluck(:id)
-
     if folder_ids.empty? && cv_ids.empty?
       redirect_back fallback_location: folder_path(@folder), alert: "Select at least one folder or file to download."
       return
     end
 
-    zip_data = build_zip_for_folders(folder_ids, extra_cv_ids: cv_ids)
+    folders = current_user.folders.where(id: folder_ids)
+    cvs     = current_user.cvs.where(id: cv_ids)
 
-    filename = "download_#{Time.current.strftime("%Y%m%d_%H%M%S")}.zip"
-    send_data zip_data,
+    require "zip"
+
+    timestamp = Time.zone.now.strftime("%Y%m%d-%H%M%S")
+    zip_name = "download-#{timestamp}.zip"
+
+    # ---- Path sanitizer: never absolute, never traversal ----
+    sanitize_zip_path = lambda do |path|
+      s = path.to_s
+      s = s.gsub("\\", "/")
+      s = s.sub(%r{\A/+}, "")      # remove ALL leading slashes
+      s = s.gsub(%r{/+}, "/")      # collapse repeated slashes
+      s = s.gsub("\u0000", "")     # remove null bytes
+      s = s.split("/").reject { |p| p.blank? || p == "." || p == ".." }.join("/")
+      s
+    end
+
+    add_file_entry = lambda do |zip, entry_path, attached|
+      return unless attached&.attached?
+      safe = sanitize_zip_path.call(entry_path)
+      return if safe.blank? # safety
+
+      attached.blob.open do |tmpfile|
+        zip.put_next_entry(safe)
+        zip.write(File.binread(tmpfile.path))
+      end
+    end
+
+    buffer = Zip::OutputStream.write_buffer do |zip|
+      # Recursive walk
+      walk = lambda do |folder, prefix|
+        safe_prefix = sanitize_zip_path.call(prefix)
+
+        # Add files in folder
+        folder.cvs.includes(file_attachment: :blob).find_each do |cv|
+          next unless cv.file.attached?
+          filename = cv.file.filename.to_s
+          add_file_entry.call(zip, "#{safe_prefix}/#{filename}", cv.file)
+        end
+
+        # Recurse into subfolders
+        folder.subfolders.order(:name).each do |sub|
+          walk.call(sub, "#{safe_prefix}/#{sub.name}")
+        end
+      end
+
+      # Add selected folders
+      folders.each do |f|
+        walk.call(f, f.name)
+      end
+
+      # Add selected files (outside folders) under Files/
+      cvs.each do |cv|
+        next unless cv.file.attached?
+        add_file_entry.call(zip, "Files/#{cv.file.filename}", cv.file)
+      end
+    end
+
+    buffer.rewind
+    send_data buffer.read,
+              filename: zip_name,
               type: "application/zip",
-              filename: filename,
               disposition: "attachment"
   end
 
