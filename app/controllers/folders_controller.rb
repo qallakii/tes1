@@ -67,17 +67,40 @@ class FoldersController < ApplicationController
     folder_ids = Array(params[:folder_ids]).map(&:to_s).reject(&:blank?)
     cv_ids     = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
 
+    if folder_ids.empty? && cv_ids.empty?
+      redirect_back fallback_location: folder_path(@folder), alert: "No items selected."
+      return
+    end
+
     moved_folders = 0
     moved_files   = 0
 
     if folder_ids.any?
-      if folder_ids.include?(target_folder.id.to_s)
-        redirect_back fallback_location: folder_path(@folder), alert: "You can’t move a folder into itself."
+      folders_to_move = current_user.folders.where(id: folder_ids)
+
+      # ✅ Prevent moving a folder into itself OR into its own subtree
+      bad = false
+      folders_to_move.find_each do |f|
+        # can't move folder into itself
+        if f.id == target_folder.id
+          bad = true
+          break
+        end
+
+        # can't move folder into one of its descendants
+        if f.self_and_descendant_ids.include?(target_folder.id)
+          bad = true
+          break
+        end
+      end
+
+      if bad
+        redirect_back fallback_location: folder_path(@folder),
+                      alert: "You can’t move a folder into itself (or into one of its subfolders)."
         return
       end
 
-      moved_folders = current_user.folders
-        .where(id: folder_ids)
+      moved_folders = folders_to_move
         .where.not(parent_id: target_folder.id)
         .update_all(parent_id: target_folder.id, updated_at: Time.current)
     end
