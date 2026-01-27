@@ -14,7 +14,6 @@ class FoldersController < ApplicationController
   def show
     @subfolders = @folder.subfolders.order(updated_at: :desc)
     @cvs = @folder.cvs.includes(file_attachment: :blob).order(updated_at: :desc)
-
     @all_folders_for_tree = current_user.folders.order(:name)
   end
 
@@ -24,6 +23,11 @@ class FoldersController < ApplicationController
 
   def create
     @folder = current_user.folders.new(folder_params)
+
+    if @folder.parent_id.present? && !current_user.folders.exists?(id: @folder.parent_id)
+      @folder.parent_id = nil
+    end
+
 
     if @folder.save
       redirect_to(@folder.parent_id.present? ? folder_path(@folder.parent_id) : folders_path,
@@ -49,7 +53,7 @@ class FoldersController < ApplicationController
     end
   end
 
-  # ✅ Moves BOTH folders and files + avoids "fake moved" when nothing changed
+  # ✅ Moves BOTH folders and files (HARDENED)
   def bulk_move_items
     target_id = params[:target_folder_id].to_s
     if target_id.blank?
@@ -57,18 +61,31 @@ class FoldersController < ApplicationController
       return
     end
 
-    if target_id == @folder.id.to_s
+    target_folder = current_user.folders.find_by(id: target_id)
+    unless target_folder
+      redirect_back fallback_location: folder_path(@folder), alert: "Destination folder not found."
+      return
+    end
+
+    if target_folder.id.to_s == @folder.id.to_s
       redirect_back fallback_location: folder_path(@folder), alert: "You’re already in this folder. Pick a different destination."
       return
     end
 
-    target_folder = current_user.folders.find(target_id)
-
-    folder_ids = Array(params[:folder_ids]).map(&:to_s).reject(&:blank?)
-    cv_ids     = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
+    # Only allow moving items that are actually listed inside THIS folder view:
+    folder_ids = scoped_subfolder_ids(Array(params[:folder_ids]))
+    cv_ids     = scoped_file_ids(Array(params[:cv_ids]))
 
     if folder_ids.empty? && cv_ids.empty?
       redirect_back fallback_location: folder_path(@folder), alert: "No items selected."
+      return
+    end
+
+    # Prevent cycles: cannot move a folder into itself OR its descendant
+    moving_folders = current_user.folders.where(id: folder_ids)
+    forbidden_target_ids = moving_folders.flat_map(&:self_and_descendant_ids).uniq
+    if forbidden_target_ids.map(&:to_s).include?(target_folder.id.to_s)
+      redirect_back fallback_location: folder_path(@folder), alert: "You can’t move a folder into itself (or into its own subfolder)."
       return
     end
 
@@ -76,31 +93,8 @@ class FoldersController < ApplicationController
     moved_files   = 0
 
     if folder_ids.any?
-      folders_to_move = current_user.folders.where(id: folder_ids)
-
-      # ✅ Prevent moving a folder into itself OR into its own subtree
-      bad = false
-      folders_to_move.find_each do |f|
-        # can't move folder into itself
-        if f.id == target_folder.id
-          bad = true
-          break
-        end
-
-        # can't move folder into one of its descendants
-        if f.self_and_descendant_ids.include?(target_folder.id)
-          bad = true
-          break
-        end
-      end
-
-      if bad
-        redirect_back fallback_location: folder_path(@folder),
-                      alert: "You can’t move a folder into itself (or into one of its subfolders)."
-        return
-      end
-
-      moved_folders = folders_to_move
+      moved_folders = current_user.folders
+        .where(id: folder_ids)
         .where.not(parent_id: target_folder.id)
         .update_all(parent_id: target_folder.id, updated_at: Time.current)
     end
@@ -119,30 +113,27 @@ class FoldersController < ApplicationController
     end
   end
 
-  # ✅ NEW: Safe recursive delete for selected folders + files (and clears share references)
+  # ✅ Safe recursive delete (HARDENED)
   def bulk_destroy_items
-    folder_ids = Array(params[:folder_ids]).map(&:to_s).reject(&:blank?)
-    cv_ids     = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
+    folder_ids = scoped_subfolder_ids(Array(params[:folder_ids]))
+    cv_ids     = scoped_file_ids(Array(params[:cv_ids]))
 
     if folder_ids.empty? && cv_ids.empty?
       redirect_back fallback_location: folder_path(@folder), alert: "No items selected."
       return
     end
 
-    # Only allow deleting user's folders
     root_folders = current_user.folders.where(id: folder_ids)
-    root_folder_ids = root_folders.pluck(:id)
 
     # Expand roots -> include all descendants
     all_folder_ids = root_folders.flat_map(&:self_and_descendant_ids).uniq
 
-    # Files from selected folders (recursive) + explicitly selected files
+    # Files from selected folders (recursive) + explicitly selected files (in this folder)
     from_folders_cv_ids = current_user.cvs.where(folder_id: all_folder_ids).pluck(:id)
     direct_cv_ids       = current_user.cvs.where(id: cv_ids).pluck(:id)
+    all_cv_ids          = (from_folders_cv_ids + direct_cv_ids).uniq
 
-    all_cv_ids = (from_folders_cv_ids + direct_cv_ids).uniq
-
-    # ✅ IMPORTANT: clear ShareLink join rows + direct folder share references FIRST (prevents FK errors)
+    # Clear share references first (avoid FK errors)
     ShareLinkFolder.where(folder_id: all_folder_ids).delete_all
     ShareLinkCv.where(cv_id: all_cv_ids).delete_all
     ShareLink.where(folder_id: all_folder_ids).delete_all
@@ -150,27 +141,18 @@ class FoldersController < ApplicationController
     deleted_files = 0
     deleted_folders = 0
 
-    if all_cv_ids.any?
-      deleted_files = current_user.cvs.where(id: all_cv_ids).destroy_all.size
-    end
+    deleted_files = current_user.cvs.where(id: all_cv_ids).destroy_all.size if all_cv_ids.any?
 
     # Destroy only roots; dependent: :destroy handles descendants
-    if root_folder_ids.any?
-      deleted_folders = current_user.folders.where(id: root_folder_ids).destroy_all.size
-    end
+    deleted_folders = current_user.folders.where(id: root_folders.pluck(:id)).destroy_all.size if root_folders.any?
 
-    if deleted_files.zero? && deleted_folders.zero?
-      redirect_back fallback_location: folder_path(@folder), alert: "Nothing deleted."
-    else
-      redirect_back fallback_location: folder_path(@folder),
-                    notice: "Deleted #{deleted_folders} folder(s) and #{deleted_files} file(s)."
-    end
+    redirect_back fallback_location: folder_path(@folder),
+                  notice: "Deleted #{deleted_folders} folder(s) and #{deleted_files} file(s)."
   end
 
-  # ✅ NEW: Download ONE folder recursively as zip
+  # ✅ Download ONE folder recursively as zip (already user-scoped)
   def download
     zip_data = build_zip_for_folders([@folder.id])
-
     filename = "#{safe_name(@folder.name)}.zip"
     send_data zip_data,
               type: "application/zip",
@@ -178,11 +160,10 @@ class FoldersController < ApplicationController
               disposition: "attachment"
   end
 
-  # ✅ NEW: Bulk download selected folders (recursive) + optional selected files as zip
-  # POST /folders/:id/bulk_download_items
+  # ✅ Bulk download selected folders/files as zip (HARDENED)
   def bulk_download_items
-    folder_ids = Array(params[:folder_ids]).map(&:to_s).reject(&:blank?)
-    cv_ids     = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
+    folder_ids = scoped_subfolder_ids(Array(params[:folder_ids]))
+    cv_ids     = scoped_file_ids(Array(params[:cv_ids]))
 
     if folder_ids.empty? && cv_ids.empty?
       redirect_back fallback_location: folder_path(@folder), alert: "Select at least one folder or file to download."
@@ -192,18 +173,15 @@ class FoldersController < ApplicationController
     folders = current_user.folders.where(id: folder_ids)
     cvs     = current_user.cvs.where(id: cv_ids)
 
-    require "zip"
-
     timestamp = Time.zone.now.strftime("%Y%m%d-%H%M%S")
     zip_name = "download-#{timestamp}.zip"
 
-    # ---- Path sanitizer: never absolute, never traversal ----
     sanitize_zip_path = lambda do |path|
       s = path.to_s
       s = s.gsub("\\", "/")
-      s = s.sub(%r{\A/+}, "")      # remove ALL leading slashes
-      s = s.gsub(%r{/+}, "/")      # collapse repeated slashes
-      s = s.gsub("\u0000", "")     # remove null bytes
+      s = s.sub(%r{\A/+}, "")
+      s = s.gsub(%r{/+}, "/")
+      s = s.gsub("\u0000", "")
       s = s.split("/").reject { |p| p.blank? || p == "." || p == ".." }.join("/")
       s
     end
@@ -211,8 +189,7 @@ class FoldersController < ApplicationController
     add_file_entry = lambda do |zip, entry_path, attached|
       return unless attached&.attached?
       safe = sanitize_zip_path.call(entry_path)
-      return if safe.blank? # safety
-
+      return if safe.blank?
       attached.blob.open do |tmpfile|
         zip.put_next_entry(safe)
         zip.write(File.binread(tmpfile.path))
@@ -220,33 +197,21 @@ class FoldersController < ApplicationController
     end
 
     buffer = Zip::OutputStream.write_buffer do |zip|
-      # Recursive walk
       walk = lambda do |folder, prefix|
         safe_prefix = sanitize_zip_path.call(prefix)
 
-        # Add files in folder
         folder.cvs.includes(file_attachment: :blob).find_each do |cv|
           next unless cv.file.attached?
-          filename = cv.file.filename.to_s
-          add_file_entry.call(zip, "#{safe_prefix}/#{filename}", cv.file)
+          add_file_entry.call(zip, "#{safe_prefix}/#{cv.file.filename}", cv.file)
         end
 
-        # Recurse into subfolders
         folder.subfolders.order(:name).each do |sub|
           walk.call(sub, "#{safe_prefix}/#{sub.name}")
         end
       end
 
-      # Add selected folders
-      folders.each do |f|
-        walk.call(f, f.name)
-      end
-
-      # Add selected files (outside folders) under Files/
-      cvs.each do |cv|
-        next unless cv.file.attached?
-        add_file_entry.call(zip, "Files/#{cv.file.filename}", cv.file)
-      end
+      folders.each { |f| walk.call(f, f.name) }
+      cvs.each { |cv| add_file_entry.call(zip, "Files/#{cv.file.filename}", cv.file) }
     end
 
     buffer.rewind
@@ -264,7 +229,6 @@ class FoldersController < ApplicationController
     ShareLink.where(folder_id: @folder.self_and_descendant_ids).delete_all
 
     @folder.destroy
-
     redirect_to(parent_id.present? ? folder_path(parent_id) : folders_path, notice: "Folder deleted")
   end
 
@@ -276,6 +240,19 @@ class FoldersController < ApplicationController
 
   def folder_params
     params.require(:folder).permit(:name, :parent_id)
+  end
+
+  # ✅ HARDENING: only allow acting on items visible inside THIS folder page
+  def scoped_subfolder_ids(raw_ids)
+    ids = Array(raw_ids).map(&:to_s).reject(&:blank?)
+    return [] if ids.empty?
+    current_user.folders.where(id: ids, parent_id: @folder.id).pluck(:id)
+  end
+
+  def scoped_file_ids(raw_ids)
+    ids = Array(raw_ids).map(&:to_s).reject(&:blank?)
+    return [] if ids.empty?
+    current_user.cvs.where(id: ids, folder_id: @folder.id).pluck(:id)
   end
 
   def safe_name(name)
@@ -318,7 +295,6 @@ class FoldersController < ApplicationController
         add_folder_recursive.call(root, "")
       end
 
-      # Extra selected files (not necessarily inside selected folders)
       extras = current_user.cvs.where(id: extra_cv_ids).includes(file_attachment: :blob)
       if extras.any?
         add_dir.call("Selected_Files")

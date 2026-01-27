@@ -1,5 +1,8 @@
+# app/controllers/share_links_controller.rb
 class ShareLinksController < ApplicationController
-  before_action :require_login, except: :show
+  before_action :require_login, except: [:show, :preview, :download]
+  before_action :set_share_link_by_token, only: [:show, :preview, :download]
+  before_action :enforce_require_login_if_needed!, only: [:show, :preview, :download]
 
   def index
     @share_links = ShareLink
@@ -94,26 +97,28 @@ class ShareLinksController < ApplicationController
     end
   end
 
+  # Public show (token)
   def show
-    @share_link = ShareLink.includes(:cvs, :folders).find_by!(token: params[:id])
-
     if @share_link.expired?
       render plain: "This share link has expired.", status: :gone
       return
     end
 
+    # Files-only share
     if @share_link.cvs.any?
       @files_only = true
       @folders = []
       @folder = nil
+      @subfolders = []
       @cvs = @share_link.cvs.with_attached_file.order(updated_at: :desc)
       return
     end
 
+    # Folder share
     @files_only = false
     @folders = @share_link.all_folders
 
-    # ✅ HARDEN: only allow folder_id that is actually part of this share
+    # HARDEN: only allow folder_id that is part of this share
     if params[:folder_id].present?
       allowed_ids = @folders.map(&:id)
       fid = params[:folder_id].to_i
@@ -122,6 +127,54 @@ class ShareLinksController < ApplicationController
       @folder = nil
     end
 
+    @subfolders = @folder ? @folder.subfolders.order(updated_at: :desc) : []
     @cvs = @folder ? @folder.cvs.with_attached_file.order(updated_at: :desc) : []
+  end
+
+  # Public preview via token (permission-checked)
+  def preview
+    return head :forbidden unless @share_link.allow_preview?
+
+    cv = find_shared_cv!(params[:cv_id])
+    redirect_to rails_blob_url(cv.file, disposition: "inline")
+  end
+
+  # Public download via token (permission-checked)
+  def download
+    return head :forbidden unless @share_link.allow_download?
+
+    cv = find_shared_cv!(params[:cv_id])
+    redirect_to rails_blob_url(cv.file, disposition: "attachment")
+  end
+
+  private
+
+  def set_share_link_by_token
+    @share_link = ShareLink.includes(:cvs, :folders).find_by!(token: params[:id])
+  end
+
+  def enforce_require_login_if_needed!
+    return unless @share_link.respond_to?(:require_login) && @share_link.require_login
+    return if current_user
+
+    redirect_to login_path, alert: "Please login to access this share link."
+  end
+
+  # CV must be part of this share (direct file share OR inside shared folder)
+  def find_shared_cv!(cv_id)
+    cv_id = cv_id.to_i
+
+    # Direct file share
+    if @share_link.cvs.exists?(id: cv_id)
+      cv = @share_link.cvs.with_attached_file.find(cv_id)
+      raise ActiveRecord::RecordNotFound unless cv.file.attached?
+      return cv
+    end
+
+    # Folder share
+    folder_ids = @share_link.all_folders.map(&:id)
+    cv = Cv.joins(:folder).with_attached_file.where(id: cv_id, folders: { id: folder_ids }).first
+    raise ActiveRecord::RecordNotFound unless cv&.file&.attached?
+    cv
   end
 end

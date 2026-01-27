@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_22_141905) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_26_161130) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -55,7 +55,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_22_141905) do
   end
 
   create_table "folders", force: :cascade do |t|
+    t.bigint "bytes_cached", default: 0, null: false
+    t.datetime "cached_at"
     t.datetime "created_at", null: false
+    t.integer "items_cached", default: 0, null: false
+    t.datetime "last_opened_at"
     t.string "name"
     t.bigint "parent_id"
     t.datetime "updated_at", null: false
@@ -113,13 +117,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_22_141905) do
   end
 
   create_table "share_links", force: :cascade do |t|
+    t.boolean "allow_download", default: true, null: false
+    t.boolean "allow_preview", default: true, null: false
     t.datetime "created_at", null: false
+    t.boolean "disabled", default: false, null: false
     t.datetime "expires_at"
     t.bigint "folder_id"
+    t.datetime "last_viewed_at"
+    t.string "password_digest"
+    t.boolean "require_login", default: false, null: false
     t.string "token", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.integer "views_count", default: 0, null: false
     t.index ["folder_id"], name: "index_share_links_on_folder_id"
+    t.index ["require_login"], name: "index_share_links_on_require_login"
     t.index ["token"], name: "index_share_links_on_token", unique: true
     t.index ["user_id"], name: "index_share_links_on_user_id"
   end

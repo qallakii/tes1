@@ -1,211 +1,41 @@
 <div class="dashboard-page">
+  <div class="drive-page-head" style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+    <h2 style="margin:0;">Search</h2>
 
-  <div class="drive-page-head">
-    <div class="drive-head-left">
-      <h1 style="margin:0;">Search</h1>
-      <div class="muted" style="margin-top:4px;">
-        Results for "<%= @query %>"
-      </div>
-    </div>
+    <%= form_with url: search_path, method: :get, local: true, style: "display:flex; gap:8px;" do %>
+      <input class="drive-input" type="text" name="q" value="<%= @q %>" placeholder="Search folders or files…" />
+      <button class="btn primary" type="submit">Search</button>
+    <% end %>
   </div>
 
-  <% if @query.blank? %>
-    <div class="drive-card" style="padding:16px;">
-      <div class="muted">Type something in the top search bar.</div>
+  <% if @q.present? %>
+    <div class="drive-card" style="padding:14px; margin-top:12px;">
+      <div style="font-weight:700;">Folders</div>
+      <% if @folders.any? %>
+        <ul>
+          <% @folders.each do |f| %>
+            <li><%= link_to f.name, folder_path(f) %></li>
+          <% end %>
+        </ul>
+      <% else %>
+        <div class="muted">No folders found.</div>
+      <% end %>
+
+      <div style="height:10px;"></div>
+
+      <div style="font-weight:700;">Files</div>
+      <% if @cvs.any? %>
+        <ul>
+          <% @cvs.each do |cv| %>
+            <li>
+              <%= link_to(cv.title.presence || cv.file.filename.to_s, folder_path(cv.folder)) %>
+              <span class="muted">in <%= cv.folder.name %></span>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <div class="muted">No files found.</div>
+      <% end %>
     </div>
-  <% else %>
-
-    <% if @folders.any? %>
-      <div style="margin: 8px 0 10px 0; font-weight:600;">Folders</div>
-
-      <div class="drive-card">
-        <div class="drive-scroll">
-          <div class="drive-list search-folders-list">
-
-            <div class="drive-header">
-              <div class="col-folder-name">Name</div>
-              <div class="col-folder-modified">Last modified</div>
-              <div class="col-folder-actions">Actions</div>
-            </div>
-
-            <% @folders.each do |folder| %>
-              <div class="drive-row">
-                <div class="col-folder-name">
-                  <%= link_to folder_path(folder), class: "folder-link" do %>
-                    <span class="folder-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                      </svg>
-                    </span>
-                    <span class="folder-name"><%= folder.name %></span>
-                  <% end %>
-                </div>
-
-                <div class="col-folder-modified">
-                  <span class="muted"><%= folder.updated_at.strftime("%b %d, %Y %H:%M") %></span>
-                </div>
-
-                <div class="col-folder-actions">
-                  <div class="action-group">
-                    <%= link_to "Open", folder_path(folder), class: "btn secondary xsmall" %>
-                  </div>
-                </div>
-              </div>
-            <% end %>
-
-          </div>
-        </div>
-      </div>
-    <% end %>
-
-    <% if @cvs.any? %>
-      <div style="margin: 18px 0 10px 0; font-weight:600;">Files</div>
-
-      <div class="drive-card">
-        <div class="drive-scroll">
-          <div class="drive-list search-files-list">
-
-            <div class="drive-header">
-              <div class="col-name">Name</div>
-              <div class="col-type">Type</div>
-              <div class="col-size">Size</div>
-              <div class="col-location">Location</div>
-              <div class="col-modified">Last modified</div>
-              <div class="col-actions">Actions</div>
-            </div>
-
-            <% @cvs.each do |cv| %>
-              <% blob = cv.file&.blob %>
-              <% display_name = cv.title.presence || cv.file.filename.to_s %>
-              <% ext = cv.file.filename.extension.to_s.upcase %>
-              <% type_label = ext.present? ? ext : "PDF" %>
-              <% size_bytes = blob&.byte_size.to_i %>
-              <% folder = cv.folder %>
-
-              <div class="drive-row search-file-row">
-                <div class="col-name">
-                  <div class="file-line">
-                    <span class="file-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <path d="M14 2v6h6"/>
-                      </svg>
-                    </span>
-
-                    <div class="file-text">
-                      <div class="file-name"><%= display_name %></div>
-                      <div class="file-sub"><%= cv.file.filename %></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="col-type">
-                  <span class="pill"><%= type_label %></span>
-                </div>
-
-                <div class="col-size">
-                  <span class="muted size-num" data-size-text><%= size_bytes %></span>
-                </div>
-
-                <div class="col-location">
-                  <% if folder.present? %>
-                    <%= link_to folder.name, folder_path(folder), class: "location-link" %>
-                  <% else %>
-                    <span class="muted">—</span>
-                  <% end %>
-                </div>
-
-                <div class="col-modified">
-                  <span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span>
-                </div>
-
-                <div class="col-actions">
-                  <div class="action-group">
-                    <%= link_to "Preview",
-                      rails_blob_path(cv.file, disposition: "inline"),
-                      target: "_blank",
-                      class: "btn secondary xsmall" %>
-
-                    <%= link_to "Download",
-                      rails_blob_path(cv.file, disposition: "attachment"),
-                      class: "btn secondary xsmall" %>
-
-                    <% if folder.present? %>
-                      <%= link_to "Open folder",
-                        folder_path(folder),
-                        class: "btn secondary xsmall" %>
-                    <% end %>
-                  </div>
-                </div>
-              </div>
-            <% end %>
-
-          </div>
-        </div>
-      </div>
-    <% end %>
-
-    <% if @folders.empty? && @cvs.empty? %>
-      <div class="drive-card" style="padding:16px;">
-        <div class="muted">No results found.</div>
-      </div>
-    <% end %>
-
   <% end %>
-
 </div>
-
-<style>
-  .search-folders-list { min-width: 720px; }
-  .search-folders-list .drive-header,
-  .search-folders-list .drive-row{
-    display:grid;
-    grid-template-columns: minmax(320px, 1fr) 220px 240px;
-    gap: 12px;
-    padding: 10px 14px;
-    align-items:center;
-    font-size: 13px;
-    line-height: 1.35;
-  }
-
-  .search-files-list { min-width: 980px; }
-  .search-files-list .drive-header,
-  .search-files-list .drive-row{
-    display:grid;
-    grid-template-columns: minmax(320px, 1fr) 90px 110px 220px 190px 420px;
-    gap: 12px;
-    padding: 10px 14px;
-    align-items:center;
-    font-size: 13px;
-    line-height: 1.35;
-  }
-
-  .folder-link{ display:flex; align-items:center; gap:10px; }
-  .folder-icon{ opacity:0.85; display:flex; }
-  .folder-name{ font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-
-  .file-line { display:flex; align-items:flex-start; gap:10px; }
-  .file-icon { margin-top:2px; opacity:0.85; flex:0 0 auto; }
-  .file-text { min-width:0; }
-  .file-name { font-weight: 600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .file-sub  { font-size: 11.5px; opacity:0.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px; }
-
-  .size-num { font-variant-numeric: tabular-nums; }
-  .col-size { justify-self: end; }
-</style>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    function humanSize(bytes) {
-      const units = ["B","KB","MB","GB","TB"];
-      let b = Number(bytes || 0);
-      let i = 0;
-      while (b >= 1024 && i < units.length - 1) { b = b / 1024; i++; }
-      return (i === 0 ? b.toFixed(0) : b.toFixed(1)) + " " + units[i];
-    }
-    document.querySelectorAll("[data-size-text]").forEach((el) => {
-      const raw = parseInt(el.textContent || "0", 10);
-      el.textContent = humanSize(raw);
-    });
-  });
-</script>

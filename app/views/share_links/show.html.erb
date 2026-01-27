@@ -114,10 +114,11 @@
               <% type_label = ext.present? ? ext : "PDF" %>
               <% size_bytes = blob&.byte_size.to_i %>
 
-              <% preview_url = rails_blob_path(cv.file, disposition: "inline") %>
-              <% download_url = rails_blob_path(cv.file, disposition: "attachment") %>
+             <% preview_url  = file_preview_share_link_path(@share_link.token, cv_id: cv.id) %>
+             <% download_url = file_download_share_link_path(@share_link.token, cv_id: cv.id) %>
 
-              <div class="drive-row shared-row clickable-row" data-preview="<%= preview_url %>">
+
+              <div class="drive-row shared-row clickable-row" data-preview="<%= preview_url || "" %>">
                 <div class="col-name">
                   <div class="file-line">
                     <span class="file-icon" aria-hidden="true">
@@ -146,8 +147,13 @@
 
                 <div class="col-actions">
                   <div class="action-group">
-                    <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
-                    <a class="btn secondary xsmall" href="<%= download_url %>">Download</a>
+                    <% if @share_link.allow_preview? && preview_url %>
+                        <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
+                      <% end %>
+
+                      <% if @share_link.allow_download? && download_url %>
+                        <a class="btn secondary xsmall" href="<%= download_url %>">Download</a>
+                      <% end %>
                   </div>
                 </div>
               </div>
@@ -231,8 +237,9 @@
               <% type_label = ext.present? ? ext : "PDF" %>
               <% size_bytes = blob&.byte_size.to_i %>
 
-              <% preview_url = rails_blob_path(cv.file, disposition: "inline") %>
-              <% download_url = rails_blob_path(cv.file, disposition: "attachment") %>
+              <% preview_url  = @share_link.allow_preview?  ? preview_file_share_link_path(@share_link.token, cv_id: cv.id) : nil %>
+              <% download_url = @share_link.allow_download? ? download_file_share_link_path(@share_link.token, cv_id: cv.id) : nil %>
+
 
               <div class="drive-row shared-row clickable-row" data-preview="<%= preview_url %>">
                 <div class="col-name">
@@ -269,7 +276,6 @@
                 </div>
               </div>
             <% end %>
-
           </div>
         </div>
       </div>

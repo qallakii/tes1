@@ -16,7 +16,6 @@ Rails.application.routes.draw do
     member do
       patch :rename
       post :bulk_move_items
-
         # ✅ NEW
       delete :bulk_destroy_items
       post   :bulk_download_items
@@ -37,7 +36,17 @@ Rails.application.routes.draw do
       post :bulk_create
       post :bulk_create_files
     end
+
+    member do
+      post  :unlock
+      patch :toggle_disabled
+
+      # Public, permission-checked preview/download (uses existing controller actions)
+      get "files/:cv_id/preview",  to: "share_links#preview",  as: :file_preview
+      get "files/:cv_id/download", to: "share_links#download", as: :file_download
+    end
   end
+
 
   get "/recents", to: "recents#index", as: :recents
   resources :recents, only: [:index]
