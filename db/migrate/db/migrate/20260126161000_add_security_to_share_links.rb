@@ -6,4 +6,3 @@ class AddSecurityToShareLinks < ActiveRecord::Migration[7.0]
     add_column :share_links, :last_viewed_at, :datetime
   end
 end
-

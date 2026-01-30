@@ -21,21 +21,44 @@ class Folder < ApplicationRecord
     while node&.parent
       d += 1
       node = node.parent
-      break if d > 50 # safety
+      break if d > 50
     end
     d
   end
 
-  def self_and_descendant_ids
-    ids = [id]
-    queue = [self]
-    while queue.any?
-      node = queue.shift
-      kids = node.subfolders.to_a
-      ids.concat(kids.map(&:id))
-      queue.concat(kids)
+  # Breadcrumb helpers
+  def ancestors
+    list = []
+    node = parent
+    while node
+      list.unshift(node)
+      node = node.parent
+      break if list.length > 50
     end
+    list
+  end
+
+  # ✅ REQUIRED by controllers:
+  # returns [self.id, child.id, grandchild.id...] FOR THIS USER ONLY
+  def self_and_descendant_ids
+    ids = [ id ]
+    queue = [ id ]
+
+    while queue.any?
+      # Load children for ALL parents in the queue at once (batch)
+      child_ids = Folder.where(parent_id: queue).pluck(:id)
+      break if child_ids.empty?
+
+      ids.concat(child_ids)
+      queue = child_ids
+    end
+
     ids.uniq
+  end
+
+
+  def descendant_ids(limit: 10_000)
+    self_and_descendant_ids(limit: limit) - [ id ]
   end
 
   def recalc_bytes_cached!
@@ -51,46 +74,6 @@ class Folder < ApplicationRecord
     total
   end
 
-
-  # Home / A / B / C path helpers (for breadcrumbs)
-  def ancestors
-    list = []
-    node = parent
-    while node
-      list.unshift(node)
-      node = node.parent
-      break if list.length > 50
-    end
-    list
-  end
-
-  # ✅ REQUIRED by controllers:
-  # returns [self.id, child.id, grandchild.id...] for THIS USER ONLY
-  def self_and_descendant_ids(limit: 10_000)
-    ids = []
-    queue = [id]
-    seen = {}
-
-    while queue.any?
-      break if ids.length >= limit
-
-      current_id = queue.shift
-      next if seen[current_id]
-      seen[current_id] = true
-
-      ids << current_id
-
-      child_ids = Folder.where(user_id: user_id, parent_id: current_id).pluck(:id)
-      queue.concat(child_ids)
-    end
-
-    ids
-  end
-
-  def descendant_ids(limit: 10_000)
-    self_and_descendant_ids(limit: limit) - [id]
-  end
-
   private
 
   def nesting_depth_within_limit
@@ -100,17 +83,14 @@ class Folder < ApplicationRecord
       errors.add(:parent_id, "Maximum folder depth is #{MAX_DEPTH}.")
     end
 
-    # prevent loops (self-parent)
     if parent_id.present? && parent_id == id
       errors.add(:parent_id, "cannot be itself")
     end
   end
 
-  # ✅ Critical hardening: you can NEVER attach your folder under another user's folder
+  # ✅ Critical hardening: cannot attach folder under another user's folder
   def parent_belongs_to_same_user
     return if parent.nil?
-    if parent.user_id != user_id
-      errors.add(:parent_id, "must belong to the same user")
-    end
+    errors.add(:parent_id, "must belong to the same user") if parent.user_id != user_id
   end
 end

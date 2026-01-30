@@ -6,23 +6,26 @@ Rails.application.routes.draw do
   delete "/logout", to: "sessions#destroy", as: :logout
 
   get "/signup", to: "users#new"
-  resources :users, only: [:create]
+  resources :users, only: [ :create ]
 
   get "/dashboard", to: "folders#index"
 
   get "/search", to: "search#index", as: :search
 
+  get "/s/:token", to: "share_links#show", as: :public_share
+
+
   resources :folders do
     member do
       patch :rename
       post :bulk_move_items
-        # ✅ NEW
+      # ✅ NEW
       delete :bulk_destroy_items
       post   :bulk_download_items
       get    :download
     end
 
-    resources :cvs, only: [:new, :create, :destroy, :show, :update] do
+    resources :cvs, only: [ :new, :create, :destroy, :show, :update ] do
       collection do
         delete :bulk_destroy
       end
@@ -31,7 +34,7 @@ Rails.application.routes.draw do
 
 
 
-  resources :share_links, only: [:index, :new, :create, :destroy, :show] do
+  resources :share_links, only: [ :index, :new, :create, :destroy, :show ] do
     collection do
       post :bulk_create
       post :bulk_create_files
@@ -49,5 +52,5 @@ Rails.application.routes.draw do
 
 
   get "/recents", to: "recents#index", as: :recents
-  resources :recents, only: [:index]
+  resources :recents, only: [ :index ]
 end

@@ -6,6 +6,6 @@ class CreateShareLinkFolders < ActiveRecord::Migration[7.0]
       t.timestamps
     end
 
-    add_index :share_link_folders, [:share_link_id, :folder_id], unique: true
+    add_index :share_link_folders, [ :share_link_id, :folder_id ], unique: true
   end
 end

@@ -7,7 +7,7 @@ class User < ApplicationRecord
 
   validates :name, presence: true
   validates :email, presence: true, uniqueness: true
-  
+
   validates :name, length: { maximum: 50 }, allow_nil: true
 
   # helper to safely get first name or fallback to email

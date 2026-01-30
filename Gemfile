@@ -19,10 +19,10 @@ gem "tailwindcss-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
 # User authentication
-gem 'devise'
+gem "devise"
 
 gem "kaminari"
-# Handle ZIP files (for share link downloads) 
+# Handle ZIP files (for share link downloads)
 gem "rubyzip", "~> 2.3"
 
 

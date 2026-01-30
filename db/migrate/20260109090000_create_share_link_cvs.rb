@@ -7,6 +7,6 @@ class CreateShareLinkCvs < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :share_link_cvs, [:share_link_id, :cv_id], unique: true
+    add_index :share_link_cvs, [ :share_link_id, :cv_id ], unique: true
   end
 end

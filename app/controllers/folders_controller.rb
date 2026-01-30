@@ -1,5 +1,6 @@
 # app/controllers/folders_controller.rb
 require "zip"
+require "tempfile"
 
 class FoldersController < ApplicationController
   before_action :require_login
@@ -152,12 +153,41 @@ class FoldersController < ApplicationController
 
   # ✅ Download ONE folder recursively as zip (already user-scoped)
   def download
-    zip_data = build_zip_for_folders([@folder.id])
+    zip_data = build_zip_for_folders([ @folder.id ])
     filename = "#{safe_name(@folder.name)}.zip"
     send_data zip_data,
               type: "application/zip",
               filename: filename,
               disposition: "attachment"
+  end
+
+  def bulk_download
+    folder_ids = Array(params[:folder_ids]).map(&:to_i).uniq
+    folders = current_user.folders.where(id: folder_ids)
+
+    if folders.empty?
+      redirect_back fallback_location: dashboard_path, alert: "No folders selected."
+      return
+    end
+
+    tempfile = Tempfile.new([ "folders-", ".zip" ])
+    tempfile.binmode
+
+    begin
+      Zip::File.open(tempfile.path, Zip::File::CREATE) do |zip|
+        folders.find_each do |folder|
+          add_folder_to_zip(zip, folder, "#{safe_zip_name(folder.name)}/")
+        end
+      end
+
+      send_file tempfile.path,
+                filename: "folders-#{Time.zone.now.strftime('%Y%m%d-%H%M%S')}.zip",
+                type: "application/zip",
+                disposition: "attachment"
+    ensure
+      tempfile.close
+      tempfile.unlink
+    end
   end
 
   # ✅ Bulk download selected folders/files as zip (HARDENED)
@@ -306,5 +336,54 @@ class FoldersController < ApplicationController
         end
       end
     end.string
+  end
+
+  def safe_zip_name(name)
+    # no UI changes; only avoids weird zip paths
+    base = name.to_s.strip
+    base = "folder" if base.empty?
+    base.gsub(/[\/\\:\*\?"<>\|\x00-\x1F]/, "_")[0, 120]
+  end
+
+  def add_folder_to_zip(zip, folder, path_prefix)
+    # Create folder entry (optional but helps some unzip tools)
+    zip.mkdir(path_prefix) unless zip.find_entry(path_prefix)
+
+    # Files in this folder
+    folder.cvs.includes(file_attachment: :blob).find_each do |cv|
+      next unless cv.file.attached?
+
+      entry_name = "#{path_prefix}#{safe_zip_name(cv.file.filename.to_s)}"
+
+      # Avoid duplicate names inside zip
+      entry_name = uniquify_zip_entry(zip, entry_name)
+
+      zip.get_output_stream(entry_name) do |out|
+        cv.file.blob.open do |io|
+          while (chunk = io.read(1024 * 1024)) # 1MB chunks
+            out.write(chunk)
+          end
+        end
+      end
+    end
+
+    # Recurse children
+    folder.subfolders.find_each do |child|
+      add_folder_to_zip(zip, child, "#{path_prefix}#{safe_zip_name(child.name)}/")
+    end
+  end
+
+  def uniquify_zip_entry(zip, entry_name)
+    return entry_name unless zip.find_entry(entry_name)
+
+    ext  = File.extname(entry_name)
+    base = entry_name.delete_suffix(ext)
+
+    i = 2
+    loop do
+      candidate = "#{base} (#{i})#{ext}"
+      return candidate unless zip.find_entry(candidate)
+      i += 1
+    end
   end
 end

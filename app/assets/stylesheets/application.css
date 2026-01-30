@@ -200,6 +200,11 @@ a { text-decoration: none; color: inherit; }
   padding: 6px 0;
 }
 
+.dropdown-menu.open {
+  display: block;
+}
+
+
 .dropdown-menu li { list-style: none; }
 .dropdown-menu li a {
   display: block;
@@ -378,4 +383,52 @@ a { text-decoration: none; color: inherit; }
 .drive-logo-text {
   font-weight: 700;
   letter-spacing: 0.2px;
+}
+
+/* ===============================
+   Profile dropdown FIX (SAFE)
+   =============================== */
+
+.profile-dropdown {
+  position: relative;
+}
+
+.profile-dropdown .dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+  padding: 6px;
+  display: none;
+  z-index: 9999;
+}
+
+.profile-dropdown .dropdown-menu.open {
+  display: block;
+}
+
+.profile-dropdown .dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  text-decoration: none;
+  color: inherit;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-dropdown .dropdown-item:hover {
+  background: rgba(0,0,0,0.06);
+}
+
+.profile-dropdown .dropdown-item.danger {
+  color: #b91c1c;
 }

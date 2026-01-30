@@ -45,13 +45,13 @@
           <div class="drive-top-right">
             <% if current_user %>
               <div class="user-dropdown">
-                <button id="profileToggle" class="profile-toggle" type="button">
+                <button id="profileBtn" class="profile-toggle" type="button">
                   <div class="avatar"><%= current_user.first_name[0].upcase %></div>
                   <span class="profile-name"><%= current_user.first_name.capitalize %></span>
                 </button>
 
-                <ul class="dropdown-menu" id="profileMenu">
-                  <li><%= link_to "Logout", logout_path, method: :delete %></li>
+                <ul id="profileMenu" class="dropdown-menu hidden">
+                  <li><%= link_to "Logout", logout_path, data: { turbo_method: :delete } %></li>
                 </ul>
               </div>
             <% else %>
