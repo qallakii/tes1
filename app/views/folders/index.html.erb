@@ -4,9 +4,23 @@
     <div class="drive-head-left">
       <%= link_to "Create Folder", new_folder_path, class: "btn primary" %>
 
-      <%= form_with url: bulk_create_share_links_path, method: :post, local: true, id: "bulk-share-form", style: "display:inline;" do %>
+      <%= form_with url: bulk_create_share_links_path, method: :post, local: true, data: { turbo: false }, id: "bulk-share-form", style: "display:inline;" do %>
+        <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+
         <button id="bulk-share-btn" type="submit" class="btn secondary" style="display:none; margin-left:8px;">
           Share
+        </button>
+
+        <!-- ✅ NEW: Bulk Download selected folders (uses same selected folder_ids[]) -->
+        <button
+          id="bulk-download-btn"
+          type="submit"
+          class="btn secondary"
+          style="display:none; margin-left:8px;"
+          formaction="<%= bulk_download_folders_path %>"
+          formmethod="post"
+          data-turbo="false">
+          Download
         </button>
       <% end %>
     </div>
@@ -69,6 +83,11 @@
                 <div class="action-group">
                   <%= link_to "Open", folder_path(folder), class: "btn secondary xsmall" %>
 
+                  <!-- ✅ NEW: Download single folder (zip with all subfolders/files) -->
+                  <%= link_to "Download",
+                    download_folder_path(folder),
+                    class: "btn secondary xsmall",
+                    data: { turbo: false, turbo_frame: "_top" } %>
                   <%= button_to "Delete",
                     folder_path(folder),
                     method: :delete,
@@ -211,21 +230,31 @@
 </style>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
+  function initDashboardFolders() {
+    // If we already bound listeners on a previous Turbo visit, clean them first
+    if (window.__dashFoldersAbort) window.__dashFoldersAbort.abort();
+    window.__dashFoldersAbort = new AbortController();
+    const { signal } = window.__dashFoldersAbort;
+
     const search = document.getElementById("folder-search");
     const sort = document.getElementById("folder-sort");
     const rows = Array.from(document.querySelectorAll(".folder-row"));
     const list = document.querySelector(".folders-list");
     const noResults = document.getElementById("folder-no-results");
 
-    // Bulk share (show button only when something is selected)
     const bulkShareBtn = document.getElementById("bulk-share-btn");
+    const bulkDownloadBtn = document.getElementById("bulk-download-btn");
+
     const selectAll = document.getElementById("select-all-folders");
     const checks = Array.from(document.querySelectorAll(".folder-select"));
 
+    if (!rows.length) return;
+
     function updateBulkUI() {
       const any = checks.some((c) => c.checked);
+
       if (bulkShareBtn) bulkShareBtn.style.display = any ? "inline-flex" : "none";
+      if (bulkDownloadBtn) bulkDownloadBtn.style.display = any ? "inline-flex" : "none";
 
       if (selectAll) {
         const all = checks.length > 0 && checks.every((c) => c.checked);
@@ -235,18 +264,10 @@
       }
     }
 
-    if (selectAll) {
-      selectAll.addEventListener("change", () => {
-        checks.forEach((c) => (c.checked = selectAll.checked));
-        updateBulkUI();
-      });
-    }
-
-    checks.forEach((c) => c.addEventListener("change", updateBulkUI));
-    updateBulkUI();
-
     function sortRows(visibleRows) {
-      const mode = sort?.value || "updated_desc";
+      if (!list) return;
+
+      const mode = (sort && sort.value) ? sort.value : "updated_desc";
       visibleRows.sort((a, b) => {
         const an = a.getAttribute("data-name") || "";
         const bn = b.getAttribute("data-name") || "";
@@ -263,8 +284,8 @@
     }
 
     function apply() {
-      const q = (search?.value || "").trim().toLowerCase();
-      let visible = [];
+      const q = (search && search.value ? search.value : "").trim().toLowerCase();
+      const visible = [];
 
       rows.forEach((row) => {
         const name = row.getAttribute("data-name") || "";
@@ -277,8 +298,29 @@
       sortRows(visible);
     }
 
-    if (search) search.addEventListener("input", apply);
-    if (sort) sort.addEventListener("change", apply);
+    // Bind events every Turbo load (safe, because we abort old ones)
+    if (selectAll) {
+      selectAll.addEventListener("change", () => {
+        checks.forEach((c) => (c.checked = selectAll.checked));
+        updateBulkUI();
+      }, { signal });
+    }
+
+    checks.forEach((c) => c.addEventListener("change", updateBulkUI, { signal }));
+
+    if (search) search.addEventListener("input", apply, { signal });
+    if (sort) sort.addEventListener("change", apply, { signal });
+
+    updateBulkUI();
     apply();
+  }
+
+  document.addEventListener("turbo:load", initDashboardFolders);
+  document.addEventListener("DOMContentLoaded", initDashboardFolders);
+
+  // IMPORTANT: when Turbo caches the page, kill listeners so next visit works perfectly
+  document.addEventListener("turbo:before-cache", () => {
+    if (window.__dashFoldersAbort) window.__dashFoldersAbort.abort();
+    window.__dashFoldersAbort = null;
   });
 </script>

@@ -110,7 +110,8 @@ class ShareLinksController < ApplicationController
     end
 
     if !@share_link.password_protected?
-      redirect_to share_link_path(@share_link.token)
+      redirect_to public_share_path(@share_link.token)
+
       return
     end
 
@@ -118,7 +119,7 @@ class ShareLinksController < ApplicationController
     if @share_link.authenticate(pw)
       session[:unlocked_share_links] ||= {}
       session[:unlocked_share_links][@share_link.token] = true
-      redirect_to share_link_path(@share_link.token), notice: "Unlocked."
+      redirect_to public_share_path(@share_link.token), notice: "Unlocked."
     else
       flash.now[:alert] = "Wrong password."
       render :password, status: :unprocessable_entity
@@ -145,38 +146,52 @@ class ShareLinksController < ApplicationController
 
   # Public show (token)
   def show
-    if @share_link.expired?
-      render plain: "This share link has expired.", status: :gone
-      return
-    end
+    # @share_link is loaded by set_share_link_by_token before_action
 
-    # Files-only share
-    if @share_link.cvs.any?
-      @files_only = true
-      @folders = []
-      @folder = nil
-      @subfolders = []
-      @cvs = @share_link.cvs.with_attached_file.order(updated_at: :desc)
-      return
-    end
+    # Files-only share (ShareLinkCv)
+    @files_only = @share_link.cvs.any?
 
-    # Folder share (roots)
-    @files_only = false
-    @folders = @share_link.all_folders
+    # Roots (folders directly attached to the share link via ShareLinkFolder)
+    @folders = @share_link.respond_to?(:all_folders) ? @share_link.all_folders : @share_link.folders
+    roots = (@folders || []).to_a
 
-    # ✅ HARDEN: allow browsing ONLY inside shared roots descendants
-    allowed_folder_ids = @folders.flat_map { |f| f.self_and_descendant_ids }.uniq
+    # Pick folder:
+    # - If folder_id is present: allow any descendant of any shared root folder
+    # - Else: if single-folder share (share_links.folder_id), show that folder
+    @folder = nil
 
     if params[:folder_id].present?
-      fid = params[:folder_id].to_i
-      @folder = Folder.where(id: allowed_folder_ids).find_by(id: fid)
+      wanted_id = params[:folder_id].to_i
+
+      allowed_folder_ids = roots.flat_map { |f| f.self_and_descendant_ids }.uniq
+      unless allowed_folder_ids.include?(wanted_id)
+        raise ActiveRecord::RecordNotFound, "Folder not in this share"
+      end
+
+      @folder = Folder.find(wanted_id)
     else
-      @folder = nil
+      # single-folder share link (created via create action with folder_id)
+      @folder = @share_link.folder if @share_link.respond_to?(:folder) && @share_link.folder.present?
     end
 
-    @subfolders = @folder ? @folder.subfolders.where(id: allowed_folder_ids).order(updated_at: :desc) : []
-    @cvs = @folder ? @folder.cvs.with_attached_file.order(updated_at: :desc) : []
+    if @files_only
+      @cvs = @share_link.cvs.with_attached_file.order(updated_at: :desc)
+      @subfolders = []
+      return
+    end
+
+    if @folder
+      @subfolders = @folder.subfolders.order(updated_at: :desc)
+      @cvs = @folder.cvs.with_attached_file.order(updated_at: :desc)
+    else
+      @subfolders = []
+      @cvs = []
+    end
   end
+
+
+
+
 
   # Public preview via token (permission-checked)
   def preview
@@ -197,8 +212,20 @@ class ShareLinksController < ApplicationController
   private
 
   def set_share_link_by_token
-    @share_link = ShareLink.includes(:cvs, :folders).find_by!(token: params[:id])
+    token = params[:token].presence
+
+    if token.blank? && params[:id].present? && params[:id].to_s !~ /\A\d+\z/
+      token = params[:id].to_s
+    end
+
+    @share_link =
+      if token.present?
+        ShareLink.includes(:cvs, :folders).find_by!(token: token)
+      else
+        ShareLink.includes(:cvs, :folders).find(params[:id])
+      end
   end
+
 
   def enforce_require_login_if_needed!
     return unless @share_link.respond_to?(:require_login) && @share_link.require_login

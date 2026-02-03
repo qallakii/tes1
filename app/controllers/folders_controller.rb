@@ -3,6 +3,7 @@ require "zip"
 require "tempfile"
 
 class FoldersController < ApplicationController
+ # after_action :cleanup_temp_zips, only: %i[download bulk_download bulk_download_items]
   before_action :require_login
   before_action :set_folder, only: %i[
     show destroy update rename bulk_move_items bulk_destroy_items bulk_download_items download
@@ -28,7 +29,6 @@ class FoldersController < ApplicationController
     if @folder.parent_id.present? && !current_user.folders.exists?(id: @folder.parent_id)
       @folder.parent_id = nil
     end
-
 
     if @folder.save
       redirect_to(@folder.parent_id.present? ? folder_path(@folder.parent_id) : folders_path,
@@ -151,16 +151,12 @@ class FoldersController < ApplicationController
                   notice: "Deleted #{deleted_folders} folder(s) and #{deleted_files} file(s)."
   end
 
-  # ✅ Download ONE folder recursively as zip (already user-scoped)
+  # ✅ Download ONE folder recursively as zip (user-scoped)
   def download
-    zip_data = build_zip_for_folders([ @folder.id ])
-    filename = "#{safe_name(@folder.name)}.zip"
-    send_data zip_data,
-              type: "application/zip",
-              filename: filename,
-              disposition: "attachment"
+    send_folder_zip(@folder)
   end
 
+  # Dashboard/root bulk download (folders only)
   def bulk_download
     folder_ids = Array(params[:folder_ids]).map(&:to_i).uniq
     folders = current_user.folders.where(id: folder_ids)
@@ -170,27 +166,28 @@ class FoldersController < ApplicationController
       return
     end
 
-    tempfile = Tempfile.new([ "folders-", ".zip" ])
+    tempfile = Tempfile.new(["folders-", ".zip"])
     tempfile.binmode
 
-    begin
-      Zip::File.open(tempfile.path, Zip::File::CREATE) do |zip|
-        folders.find_each do |folder|
-          add_folder_to_zip(zip, folder, "#{safe_zip_name(folder.name)}/")
-        end
+    Zip::File.open(tempfile.path, Zip::File::CREATE) do |zip|
+      folders.find_each do |folder|
+        add_folder_to_zip(zip, folder, "#{safe_zip_name(folder.name)}/")
       end
-
-      send_file tempfile.path,
-                filename: "folders-#{Time.zone.now.strftime('%Y%m%d-%H%M%S')}.zip",
-                type: "application/zip",
-                disposition: "attachment"
-    ensure
-      tempfile.close
-      tempfile.unlink
     end
+
+    tempfile.close
+
+    data = File.binread(tempfile.path)
+    File.delete(tempfile.path) if File.exist?(tempfile.path)
+
+    send_data data,
+              filename: "folders-#{Time.zone.now.strftime('%Y%m%d-%H%M%S')}.zip",
+              type: "application/zip",
+              disposition: "attachment"
   end
 
-  # ✅ Bulk download selected folders/files as zip (HARDENED)
+
+  # ✅ Bulk download selected folders/files as zip (HARDENED + STREAMING)
   def bulk_download_items
     folder_ids = scoped_subfolder_ids(Array(params[:folder_ids]))
     cv_ids     = scoped_file_ids(Array(params[:cv_ids]))
@@ -201,55 +198,50 @@ class FoldersController < ApplicationController
     end
 
     folders = current_user.folders.where(id: folder_ids)
-    cvs     = current_user.cvs.where(id: cv_ids)
+    cvs     = current_user.cvs.where(id: cv_ids).includes(file_attachment: :blob)
+
+    # Nice UX: if only one file selected, download directly
+    if folders.empty? && cvs.size == 1
+      redirect_to rails_blob_path(cvs.first.file, disposition: "attachment")
+      return
+    end
+
+    tempfile = Tempfile.new(["download-", ".zip"])
+    tempfile.binmode
+
+    Zip::File.open(tempfile.path, Zip::File::CREATE) do |zip|
+      cvs.each do |cv|
+        next unless cv.file.attached?
+
+        entry_name = "Files/#{safe_zip_name(cv.file.filename.to_s)}"
+        entry_name = uniquify_zip_entry(zip, entry_name)
+
+        zip.get_output_stream(entry_name) do |out|
+          cv.file.blob.open do |io|
+            while (chunk = io.read(1024 * 1024))
+              out.write(chunk)
+            end
+          end
+        end
+      end
+
+      folders.find_each do |folder|
+        add_folder_to_zip(zip, folder, "#{safe_zip_name(folder.name)}/")
+      end
+    end
+
+    tempfile.close
+
+    data = File.binread(tempfile.path)
+    File.delete(tempfile.path) if File.exist?(tempfile.path)
 
     timestamp = Time.zone.now.strftime("%Y%m%d-%H%M%S")
-    zip_name = "download-#{timestamp}.zip"
-
-    sanitize_zip_path = lambda do |path|
-      s = path.to_s
-      s = s.gsub("\\", "/")
-      s = s.sub(%r{\A/+}, "")
-      s = s.gsub(%r{/+}, "/")
-      s = s.gsub("\u0000", "")
-      s = s.split("/").reject { |p| p.blank? || p == "." || p == ".." }.join("/")
-      s
-    end
-
-    add_file_entry = lambda do |zip, entry_path, attached|
-      return unless attached&.attached?
-      safe = sanitize_zip_path.call(entry_path)
-      return if safe.blank?
-      attached.blob.open do |tmpfile|
-        zip.put_next_entry(safe)
-        zip.write(File.binread(tmpfile.path))
-      end
-    end
-
-    buffer = Zip::OutputStream.write_buffer do |zip|
-      walk = lambda do |folder, prefix|
-        safe_prefix = sanitize_zip_path.call(prefix)
-
-        folder.cvs.includes(file_attachment: :blob).find_each do |cv|
-          next unless cv.file.attached?
-          add_file_entry.call(zip, "#{safe_prefix}/#{cv.file.filename}", cv.file)
-        end
-
-        folder.subfolders.order(:name).each do |sub|
-          walk.call(sub, "#{safe_prefix}/#{sub.name}")
-        end
-      end
-
-      folders.each { |f| walk.call(f, f.name) }
-      cvs.each { |cv| add_file_entry.call(zip, "Files/#{cv.file.filename}", cv.file) }
-    end
-
-    buffer.rewind
-    send_data buffer.read,
-              filename: zip_name,
+    send_data data,
+              filename: "download-#{timestamp}.zip",
               type: "application/zip",
               disposition: "attachment"
   end
+
 
   def destroy
     parent_id = @folder.parent_id
@@ -263,6 +255,22 @@ class FoldersController < ApplicationController
   end
 
   private
+
+  def remember_temp_zip(path)
+    @temp_zip_paths ||= []
+    @temp_zip_paths << path
+  end
+
+  def cleanup_temp_zips
+    Array(@temp_zip_paths).each do |path|
+      begin
+        File.delete(path) if path.present? && File.exist?(path)
+      rescue => e
+        Rails.logger.warn("Temp zip cleanup failed for #{path}: #{e.class} #{e.message}")
+      end
+    end
+  end
+
 
   def set_folder
     @folder = current_user.folders.find(params[:id])
@@ -289,54 +297,30 @@ class FoldersController < ApplicationController
     name.to_s.strip.gsub(/[^\w\- ]+/, "").gsub(/\s+/, "_").presence || "folder"
   end
 
-  def build_zip_for_folders(folder_ids, extra_cv_ids: [])
-    roots = current_user.folders.where(id: folder_ids).includes(:subfolders, :cvs)
+  # ✅ Send ONE folder zip using streaming writes (no RAM explosion)
+  def send_folder_zip(folder)
+    tempfile = Tempfile.new(["folder-", ".zip"])
+    tempfile.binmode
 
-    Zip::OutputStream.write_buffer do |zip|
-      added_dirs = {}
+    Zip::File.open(tempfile.path, Zip::File::CREATE) do |zip|
+      add_folder_to_zip(zip, folder, "#{safe_zip_name(folder.name)}/")
+    end
 
-      add_dir = lambda do |dir_path|
-        dir_path = dir_path.to_s
-        dir_path = "#{dir_path}/" unless dir_path.end_with?("/")
-        return if dir_path == "/"
-        return if added_dirs[dir_path]
+    tempfile.close
 
-        zip.put_next_entry(dir_path)
-        added_dirs[dir_path] = true
-      end
+    data = File.binread(tempfile.path)
+    File.delete(tempfile.path) if File.exist?(tempfile.path)
 
-      add_folder_recursive = lambda do |folder, base_path|
-        folder_path = File.join(base_path, safe_name(folder.name))
-        add_dir.call(folder_path)
+    timestamp = Time.zone.now.strftime("%Y%m%d-%H%M%S")
+    send_data data,
+              filename: "#{safe_zip_name(folder.name)}-#{timestamp}.zip",
+              type: "application/zip",
+              disposition: "attachment"
 
-        folder.cvs.includes(file_attachment: :blob).find_each do |cv|
-          next unless cv.file.attached?
-          entry_path = File.join(folder_path, cv.file.filename.to_s)
-          zip.put_next_entry(entry_path)
-          zip.write(cv.file.download)
-        end
-
-        folder.subfolders.order(:name).each do |child|
-          add_folder_recursive.call(child, folder_path)
-        end
-      end
-
-      roots.order(:name).each do |root|
-        add_folder_recursive.call(root, "")
-      end
-
-      extras = current_user.cvs.where(id: extra_cv_ids).includes(file_attachment: :blob)
-      if extras.any?
-        add_dir.call("Selected_Files")
-        extras.each do |cv|
-          next unless cv.file.attached?
-          entry_path = File.join("Selected_Files", cv.file.filename.to_s)
-          zip.put_next_entry(entry_path)
-          zip.write(cv.file.download)
-        end
-      end
-    end.string
   end
+
+
+
 
   def safe_zip_name(name)
     # no UI changes; only avoids weird zip paths

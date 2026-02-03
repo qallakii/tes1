@@ -17,7 +17,7 @@
             <% folders = link.respond_to?(:all_folders) ? link.all_folders : [] %>
             <% first_folder = folders.first || link.folder %>
             <% folder_count = folders.size %>
-            <% share_url = share_link_url(link.token) %>
+            <% share_url = public_share_url(link.token) %>
 
             <div class="drive-row share-row">
               <div class="col-folder">
@@ -67,10 +67,12 @@
                   <button type="button" class="btn secondary xsmall copy-btn" data-copy="<%= share_url %>">Copy</button>
 
                   <%= link_to "Open",
-                    share_link_path(link.token),
+                    public_share_path(link.token),
                     target: "_blank",
                     rel: "noopener",
                     class: "btn secondary xsmall" %>
+
+
 
                   <%= button_to "Delete",
                     share_link_path(link),

@@ -92,4 +92,10 @@ class CvsController < ApplicationController
   def cv_params
     params.require(:cv).permit(:file, :title, files: [])
   end
+
+  def download
+    cv = current_user.cvs.find(params[:id])
+    redirect_to rails_blob_path(cv.file, disposition: "attachment")
+  end
+
 end

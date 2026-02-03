@@ -1,6 +1,6 @@
 <div class="dashboard-page">
 
-  <% share_url = share_link_url(@share_link.token) %>
+  <% share_url = public_share_url(@share_link.token) %>
   <% folders = (@folders.presence || []).to_a %>
   <% selected_folder = @folder %>
 
@@ -67,7 +67,7 @@
           </div>
 
           <% folders.each do |f| %>
-            <% open_url = share_link_path(@share_link.token, folder_id: f.id) %>
+            <% open_url = public_share_path(@share_link.token, folder_id: f.id) %>
             <div class="drive-row folder-pick-row clickable-folder-row" data-open="<%= open_url %>">
               <div class="folder-cell">
                 <span class="folder-icon" aria-hidden="true">
@@ -114,8 +114,8 @@
               <% type_label = ext.present? ? ext : "PDF" %>
               <% size_bytes = blob&.byte_size.to_i %>
 
-             <% preview_url  = file_preview_share_link_path(@share_link.token, cv_id: cv.id) %>
-             <% download_url = file_download_share_link_path(@share_link.token, cv_id: cv.id) %>
+             <% preview_url  = file_preview_share_link_path(@share_link, cv_id: cv.id) %>
+             <% download_url = file_download_share_link_path(@share_link, cv_id: cv.id) %>
 
 
               <div class="drive-row shared-row clickable-row" data-preview="<%= preview_url || "" %>">
@@ -181,7 +181,7 @@
         <div style="font-weight:800;"><%= selected_folder.name %></div>
       </div>
       <div class="folder-sticky-right">
-        <%= link_to "Back to folders", share_link_path(@share_link.token), class: "btn secondary" %>
+        <%= link_to "Back to folders", public_share_path(@share_link.token), class: "btn secondary" %>
       </div>
     </div>
     <% if @subfolders.any? %>
@@ -194,7 +194,7 @@
             </div>
 
             <% @subfolders.each do |sf| %>
-              <% open_url = share_link_path(@share_link.token, folder_id: sf.id) %>
+              <% open_url = public_share_path(@share_link.token, folder_id: sf.id) %>
               <div class="drive-row folder-pick-row clickable-folder-row" data-open="<%= open_url %>">
                 <div class="folder-cell">
                   <span class="folder-icon" aria-hidden="true">
@@ -237,11 +237,10 @@
               <% type_label = ext.present? ? ext : "PDF" %>
               <% size_bytes = blob&.byte_size.to_i %>
 
-              <% preview_url  = @share_link.allow_preview?  ? preview_file_share_link_path(@share_link.token, cv_id: cv.id) : nil %>
-              <% download_url = @share_link.allow_download? ? download_file_share_link_path(@share_link.token, cv_id: cv.id) : nil %>
+              <% preview_url  = @share_link.allow_preview?  ? file_preview_share_link_path(@share_link, cv_id: cv.id) : nil %>
+              <% download_url = @share_link.allow_download? ? file_download_share_link_path(@share_link, cv_id: cv.id) : nil %>
 
-
-              <div class="drive-row shared-row clickable-row" data-preview="<%= preview_url %>">
+              <div class="drive-row shared-row clickable-row" data-preview="<%= preview_url || "" %>">
                 <div class="col-name">
                   <div class="file-line">
                     <span class="file-icon" aria-hidden="true">
@@ -258,7 +257,9 @@
                   </div>
                 </div>
 
-                <div class="col-type"><span class="pill"><%= type_label %></span></div>
+                <div class="col-type">
+                  <span class="pill"><%= type_label %></span>
+                </div>
 
                 <div class="col-size">
                   <span class="muted size-num" data-size-text><%= size_bytes %></span>
@@ -270,12 +271,18 @@
 
                 <div class="col-actions">
                   <div class="action-group">
-                    <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
-                    <a class="btn secondary xsmall" href="<%= download_url %>">Download</a>
+                    <% if @share_link.allow_preview? && preview_url.present? %>
+                      <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
+                    <% end %>
+
+                    <% if @share_link.allow_download? && download_url.present? %>
+                      <a class="btn secondary xsmall" href="<%= download_url %>">Download</a>
+                    <% end %>
                   </div>
                 </div>
               </div>
             <% end %>
+
           </div>
         </div>
       </div>
