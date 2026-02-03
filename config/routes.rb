@@ -43,6 +43,7 @@ Rails.application.routes.draw do
     collection do
       post :bulk_create
       post :bulk_create_files
+      post :bulk_create_items 
     end
 
     member do

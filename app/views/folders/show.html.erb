@@ -116,7 +116,7 @@
                       method: :delete,
                       data: { confirm: "Delete this folder and everything inside?" },
                       class: "kebab-item danger",
-                      form: { class: "inline-form" } %>
+                      form: { class: "inline-form", data: {turbo:  false} } %>
                   </div>
                 </div>
               </div>
@@ -649,26 +649,25 @@
       row.addEventListener("click", (e) => {
         if (e.target.closest(".kebab-wrap")) return;
         if (e.target.closest(".col-cv-actions")) return;
+        if (!checkbox) return;
 
-        clearTimeout(folderClickTimer);
-        folderClickTimer = setTimeout(() => {
-          if (!checkbox) return;
-          checkbox.checked = !checkbox.checked;
-          checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-        }, CLICK_DELAY);
+        // if user is double-clicking, ignore click toggles
+        if (e.detail && e.detail > 1) return;
+
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event("change", { bubbles: true }));
       }, { signal });
 
       row.addEventListener("dblclick", (e) => {
         if (e.target.closest(".kebab-wrap")) return;
         if (e.target.closest(".col-cv-actions")) return;
 
-        clearTimeout(folderClickTimer);
         if (url) window.location = url;
       }, { signal });
     });
 
+
     // File rows: click select, dblclick preview
-    let fileClickTimer = null;
     document.querySelectorAll(".cv-row.clickable-row").forEach((row) => {
       const checkbox = row.querySelector(".cv-check");
       if (!checkbox) return;
@@ -677,18 +676,16 @@
         if (e.target.closest(".kebab-wrap")) return;
         if (e.target.closest(".col-cv-actions")) return;
 
-        clearTimeout(fileClickTimer);
-        fileClickTimer = setTimeout(() => {
-          checkbox.checked = !checkbox.checked;
-          checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-        }, CLICK_DELAY);
+        if (e.detail && e.detail > 1) return;
+
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event("change", { bubbles: true }));
       }, { signal });
 
       row.addEventListener("dblclick", (e) => {
         if (e.target.closest(".kebab-wrap")) return;
         if (e.target.closest(".col-cv-actions")) return;
 
-        clearTimeout(fileClickTimer);
         const url = row.getAttribute("data-preview");
         if (url) window.open(url, "_blank", "noopener");
       }, { signal });
@@ -727,6 +724,275 @@
         bulkDownloadForm.submit();
       }, { signal });
     }
+
+        // =========================
+    // RENAME (folder kebab)
+    // =========================
+    const renameOverlay = document.getElementById("rename-folder-overlay");
+    const renameInput   = document.getElementById("rename-folder-input");
+    const renameForm    = document.getElementById("rename-folder-form");
+    const closeRename   = document.getElementById("close-rename-folder");
+    const cancelRename  = document.getElementById("cancel-rename-folder");
+
+    function openRenameModal(folderId, folderName) {
+      if (!renameOverlay || !renameForm || !renameInput) return;
+
+      renameInput.value = folderName || "";
+
+      // Build action like /folders/:id/rename
+      const prefix = renameForm.dataset.renamePrefix || "/folders";
+      renameForm.action = `${prefix}/${folderId}/rename`;
+
+      renameOverlay.style.display = "flex";
+      renameInput.focus();
+      renameInput.select();
+    }
+
+    function closeRenameModal() {
+      if (renameOverlay) renameOverlay.style.display = "none";
+    }
+
+    document.querySelectorAll(".folder-rename-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        openRenameModal(btn.dataset.folderId, btn.dataset.folderName);
+      }, { signal });
+    });
+
+    if (closeRename) closeRename.addEventListener("click", closeRenameModal, { signal });
+    if (cancelRename) cancelRename.addEventListener("click", closeRenameModal, { signal });
+    if (renameOverlay) {
+      renameOverlay.addEventListener("click", (e) => {
+        if (e.target === renameOverlay) closeRenameModal();
+      }, { signal });
+    }
+
+    // =========================
+    // BULK DELETE (folders + files)
+    // =========================
+    const bulkDeleteBtn = document.getElementById("bulk-delete");
+    const bulkDestroyForm = document.getElementById("bulk-destroy-items-form");
+    const bulkDestroyFolderIds = document.getElementById("bulk-destroy-folder-ids");
+    const bulkDestroyFileIds = document.getElementById("bulk-destroy-file-ids");
+
+    if (bulkDeleteBtn && bulkDestroyForm) {
+      bulkDeleteBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+
+        const folderIds = selectedFolderIds();
+        const fileIds   = selectedFileIds();
+
+        if (folderIds.length === 0 && fileIds.length === 0) return;
+        if (!confirm("Delete selected items?")) return;
+
+        fillHiddenInputs(bulkDestroyFolderIds, "folder_ids[]", folderIds);
+        fillHiddenInputs(bulkDestroyFileIds, "cv_ids[]", fileIds);
+
+        bulkDestroyForm.submit();
+      }, { signal });
+    }
+
+    // =========================
+    // MOVE (bulk + one file)
+    // =========================
+    const moveOverlay = document.getElementById("move-overlay");
+    const moveSelectedName = document.getElementById("move-selected-name");
+    const moveConfirm = document.getElementById("move-confirm");
+    const moveCancel = document.getElementById("move-cancel");
+    const closeMove = document.getElementById("close-move");
+
+    const bulkMoveForm = document.getElementById("bulk-move-form");
+    const bulkMoveFolderIds = document.getElementById("bulk-move-folder-ids");
+    const bulkMoveFileIds = document.getElementById("bulk-move-file-ids");
+    const moveTarget = document.getElementById("move-target-folder-id");
+
+    const moveOneForm = document.getElementById("move-one-form");
+    const moveOneFileId = document.getElementById("move-one-file-id");
+    const moveTargetOne = document.getElementById("move-target-folder-id-one");
+
+    let pickedTargetId = null;
+    let moveMode = "bulk"; // "bulk" | "one"
+    let oneCvId = null;
+
+    function openMoveModal(mode, cvId = null) {
+      if (!moveOverlay) return;
+
+      moveMode = mode;
+      oneCvId = cvId;
+      pickedTargetId = null;
+
+      if (moveSelectedName) moveSelectedName.textContent = "None";
+      if (moveConfirm) moveConfirm.disabled = true;
+
+      document.querySelectorAll(".tree-row").forEach((r) => r.classList.remove("selected"));
+
+      moveOverlay.style.display = "flex";
+    }
+
+    function closeMoveModal() {
+      if (moveOverlay) moveOverlay.style.display = "none";
+    }
+
+    // Pick destination folder
+    document.querySelectorAll(".tree-row").forEach((row) => {
+      const pick = row.querySelector(".tree-pick");
+      const toggle = row.querySelector(".tree-toggle");
+
+      // toggle children
+      const next = row.nextElementSibling;
+      if (toggle && next && next.classList.contains("tree-children")) {
+        toggle.addEventListener("click", (e) => {
+          e.preventDefault();
+          const open = next.style.display === "block";
+          next.style.display = open ? "none" : "block";
+          toggle.textContent = open ? "▸" : "▾";
+        }, { signal });
+      }
+
+      if (pick) {
+        pick.addEventListener("click", (e) => {
+          e.preventDefault();
+          pickedTargetId = row.dataset.folderId;
+
+          document.querySelectorAll(".tree-row").forEach((r) => r.classList.remove("selected"));
+          row.classList.add("selected");
+
+          if (moveSelectedName) moveSelectedName.textContent = row.dataset.folderName || "Selected";
+          if (moveConfirm) moveConfirm.disabled = !pickedTargetId;
+        }, { signal });
+      }
+    });
+
+    // Open move modal - bulk
+    const bulkMoveBtn = document.getElementById("bulk-move");
+    if (bulkMoveBtn) {
+      bulkMoveBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const any = selectedFolderIds().length > 0 || selectedFileIds().length > 0;
+        if (!any) return;
+        openMoveModal("bulk");
+      }, { signal });
+    }
+
+    // Open move modal - one file
+    document.querySelectorAll(".move-one-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        openMoveModal("one", btn.dataset.cvId);
+      }, { signal });
+    });
+
+    if (moveCancel) moveCancel.addEventListener("click", closeMoveModal, { signal });
+    if (closeMove) closeMove.addEventListener("click", closeMoveModal, { signal });
+    if (moveOverlay) {
+      moveOverlay.addEventListener("click", (e) => {
+        if (e.target === moveOverlay) closeMoveModal();
+      }, { signal });
+    }
+
+    if (moveConfirm) {
+      moveConfirm.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (!pickedTargetId) return;
+
+        // bulk move
+        if (moveMode === "bulk") {
+          if (!bulkMoveForm || !moveTarget) return;
+
+          moveTarget.value = pickedTargetId;
+          fillHiddenInputs(bulkMoveFolderIds, "folder_ids[]", selectedFolderIds());
+          fillHiddenInputs(bulkMoveFileIds, "cv_ids[]", selectedFileIds());
+
+          bulkMoveForm.submit();
+          closeMoveModal();
+          return;
+        }
+
+        // move one file
+        if (moveMode === "one") {
+          if (!moveOneForm || !moveTargetOne || !moveOneFileId) return;
+
+          moveTargetOne.value = pickedTargetId;
+          fillHiddenInputs(moveOneFileId, "cv_ids[]", [oneCvId]);
+
+          moveOneForm.submit();
+          closeMoveModal();
+        }
+      }, { signal });
+    }
+
+    // =========================
+    // SHARE (bulk + one file)
+    // Your show.html has cv ids (NOT folder ids) for share.
+    // =========================
+    function csrfToken() {
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      return meta ? meta.getAttribute("content") : "";
+    }
+
+    function postShareItems(folderIds, cvIds) {
+      folderIds = (folderIds || []).filter(Boolean);
+      cvIds = (cvIds || []).filter(Boolean);
+
+      if (folderIds.length === 0 && cvIds.length === 0) return;
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "/share_links/bulk_create_items";
+      form.style.display = "none";
+
+      const token = document.createElement("input");
+      token.type = "hidden";
+      token.name = "authenticity_token";
+      token.value = csrfToken();
+      form.appendChild(token);
+
+      folderIds.forEach((id) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "folder_ids[]";
+        input.value = id;
+        form.appendChild(input);
+      });
+
+      cvIds.forEach((id) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "cv_ids[]";
+        input.value = id;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+    }
+
+
+    // Share one file
+   document.querySelectorAll(".share-one-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        postShareItems([], [btn.dataset.cvId]);
+      }, { signal });
+    });
+
+
+    // Bulk Share (selected files only)
+    const bulkShareBtn = document.getElementById("bulk-share");
+    if (bulkShareBtn) {
+      bulkShareBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+
+        const folderIds = selectedFolderIds();
+        const fileIds   = selectedFileIds();
+
+        if (folderIds.length === 0 && fileIds.length === 0) return;
+
+        postShareItems(folderIds, fileIds);
+      }, { signal });
+    }
+
+
   
   }
 

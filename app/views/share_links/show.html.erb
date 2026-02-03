@@ -3,6 +3,8 @@
   <% share_url = public_share_url(@share_link.token) %>
   <% folders = (@folders.presence || []).to_a %>
   <% selected_folder = @folder %>
+  <% direct_files = defined?(@direct_cvs) ? @direct_cvs : [] %>
+  <% mixed = direct_files.any? && folders.any? %>
 
   <div class="share-hero">
     <div class="share-hero-left">
@@ -183,7 +185,149 @@
       <div class="folder-sticky-right">
         <%= link_to "Back to folders", public_share_path(@share_link.token), class: "btn secondary" %>
       </div>
+      <%# ====== DIRECTLY SHARED FILES (for mixed shares) ====== %>
+      <% if defined?(@direct_cvs) && @direct_cvs.any? && !@files_only %>
+        <div class="drive-card" style="margin-bottom:12px;">
+          <div class="drive-scroll">
+            <div class="drive-list shared-files-list">
+
+              <div class="drive-header">
+                <div class="col-name">Directly shared files</div>
+                <div class="col-type">Type</div>
+                <div class="col-size">Size</div>
+                <div class="col-modified">Last modified</div>
+                <div class="col-actions">Actions</div>
+              </div>
+
+              <% @direct_cvs.each do |cv| %>
+                <% blob = cv.file&.blob %>
+                <% display_name = cv.title.presence || cv.file.filename.to_s %>
+                <% ext = cv.file.filename.extension.to_s.upcase %>
+                <% type_label = ext.present? ? ext : "PDF" %>
+                <% size_bytes = blob&.byte_size.to_i %>
+
+                <% preview_url  = @share_link.allow_preview?  ? file_preview_share_link_path(@share_link, cv_id: cv.id) : nil %>
+                <% download_url = @share_link.allow_download? ? file_download_share_link_path(@share_link, cv_id: cv.id) : nil %>
+
+                <div class="drive-row shared-row clickable-row" data-preview="<%= preview_url || "" %>">
+                  <div class="col-name">
+                    <div class="file-line">
+                      <span class="file-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                          <path d="M14 2v6h6"/>
+                        </svg>
+                      </span>
+
+                      <div class="file-text">
+                        <div class="file-name"><%= display_name %></div>
+                        <div class="file-sub"><%= cv.file.filename %></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-type"><span class="pill"><%= type_label %></span></div>
+
+                  <div class="col-size">
+                    <span class="muted size-num" data-size-text><%= size_bytes %></span>
+                  </div>
+
+                  <div class="col-modified">
+                    <span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span>
+                  </div>
+
+                  <div class="col-actions">
+                    <div class="action-group">
+                      <% if @share_link.allow_preview? && preview_url.present? %>
+                        <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
+                      <% end %>
+
+                      <% if @share_link.allow_download? && download_url.present? %>
+                        <a class="btn secondary xsmall" href="<%= download_url %>">Download</a>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+
+            </div>
+          </div>
+        </div>
+      <% end %>
+
     </div>
+
+    <%# ====== DIRECTLY SHARED FILES (for mixed shares) ====== %>
+    <% if defined?(@direct_cvs) && @direct_cvs.any? && !@files_only %>
+      <div class="drive-card" style="margin-bottom:12px;">
+        <div class="drive-scroll">
+          <div class="drive-list shared-files-list">
+
+            <div class="drive-header">
+              <div class="col-name">Directly shared files</div>
+              <div class="col-type">Type</div>
+              <div class="col-size">Size</div>
+              <div class="col-modified">Last modified</div>
+              <div class="col-actions">Actions</div>
+            </div>
+
+            <% @direct_cvs.each do |cv| %>
+              <% blob = cv.file&.blob %>
+              <% display_name = cv.title.presence || cv.file.filename.to_s %>
+              <% ext = cv.file.filename.extension.to_s.upcase %>
+              <% type_label = ext.present? ? ext : "PDF" %>
+              <% size_bytes = blob&.byte_size.to_i %>
+
+              <% preview_url  = @share_link.allow_preview?  ? file_preview_share_link_path(@share_link, cv_id: cv.id) : nil %>
+              <% download_url = @share_link.allow_download? ? file_download_share_link_path(@share_link, cv_id: cv.id) : nil %>
+
+              <div class="drive-row shared-row clickable-row" data-preview="<%= preview_url || "" %>">
+                <div class="col-name">
+                  <div class="file-line">
+                    <span class="file-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6"/>
+                      </svg>
+                    </span>
+
+                    <div class="file-text">
+                      <div class="file-name"><%= display_name %></div>
+                      <div class="file-sub"><%= cv.file.filename %></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-type"><span class="pill"><%= type_label %></span></div>
+
+                <div class="col-size">
+                  <span class="muted size-num" data-size-text><%= size_bytes %></span>
+                </div>
+
+                <div class="col-modified">
+                  <span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span>
+                </div>
+
+                <div class="col-actions">
+                  <div class="action-group">
+                    <% if @share_link.allow_preview? && preview_url.present? %>
+                      <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
+                    <% end %>
+
+                    <% if @share_link.allow_download? && download_url.present? %>
+                      <a class="btn secondary xsmall" href="<%= download_url %>">Download</a>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+
     <% if @subfolders.any? %>
       <div class="drive-card" style="margin-bottom:12px;">
         <div class="drive-scroll">

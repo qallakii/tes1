@@ -89,6 +89,37 @@ class ShareLinksController < ApplicationController
     redirect_to share_links_path, notice: "Share link created."
   end
 
+  def bulk_create_items
+    folder_ids = Array(params[:folder_ids]).map(&:to_s).reject(&:blank?)
+    cv_ids     = Array(params[:cv_ids]).map(&:to_s).reject(&:blank?)
+
+    if folder_ids.empty? && cv_ids.empty?
+      redirect_back fallback_location: dashboard_path, alert: "Select at least one folder or file to share."
+      return
+    end
+
+    folders = current_user.folders.where(id: folder_ids)
+
+    cvs = Cv.joins(:folder)
+            .where(id: cv_ids, folders: { user_id: current_user.id })
+            .with_attached_file
+
+    share_link = ShareLink.new(expires_at: nil)
+    share_link.user_id = current_user.id if ShareLink.column_names.include?("user_id")
+    share_link.save!
+
+    folders.each do |f|
+      ShareLinkFolder.find_or_create_by!(share_link: share_link, folder: f)
+    end
+
+    cvs.each do |cv|
+      ShareLinkCv.find_or_create_by!(share_link: share_link, cv: cv)
+    end
+
+    redirect_to share_links_path, notice: "Share link created."
+  end
+
+
   def destroy
     share_link = ShareLink.find(params[:id])
 
@@ -146,18 +177,20 @@ class ShareLinksController < ApplicationController
 
   # Public show (token)
   def show
-    # @share_link is loaded by set_share_link_by_token before_action
+    # Roots from join table (multi-folder share)
+    @folders = (@share_link.respond_to?(:all_folders) ? @share_link.all_folders : @share_link.folders).to_a
 
-    # Files-only share (ShareLinkCv)
-    @files_only = @share_link.cvs.any?
+    # Single-folder share (share_links.folder_id)
+    single_folder = (@share_link.respond_to?(:folder) && @share_link.folder.present?) ? @share_link.folder : nil
 
-    # Roots (folders directly attached to the share link via ShareLinkFolder)
-    @folders = @share_link.respond_to?(:all_folders) ? @share_link.all_folders : @share_link.folders
-    roots = (@folders || []).to_a
+    # ✅ Directly shared files (ShareLinkCv) — used for files-only and mixed shares
+    @direct_cvs = @share_link.cvs.with_attached_file.order(updated_at: :desc)
 
-    # Pick folder:
-    # - If folder_id is present: allow any descendant of any shared root folder
-    # - Else: if single-folder share (share_links.folder_id), show that folder
+    # ✅ Files-only mode ONLY when there are direct files AND there are NO folders at all
+    @files_only = @direct_cvs.any? && @folders.empty? && single_folder.nil?
+
+    # Pick which folder we are viewing
+    roots = @folders
     @folder = nil
 
     if params[:folder_id].present?
@@ -170,16 +203,20 @@ class ShareLinksController < ApplicationController
 
       @folder = Folder.find(wanted_id)
     else
-      # single-folder share link (created via create action with folder_id)
-      @folder = @share_link.folder if @share_link.respond_to?(:folder) && @share_link.folder.present?
+      # ✅ Default folder when opening link:
+      # 1) single-folder share → that folder
+      # 2) multi-folder share → first root folder
+      @folder = single_folder || roots.first
     end
 
+    # Files-only view
     if @files_only
-      @cvs = @share_link.cvs.with_attached_file.order(updated_at: :desc)
+      @cvs = @direct_cvs
       @subfolders = []
       return
     end
 
+    # Folder browsing view
     if @folder
       @subfolders = @folder.subfolders.order(updated_at: :desc)
       @cvs = @folder.cvs.with_attached_file.order(updated_at: :desc)
@@ -189,10 +226,7 @@ class ShareLinksController < ApplicationController
     end
   end
 
-
-
-
-
+  
   # Public preview via token (permission-checked)
   def preview
     return head :forbidden unless @share_link.allow_preview?
