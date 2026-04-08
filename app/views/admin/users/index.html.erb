@@ -1,34 +1,70 @@
-<div class="page-head">
-  <div>
-    <h1 class="page-title">Users</h1>
-    <div class="page-sub">Toggle admin access.</div>
-  </div>
-
-  <div style="display:flex; gap:10px; flex-wrap:wrap;">
-    <%= link_to "Back", admin_root_path, class: "btn" %>
-  </div>
-</div>
-
-<div class="card">
-  <div class="list">
-    <div class="list-head" style="grid-template-columns: 1fr 1fr 120px 120px;">
-      <div>Name</div>
-      <div>Email</div>
-      <div class="col-hide-sm">Admin</div>
-      <div>Actions</div>
+<div class="admin-shell">
+  <div class="admin-section-head">
+    <div>
+      <div class="admin-eyebrow">User Directory</div>
+      <h1 class="admin-title">Users</h1>
+      <div class="admin-subtitle">Manage accounts, invites, password resets, access level, and suspension status.</div>
     </div>
 
-    <% @users.each do |u| %>
-      <div class="list-row" style="grid-template-columns: 1fr 1fr 120px 120px;">
-        <div>
-          <span class="item-title"><%= u.name.presence || "—" %></span>
-        </div>
-        <div class="cell-muted"><%= u.email %></div>
-        <div class="cell-muted col-hide-sm"><%= u.admin? ? "Yes" : "No" %></div>
-        <div>
-          <%= link_to "Edit", edit_admin_user_path(u), class: "btn small" %>
-        </div>
-      </div>
+    <div class="admin-hero-actions">
+      <%= link_to "Back", admin_root_path, class: "btn secondary" %>
+      <%= link_to "Add user", new_admin_user_path, class: "btn primary" %>
+    </div>
+  </div>
+
+  <div class="admin-panel admin-toolbar-panel">
+    <div class="admin-toolbar-copy">
+      <div class="admin-card-kicker">Directory</div>
+      <div class="admin-card-title">Team management</div>
+      <div class="admin-toolbar-note"><%= pluralize(@users.count, "user") %> in the current result set.</div>
+    </div>
+    <%= form_with url: admin_users_path, method: :get, local: true, class: "admin-toolbar" do %>
+      <input class="drive-input admin-search" type="text" name="q" value="<%= @q %>" placeholder="Search users by name or email" />
     <% end %>
+  </div>
+
+  <div class="admin-panel">
+    <div class="admin-users-table">
+      <div class="admin-users-head">
+        <div>Name</div>
+        <div>Email</div>
+        <div>Role</div>
+        <div>Status</div>
+        <div>Actions</div>
+      </div>
+
+      <% if @users.any? %>
+        <% @users.each do |u| %>
+          <div class="admin-users-row">
+              <div>
+                <div class="admin-user-name"><%= u.name.presence || "Unnamed user" %></div>
+                <div class="admin-list-caption">Joined <%= u.created_at.strftime("%b %-d, %Y") %></div>
+              </div>
+            <div class="admin-user-email"><%= u.email %></div>
+            <div>
+              <span class="admin-badge <%= u.admin? ? 'is-admin' : 'is-user' %>">
+                <%= u.admin? ? "Admin" : "User" %>
+              </span>
+            </div>
+            <div>
+              <span class="admin-badge <%= u.suspended? ? 'is-suspended' : 'is-active' %>">
+                <%= u.suspended? ? "Suspended" : "Active" %>
+              </span>
+            </div>
+            <div class="admin-actions">
+              <%= link_to "Edit", edit_admin_user_path(u), class: "btn small secondary" %>
+              <%= button_to "Invite", send_invite_admin_user_path(u), method: :post, class: "btn small secondary", form: { class: "admin-inline-form" } %>
+              <%= button_to "Reset", reset_password_admin_user_path(u), method: :post, class: "btn small secondary", form: { class: "admin-inline-form" } %>
+              <%= button_to (u.suspended? ? "Activate" : "Suspend"), toggle_suspended_admin_user_path(u), method: :patch, class: "btn small #{u.suspended? ? 'secondary' : 'danger'}", form: { class: "admin-inline-form" } %>
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="admin-empty-state">
+          <div class="admin-empty-title">No users found</div>
+          <div class="admin-empty-copy">Try a different search or create a new account.</div>
+        </div>
+      <% end %>
+    </div>
   </div>
 </div>

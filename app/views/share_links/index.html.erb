@@ -1,6 +1,7 @@
 <div class="dashboard-page">
 
   <% if @share_links.any? %>
+    <div style="margin-bottom:12px; font-weight:700; color:#111827;">Links you created</div>
     <div class="drive-card">
       <div class="drive-scroll">
         <div class="drive-list share-links-list">
@@ -91,6 +92,84 @@
   <% else %>
     <div class="drive-card" style="padding:16px;">
       <div class="muted">No share links yet.</div>
+    </div>
+  <% end %>
+
+  <div style="height:16px;"></div>
+
+  <% if @received_share_links.any? %>
+    <div style="margin-bottom:12px; font-weight:700; color:#111827;">Shared with you</div>
+    <div class="drive-card">
+      <div class="drive-scroll">
+        <div class="drive-list share-links-list">
+
+          <div class="drive-header">
+            <div class="col-folder">Items</div>
+            <div class="col-url">From</div>
+            <div class="col-expires">Expires</div>
+            <div class="col-created">Created</div>
+            <div class="col-actions">Actions</div>
+          </div>
+
+          <% @received_share_links.each do |link| %>
+            <% folders = link.respond_to?(:all_folders) ? link.all_folders : [] %>
+            <% files = link.cvs.to_a %>
+            <% share_url = public_share_url(link.token) %>
+            <% item_label =
+              if folders.any?
+                label = folders.first.name
+                folders.size > 1 ? "#{label} (+#{folders.size - 1})" : label
+              elsif files.any?
+                label = files.first.title.presence || files.first.file.filename.to_s
+                files.size > 1 ? "#{label} (+#{files.size - 1})" : label
+              else
+                "Shared items"
+              end %>
+
+            <div class="drive-row share-row">
+              <div class="col-folder">
+                <span class="folder-name"><%= item_label %></span>
+              </div>
+
+              <div class="col-url">
+                <span class="muted"><%= link.user&.email || "Unknown sender" %></span>
+              </div>
+
+              <div class="col-expires">
+                <span class="muted">
+                  <% if link.expires_at.nil? %>
+                    Never
+                  <% elsif link.expires_at < Time.current %>
+                    Expired
+                  <% else %>
+                    <%= link.expires_at.strftime("%b %d, %Y %H:%M") %>
+                  <% end %>
+                </span>
+              </div>
+
+              <div class="col-created">
+                <span class="muted"><%= link.created_at.strftime("%b %d, %Y %H:%M") %></span>
+              </div>
+
+              <div class="col-actions">
+                <div class="action-group">
+                  <button type="button" class="btn secondary xsmall copy-btn" data-copy="<%= share_url %>">Copy</button>
+                  <%= link_to "Open",
+                    public_share_path(link.token),
+                    target: "_blank",
+                    rel: "noopener",
+                    class: "btn secondary xsmall" %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="drive-card" style="padding:16px;">
+      <div class="muted">Nothing has been shared with you yet.</div>
     </div>
   <% end %>
 

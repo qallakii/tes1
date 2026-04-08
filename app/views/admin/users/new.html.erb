@@ -1,0 +1,121 @@
+<div class="admin-shell">
+  <div class="admin-section-head">
+    <div>
+      <div class="admin-eyebrow">Create Account</div>
+      <h1 class="admin-title">Add user</h1>
+      <div class="admin-subtitle">Create a new account and generate an invite link in one step.</div>
+    </div>
+
+    <div class="admin-hero-actions">
+      <%= link_to "Back", admin_users_path, class: "btn secondary" %>
+    </div>
+  </div>
+
+  <div class="admin-edit-grid">
+    <div class="admin-panel admin-panel-form">
+      <div class="admin-form-intro">
+        <div class="admin-card-kicker">Setup</div>
+        <div class="admin-card-title">User details</div>
+        <div class="admin-form-copy">Set the account identity, choose access level, and decide how the first password should work.</div>
+      </div>
+      <%= form_with(model: @user, url: admin_users_path, method: :post, local: true) do |f| %>
+        <div class="form-row">
+          <label class="label">Name</label>
+          <%= f.text_field :name, class: "input" %>
+        </div>
+
+        <div class="form-row">
+          <label class="label">Email</label>
+          <%= f.email_field :email, class: "input" %>
+        </div>
+
+        <div class="form-row">
+          <label class="label">Role</label>
+          <label class="admin-checkbox-row">
+            <%= f.check_box :admin %>
+            <span>Give this user admin access</span>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label class="label">Password setup</label>
+          <div class="admin-radio-group">
+            <label class="admin-checkbox-row">
+              <%= radio_button_tag :password_mode, "password", params[:password_mode] != "temporary", data: { password_mode: "password" } %>
+              <span>Set a normal password now</span>
+            </label>
+            <label class="admin-checkbox-row">
+              <%= radio_button_tag :password_mode, "temporary", params[:password_mode] == "temporary", data: { password_mode: "temporary" } %>
+              <span>Set a temporary password and force change on first login</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row password-mode-panel" data-password-panel="password">
+          <label class="label">Password</label>
+          <%= f.password_field :password, class: "input", autocomplete: "new-password" %>
+        </div>
+
+        <div class="form-row password-mode-panel" data-password-panel="password">
+          <label class="label">Confirm password</label>
+          <%= f.password_field :password_confirmation, class: "input", autocomplete: "new-password" %>
+        </div>
+
+        <div class="form-row password-mode-panel" data-password-panel="temporary">
+          <label class="label">Temporary password</label>
+          <%= password_field_tag :temporary_password, params[:temporary_password], class: "input", autocomplete: "new-password" %>
+          <div class="admin-form-copy">The user can log in with this once, then must create a new password.</div>
+        </div>
+
+        <div class="admin-form-actions">
+          <%= f.submit "Create user", class: "btn primary" %>
+          <%= link_to "Cancel", admin_users_path, class: "btn secondary" %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="admin-side-stack">
+      <div class="admin-panel admin-panel-form">
+        <div class="admin-card-kicker">Flow</div>
+        <div class="admin-card-title">What happens next</div>
+        <div class="admin-note-list">
+          <div>An account is created immediately.</div>
+          <div>If you choose a normal password, the user can sign in directly.</div>
+          <div>If you choose a temporary password, the first login forces a password change.</div>
+        </div>
+      </div>
+
+      <div class="admin-panel admin-panel-form">
+        <div class="admin-card-kicker">Recommendation</div>
+        <div class="admin-card-title">Admin access</div>
+        <div class="admin-note-list">
+          <div>Only give admin access to trusted internal users.</div>
+          <div>Standard users can still upload, share, and manage their own content.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initAdminUserNewPage() {
+    const radios = document.querySelectorAll('input[name="password_mode"]');
+    const panels = document.querySelectorAll("[data-password-panel]");
+    if (radios.length === 0 || panels.length === 0) return;
+
+    const selected = () => Array.from(radios).find((radio) => radio.checked)?.value || "password";
+
+    const updatePanels = () => {
+      const mode = selected();
+      panels.forEach((panel) => {
+        panel.style.display = panel.dataset.passwordPanel === mode ? "" : "none";
+      });
+    };
+
+    radios.forEach((radio) => radio.addEventListener("change", updatePanels));
+    updatePanels();
+  }
+
+  document.addEventListener("turbo:load", initAdminUserNewPage);
+  document.addEventListener("DOMContentLoaded", initAdminUserNewPage);
+</script>

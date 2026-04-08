@@ -1,13 +1,13 @@
-<h2>Upload CV</h2>
+<h2>Upload File</h2>
 
 <button id="open-upload" class="upload-btn">
-  Upload CV
+  Upload File
 </button>
 
 <!-- Overlay -->
 <div id="upload-overlay" class="overlay" style="display:none;">
   <div class="upload-modal">
-    <h3>Select PDF file</h3>
+    <h3>Select file</h3>
 
     <%= form_with model: [@folder, @cv], local: true do |f| %>
 
@@ -20,7 +20,7 @@
       <% end %>
 
       <!-- hidden title to satisfy validation -->
-      <%= f.hidden_field :title, value: "CV" %>
+      <%= f.hidden_field :title, value: "File" %>
 
       <div>
         <%= f.file_field :file, required: true %>

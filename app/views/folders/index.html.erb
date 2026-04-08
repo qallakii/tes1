@@ -1,38 +1,39 @@
 <div class="dashboard-page">
 
   <div class="drive-page-head">
-    <div class="drive-head-left">
+    <div class="drive-head-main">
+      <div class="drive-head-left">
       <%= link_to "Create Folder", new_folder_path, class: "btn primary" %>
 
-      <%= form_with url: bulk_create_share_links_path, method: :post, local: true, data: { turbo: false }, id: "bulk-share-form", style: "display:inline;" do %>
-        <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+        <%= form_with url: bulk_create_share_links_path, method: :post, local: true, data: { turbo: false }, id: "bulk-share-form", class: "dashboard-bulk-actions" do %>
+          <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
 
-        <button id="bulk-share-btn" type="submit" class="btn secondary" style="display:none; margin-left:8px;">
-          Share
-        </button>
+          <button id="bulk-share-btn" type="button" class="btn secondary" style="display:none;">
+            Share
+          </button>
 
-        <!-- ✅ NEW: Bulk Download selected folders (uses same selected folder_ids[]) -->
-        <button
-          id="bulk-download-btn"
-          type="submit"
-          class="btn secondary"
-          style="display:none; margin-left:8px;"
-          formaction="<%= bulk_download_folders_path %>"
-          formmethod="post"
-          data-turbo="false">
-          Download
-        </button>
-      <% end %>
-    </div>
+          <button
+            id="bulk-download-btn"
+            type="submit"
+            class="btn secondary"
+            style="display:none;"
+            formaction="<%= bulk_download_folders_path %>"
+            formmethod="post"
+            data-turbo="false">
+            Download
+          </button>
+        <% end %>
+      </div>
 
-    <div class="drive-head-right">
-      <input id="folder-search" class="drive-input" type="text" placeholder="Search folders…" autocomplete="off" />
-      <select id="folder-sort" class="drive-select">
-        <option value="name_asc">Sort: Name (A–Z)</option>
-        <option value="name_desc">Sort: Name (Z–A)</option>
-        <option value="updated_desc" selected>Sort: Last modified (newest)</option>
-        <option value="updated_asc">Sort: Last modified (oldest)</option>
-      </select>
+      <div class="drive-head-right">
+        <input id="folder-search" class="drive-input" type="text" placeholder="Search folders…" autocomplete="off" />
+        <select id="folder-sort" class="drive-select">
+          <option value="name_asc">Sort: Name (A–Z)</option>
+          <option value="name_desc">Sort: Name (Z–A)</option>
+          <option value="updated_desc" selected>Sort: Last modified (newest)</option>
+          <option value="updated_asc">Sort: Last modified (oldest)</option>
+        </select>
+      </div>
     </div>
   </div>
 
@@ -116,6 +117,8 @@
 
 </div>
 
+<%= render "shared/share_modal" %>
+
 <style>
   /* page header row */
   .drive-page-head{
@@ -126,11 +129,32 @@
     flex-wrap:wrap;
     margin: 8px 0 16px 0;
   }
+  .drive-head-main{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:32px;
+    flex-wrap:wrap;
+    width:100%;
+  }
+  .drive-head-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .dashboard-bulk-actions{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    margin:0;
+  }
   .drive-head-right{
     display:flex;
     align-items:center;
     gap:10px;
     flex-wrap:wrap;
+    margin-left:auto;
   }
   .drive-input{
     width: min(520px, 74vw);
@@ -310,6 +334,17 @@
 
     if (search) search.addEventListener("input", apply, { signal });
     if (sort) sort.addEventListener("change", apply, { signal });
+
+    if (bulkShareBtn) {
+      bulkShareBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const folderIds = checks.filter((c) => c.checked).map((c) => c.value).filter(Boolean);
+        if (folderIds.length === 0) return;
+        if (typeof window.openShareModal === "function") {
+          window.openShareModal({ folderIds, cvIds: [] });
+        }
+      }, { signal });
+    }
 
     updateBulkUI();
     apply();

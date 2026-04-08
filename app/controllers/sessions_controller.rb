@@ -5,9 +5,17 @@ class SessionsController < ApplicationController
   def create
     user = User.find_by(email: params[:email])
 
-    if user&.authenticate(params[:password])
-      session[:user_id] = user.id
-      redirect_to dashboard_path
+    if user&.suspended?
+      flash.now[:alert] = "This account has been suspended."
+      render :new, status: :unprocessable_entity
+    elsif user&.authenticate(params[:password])
+      if user.force_password_change?
+        user.generate_password_reset_token!
+        redirect_to password_reset_path(user.reset_password_token), alert: "You must change your temporary password before continuing."
+      else
+        session[:user_id] = user.id
+        redirect_to(session.delete(:return_to).presence || dashboard_path)
+      end
     else
       flash.now[:alert] = "Invalid email or password"
       render :new, status: :unprocessable_entity

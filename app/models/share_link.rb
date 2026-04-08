@@ -10,6 +10,8 @@ class ShareLink < ApplicationRecord
 
   has_many :share_link_cvs, dependent: :destroy
   has_many :cvs, through: :share_link_cvs
+  has_many :share_link_accesses, dependent: :destroy
+  has_many :allowed_users, through: :share_link_accesses, source: :user
 
   def expired?
     expires_at.present? && expires_at < Time.current
@@ -25,5 +27,9 @@ class ShareLink < ApplicationRecord
 
   def disabled?
     respond_to?(:disabled) && !!self[:disabled]
+  end
+
+  def restricted_to_specific_people?
+    share_link_accesses.exists?
   end
 end

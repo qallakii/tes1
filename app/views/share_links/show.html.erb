@@ -3,8 +3,7 @@
   <% share_url = public_share_url(@share_link.token) %>
   <% folders = (@folders.presence || []).to_a %>
   <% selected_folder = @folder %>
-  <% direct_files = defined?(@direct_cvs) ? @direct_cvs : [] %>
-  <% mixed = direct_files.any? && folders.any? %>
+  <% direct_files = defined?(@direct_cvs) ? (@direct_cvs || []) : [] %>
 
   <div class="share-hero">
     <div class="share-hero-left">
@@ -52,17 +51,27 @@
     <div class="share-hero-right">
       <button type="button" class="btn secondary copy-btn" data-copy="<%= share_url %>">Copy link</button>
       <a class="btn primary" href="<%= share_url %>" target="_blank" rel="noopener">Open</a>
+      <%= link_to "Back to folders", public_share_path(@share_link.token), class: "btn secondary" %>
       <% unless current_user %>
         <%= link_to "Login", login_path, class: "btn secondary" %>
       <% end %>
+
+      <!-- ✅ Bulk actions (shows only when something is selected) -->
+      <div id="bulk-actions" style="display:none; margin-top:10px; align-items:center; gap:8px; width:100%; flex-wrap:wrap;">
+        <button id="bulk-open" class="btn secondary" type="button">Open</button>
+        <button id="bulk-preview" class="btn secondary" type="button">Preview</button>
+        <button id="bulk-download" class="btn secondary" type="button">Download</button>
+        <button id="bulk-clear" class="btn secondary" type="button">Clear</button>
+      </div>
     </div>
   </div>
 
-  <%# ====== FOLDERS LIST (click anywhere) ====== %>
+  <%# ====== FOLDERS LIST (when nothing selected) ====== %>
   <% unless selected_folder || @files_only %>
     <div class="drive-card" style="margin-bottom:12px;">
       <div class="drive-scroll">
         <div class="drive-list folders-pick-list" style="min-width:720px;">
+
           <div class="drive-header folders-pick-header">
             <div>Folder</div>
             <div style="text-align:right;">Action</div>
@@ -89,44 +98,55 @@
           <% if folders.empty? %>
             <div style="padding:16px;" class="muted">No folders found in this share link.</div>
           <% end %>
+
         </div>
       </div>
     </div>
   <% end %>
 
-  <%# ====== FILES ONLY MODE ====== %>
+  <%# ====== FILES ONLY MODE (MATCH folder/show style) ====== %>
   <% if @files_only %>
-    <% if @cvs.any? %>
-      <div class="drive-card">
-        <div class="drive-scroll">
-          <div class="drive-list shared-files-list">
+    <div class="drive-card">
+      <div class="drive-scroll">
+        <div class="drive-list cvs-list">
 
-            <div class="drive-header">
-              <div class="col-name">Name</div>
-              <div class="col-type">Type</div>
-              <div class="col-size">Size</div>
-              <div class="col-modified">Last modified</div>
-              <div class="col-actions">Actions</div>
-            </div>
+          <div class="drive-header">
+            <div class="col-cv-check"><input type="checkbox" id="select-all" /></div>
+            <div class="col-cv-name">Name</div>
+            <div class="col-cv-type">Type</div>
+            <div class="col-cv-size">Size</div>
+            <div class="col-cv-modified">Last modified</div>
+            <div class="col-cv-actions">Actions</div>
+          </div>
 
-            <% @cvs.each do |cv| %>
+          <% if (@cvs || []).any? %>
+            <% (@cvs || []).each do |cv| %>
               <% blob = cv.file&.blob %>
+              <% next unless blob %>
+
               <% display_name = cv.title.presence || cv.file.filename.to_s %>
               <% ext = cv.file.filename.extension.to_s.upcase %>
-              <% type_label = ext.present? ? ext : "PDF" %>
-              <% size_bytes = blob&.byte_size.to_i %>
+              <% type_label = ext.present? ? ext : "FILE" %>
+              <% size_bytes = blob.byte_size.to_i %>
 
-             <% preview_url  = file_preview_share_link_path(@share_link, cv_id: cv.id) %>
-             <% download_url = file_download_share_link_path(@share_link, cv_id: cv.id) %>
+              <% preview_url  = file_preview_share_link_path(@share_link, cv_id: cv.id) %>
+              <% download_url = file_download_share_link_path(@share_link, cv_id: cv.id) %>
 
+              <div class="drive-row cv-row clickable-row"
+                   data-kind="file"
+                   data-preview="<%= preview_url || "" %>"
+                   data-download="<%= download_url || "" %>">
 
-              <div class="drive-row shared-row clickable-row" data-preview="<%= preview_url || "" %>">
-                <div class="col-name">
+                <div class="col-cv-check">
+                  <input class="cv-check" type="checkbox" value="<%= cv.id %>" />
+                </div>
+
+                <div class="col-cv-name">
                   <div class="file-line">
-                    <span class="file-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <path d="M14 2v6h6"/>
+                    <span class="folder-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <path d="M14 2v6h6"></path>
                       </svg>
                     </span>
 
@@ -137,260 +157,170 @@
                   </div>
                 </div>
 
-                <div class="col-type"><span class="pill"><%= type_label %></span></div>
+                <div class="col-cv-type"><span class="pill"><%= type_label %></span></div>
+                <div class="col-cv-size"><span class="muted size-num" data-size-text><%= size_bytes %></span></div>
+                <div class="col-cv-modified"><span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span></div>
 
-                <div class="col-size">
-                  <span class="muted size-num" data-size-text><%= size_bytes %></span>
-                </div>
-
-                <div class="col-modified">
-                  <span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span>
-                </div>
-
-                <div class="col-actions">
-                  <div class="action-group">
-                    <% if @share_link.allow_preview? && preview_url %>
-                        <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
-                      <% end %>
-
-                      <% if @share_link.allow_download? && download_url %>
-                        <a class="btn secondary xsmall" href="<%= download_url %>">Download</a>
-                      <% end %>
-                  </div>
-                </div>
-              </div>
-            <% end %>
-
-          </div>
-        </div>
-      </div>
-    <% else %>
-      <div class="drive-card" style="padding:16px;">
-        <div class="muted">No files found in this share link.</div>
-      </div>
-    <% end %>
-  <% end %>
-
-  <%# ====== SELECTED FOLDER VIEW (ONLY ONE) ====== %>
-  <% if selected_folder %>
-    <div class="folder-sticky-bar">
-      <div class="folder-sticky-left">
-        <span class="folder-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-          </svg>
-        </span>
-        <div style="font-weight:800;"><%= selected_folder.name %></div>
-      </div>
-      <div class="folder-sticky-right">
-        <%= link_to "Back to folders", public_share_path(@share_link.token), class: "btn secondary" %>
-      </div>
-      <%# ====== DIRECTLY SHARED FILES (for mixed shares) ====== %>
-      <% if defined?(@direct_cvs) && @direct_cvs.any? && !@files_only %>
-        <div class="drive-card" style="margin-bottom:12px;">
-          <div class="drive-scroll">
-            <div class="drive-list shared-files-list">
-
-              <div class="drive-header">
-                <div class="col-name">Directly shared files</div>
-                <div class="col-type">Type</div>
-                <div class="col-size">Size</div>
-                <div class="col-modified">Last modified</div>
-                <div class="col-actions">Actions</div>
-              </div>
-
-              <% @direct_cvs.each do |cv| %>
-                <% blob = cv.file&.blob %>
-                <% display_name = cv.title.presence || cv.file.filename.to_s %>
-                <% ext = cv.file.filename.extension.to_s.upcase %>
-                <% type_label = ext.present? ? ext : "PDF" %>
-                <% size_bytes = blob&.byte_size.to_i %>
-
-                <% preview_url  = @share_link.allow_preview?  ? file_preview_share_link_path(@share_link, cv_id: cv.id) : nil %>
-                <% download_url = @share_link.allow_download? ? file_download_share_link_path(@share_link, cv_id: cv.id) : nil %>
-
-                <div class="drive-row shared-row clickable-row" data-preview="<%= preview_url || "" %>">
-                  <div class="col-name">
-                    <div class="file-line">
-                      <span class="file-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                          <path d="M14 2v6h6"/>
-                        </svg>
-                      </span>
-
-                      <div class="file-text">
-                        <div class="file-name"><%= display_name %></div>
-                        <div class="file-sub"><%= cv.file.filename %></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="col-type"><span class="pill"><%= type_label %></span></div>
-
-                  <div class="col-size">
-                    <span class="muted size-num" data-size-text><%= size_bytes %></span>
-                  </div>
-
-                  <div class="col-modified">
-                    <span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span>
-                  </div>
-
-                  <div class="col-actions">
-                    <div class="action-group">
-                      <% if @share_link.allow_preview? && preview_url.present? %>
-                        <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
-                      <% end %>
-
-                      <% if @share_link.allow_download? && download_url.present? %>
-                        <a class="btn secondary xsmall" href="<%= download_url %>">Download</a>
-                      <% end %>
-                    </div>
-                  </div>
-                </div>
-              <% end %>
-
-            </div>
-          </div>
-        </div>
-      <% end %>
-
-    </div>
-
-    <%# ====== DIRECTLY SHARED FILES (for mixed shares) ====== %>
-    <% if defined?(@direct_cvs) && @direct_cvs.any? && !@files_only %>
-      <div class="drive-card" style="margin-bottom:12px;">
-        <div class="drive-scroll">
-          <div class="drive-list shared-files-list">
-
-            <div class="drive-header">
-              <div class="col-name">Directly shared files</div>
-              <div class="col-type">Type</div>
-              <div class="col-size">Size</div>
-              <div class="col-modified">Last modified</div>
-              <div class="col-actions">Actions</div>
-            </div>
-
-            <% @direct_cvs.each do |cv| %>
-              <% blob = cv.file&.blob %>
-              <% display_name = cv.title.presence || cv.file.filename.to_s %>
-              <% ext = cv.file.filename.extension.to_s.upcase %>
-              <% type_label = ext.present? ? ext : "PDF" %>
-              <% size_bytes = blob&.byte_size.to_i %>
-
-              <% preview_url  = @share_link.allow_preview?  ? file_preview_share_link_path(@share_link, cv_id: cv.id) : nil %>
-              <% download_url = @share_link.allow_download? ? file_download_share_link_path(@share_link, cv_id: cv.id) : nil %>
-
-              <div class="drive-row shared-row clickable-row" data-preview="<%= preview_url || "" %>">
-                <div class="col-name">
-                  <div class="file-line">
-                    <span class="file-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <path d="M14 2v6h6"/>
-                      </svg>
-                    </span>
-
-                    <div class="file-text">
-                      <div class="file-name"><%= display_name %></div>
-                      <div class="file-sub"><%= cv.file.filename %></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="col-type"><span class="pill"><%= type_label %></span></div>
-
-                <div class="col-size">
-                  <span class="muted size-num" data-size-text><%= size_bytes %></span>
-                </div>
-
-                <div class="col-modified">
-                  <span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span>
-                </div>
-
-                <div class="col-actions">
+                <div class="col-cv-actions">
                   <div class="action-group">
                     <% if @share_link.allow_preview? && preview_url.present? %>
                       <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
                     <% end %>
-
                     <% if @share_link.allow_download? && download_url.present? %>
-                      <a class="btn secondary xsmall" href="<%= download_url %>">Download</a>
+                      <a class="btn secondary xsmall" href="<%= download_url %>" data-turbo="false" data-turbo-frame="_top">Download</a>
                     <% end %>
                   </div>
                 </div>
+
               </div>
             <% end %>
+          <% else %>
+            <div style="padding:16px;" class="muted">No files found in this share link.</div>
+          <% end %>
 
-          </div>
         </div>
       </div>
-    <% end %>
+    </div>
+  <% end %>
 
+  <%# ====== SELECTED FOLDER VIEW (ONE CARD, SAME GRID AS folder/show) ====== %>
+  <% if selected_folder && !@files_only %>
+    <div class="drive-card">
+      <div class="drive-scroll">
+        <div class="drive-list cvs-list">
 
-    <% if @subfolders.any? %>
-      <div class="drive-card" style="margin-bottom:12px;">
-        <div class="drive-scroll">
-          <div class="drive-list folders-pick-list" style="min-width:720px;">
-            <div class="drive-header folders-pick-header">
-              <div>Subfolder</div>
-              <div style="text-align:right;">Action</div>
-            </div>
+          <div class="drive-header">
+            <div class="col-cv-check"><input type="checkbox" id="select-all" /></div>
+            <div class="col-cv-name">Name</div>
+            <div class="col-cv-type">Type</div>
+            <div class="col-cv-size">Size</div>
+            <div class="col-cv-modified">Last modified</div>
+            <div class="col-cv-actions">Actions</div>
+          </div>
 
-            <% @subfolders.each do |sf| %>
-              <% open_url = public_share_path(@share_link.token, folder_id: sf.id) %>
-              <div class="drive-row folder-pick-row clickable-folder-row" data-open="<%= open_url %>">
-                <div class="folder-cell">
+          <%# Subfolders %>
+          <% (@subfolders || []).each do |sf| %>
+            <% open_url = public_share_path(@share_link.token, folder_id: sf.id) %>
+
+            <div class="drive-row folder-row clickable-folder-row"
+                 data-kind="folder"
+                 data-open="<%= open_url %>"
+                 data-download="<%= open_url %>">
+              <div class="col-cv-check">
+                <input class="folder-check" type="checkbox" value="<%= sf.id %>" />
+              </div>
+
+              <div class="col-cv-name">
+                <div class="file-line">
                   <span class="folder-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                     </svg>
                   </span>
-                  <div class="folder-name"><%= sf.name %></div>
-                </div>
 
-                <div style="text-align:right;">
+                  <div class="file-text">
+                    <div class="file-name"><%= sf.name %></div>
+                    <div class="file-sub">Folder</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-cv-type"><span class="pill">FOLDER</span></div>
+              <div class="col-cv-size"><span class="muted">—</span></div>
+              <div class="col-cv-modified"><span class="muted"><%= sf.updated_at.strftime("%b %d, %Y %H:%M") %></span></div>
+
+              <div class="col-cv-actions">
+                <div class="action-group">
                   <%= link_to "Open", open_url, class: "btn secondary xsmall" %>
                 </div>
               </div>
-            <% end %>
-
-          </div>
-        </div>
-      </div>
-    <% end %>
-
-
-    <% if @cvs.any? %>
-      <div class="drive-card">
-        <div class="drive-scroll">
-          <div class="drive-list shared-files-list">
-
-            <div class="drive-header">
-              <div class="col-name">Name</div>
-              <div class="col-type">Type</div>
-              <div class="col-size">Size</div>
-              <div class="col-modified">Last modified</div>
-              <div class="col-actions">Actions</div>
             </div>
+          <% end %>
 
-            <% @cvs.each do |cv| %>
+          <%# Direct files (mixed shares) %>
+          <% direct_files.each do |cv| %>
+            <% blob = cv.file&.blob %>
+            <% next unless blob %>
+
+            <% display_name = cv.title.presence || cv.file.filename.to_s %>
+            <% ext = cv.file.filename.extension.to_s.upcase %>
+            <% type_label = ext.present? ? ext : "FILE" %>
+            <% size_bytes = blob.byte_size.to_i %>
+
+            <% preview_url  = @share_link.allow_preview?  ? file_preview_share_link_path(@share_link, cv_id: cv.id) : nil %>
+            <% download_url = @share_link.allow_download? ? file_download_share_link_path(@share_link, cv_id: cv.id) : nil %>
+
+            <div class="drive-row cv-row clickable-row"
+                 data-kind="file"
+                 data-preview="<%= preview_url || "" %>"
+                 data-download="<%= download_url || "" %>">
+
+              <div class="col-cv-check">
+                <input class="cv-check" type="checkbox" value="<%= cv.id %>" />
+              </div>
+
+              <div class="col-cv-name">
+                <div class="file-line">
+                  <span class="folder-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <path d="M14 2v6h6"></path>
+                    </svg>
+                  </span>
+
+                  <div class="file-text">
+                    <div class="file-name"><%= display_name %></div>
+                    <div class="file-sub"><%= cv.file.filename %> • Direct share</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-cv-type"><span class="pill"><%= type_label %></span></div>
+              <div class="col-cv-size"><span class="muted size-num" data-size-text><%= size_bytes %></span></div>
+              <div class="col-cv-modified"><span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span></div>
+
+              <div class="col-cv-actions">
+                <div class="action-group">
+                  <% if preview_url.present? %>
+                    <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
+                  <% end %>
+                  <% if download_url.present? %>
+                    <a class="btn secondary xsmall" href="<%= download_url %>" data-turbo="false" data-turbo-frame="_top">Download</a>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+
+          <%# Files inside selected folder %>
+          <% if (@cvs || []).any? %>
+            <% (@cvs || []).each do |cv| %>
               <% blob = cv.file&.blob %>
+              <% next unless blob %>
+
               <% display_name = cv.title.presence || cv.file.filename.to_s %>
               <% ext = cv.file.filename.extension.to_s.upcase %>
-              <% type_label = ext.present? ? ext : "PDF" %>
-              <% size_bytes = blob&.byte_size.to_i %>
+              <% type_label = ext.present? ? ext : "FILE" %>
+              <% size_bytes = blob.byte_size.to_i %>
 
               <% preview_url  = @share_link.allow_preview?  ? file_preview_share_link_path(@share_link, cv_id: cv.id) : nil %>
               <% download_url = @share_link.allow_download? ? file_download_share_link_path(@share_link, cv_id: cv.id) : nil %>
 
-              <div class="drive-row shared-row clickable-row" data-preview="<%= preview_url || "" %>">
-                <div class="col-name">
+              <div class="drive-row cv-row clickable-row"
+                   data-kind="file"
+                   data-preview="<%= preview_url || "" %>"
+                   data-download="<%= download_url || "" %>">
+
+                <div class="col-cv-check">
+                  <input class="cv-check" type="checkbox" value="<%= cv.id %>" />
+                </div>
+
+                <div class="col-cv-name">
                   <div class="file-line">
-                    <span class="file-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <path d="M14 2v6h6"/>
+                    <span class="folder-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <path d="M14 2v6h6"></path>
                       </svg>
                     </span>
 
@@ -401,40 +331,30 @@
                   </div>
                 </div>
 
-                <div class="col-type">
-                  <span class="pill"><%= type_label %></span>
-                </div>
+                <div class="col-cv-type"><span class="pill"><%= type_label %></span></div>
+                <div class="col-cv-size"><span class="muted size-num" data-size-text><%= size_bytes %></span></div>
+                <div class="col-cv-modified"><span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span></div>
 
-                <div class="col-size">
-                  <span class="muted size-num" data-size-text><%= size_bytes %></span>
-                </div>
-
-                <div class="col-modified">
-                  <span class="muted"><%= cv.updated_at.strftime("%b %d, %Y %H:%M") %></span>
-                </div>
-
-                <div class="col-actions">
+                <div class="col-cv-actions">
                   <div class="action-group">
-                    <% if @share_link.allow_preview? && preview_url.present? %>
+                    <% if preview_url.present? %>
                       <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
                     <% end %>
-
-                    <% if @share_link.allow_download? && download_url.present? %>
-                      <a class="btn secondary xsmall" href="<%= download_url %>">Download</a>
+                    <% if download_url.present? %>
+                      <a class="btn secondary xsmall" href="<%= download_url %>" data-turbo="false" data-turbo-frame="_top">Download</a>
                     <% end %>
                   </div>
                 </div>
+
               </div>
             <% end %>
+          <% elsif (@subfolders || []).empty? && direct_files.empty? %>
+            <div style="padding:16px;" class="muted">This folder is empty.</div>
+          <% end %>
 
-          </div>
         </div>
       </div>
-    <% else %>
-      <div class="drive-card" style="padding:16px;">
-        <div class="muted">No files in this folder.</div>
-      </div>
-    <% end %>
+    </div>
   <% end %>
 
 </div>
@@ -456,6 +376,11 @@
   .share-sub{ font-size: 13px; }
   .share-hero-right{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 
+  .clickable-row,
+  .clickable-folder-row{
+    cursor: pointer;
+  }
+
   .share-badges{ display:flex; gap:8px; flex-wrap:wrap; }
   .badge{
     display:inline-flex;
@@ -469,86 +394,6 @@
   .badge.neutral{ background: rgba(37,99,235,0.10); }
   .badge.danger{ background: rgba(185,28,28,0.12); }
 
-  .folders-pick-list .folders-pick-header,
-  .folders-pick-list .folder-pick-row{
-    display:grid;
-    grid-template-columns: 1fr 160px;
-    gap: 12px;
-    padding: 10px 14px;
-    align-items:center;
-    font-size: 13px;
-    line-height: 1.35;
-  }
-  .folders-pick-list .folders-pick-header{
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    background: rgba(0,0,0,0.02);
-    border-bottom: 1px solid rgba(0,0,0,0.08);
-  }
-  .folder-pick-row{
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-    transition: background 0.15s ease;
-    cursor:pointer;
-  }
-  .folder-pick-row:hover{ background: rgba(0,0,0,0.02); }
-
-  .folder-cell{ display:flex; align-items:center; gap:10px; min-width:0; }
-  .folder-icon{ opacity:0.85; display:flex; }
-  .folder-name{ font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-
-  .folder-sticky-bar{
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: #fff;
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 12px;
-    padding: 10px 14px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  .folder-sticky-left{ display:flex; align-items:center; gap:10px; min-width:0; }
-  .folder-sticky-right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-
-  .shared-files-list { min-width: 980px; }
-  .shared-files-list .drive-header,
-  .shared-files-list .drive-row{
-    display:grid;
-    grid-template-columns: minmax(320px, 1fr) 90px 110px 190px 220px;
-    gap: 12px;
-    padding: 10px 14px;
-    align-items:center;
-    font-size: 13px;
-    line-height: 1.35;
-  }
-  .shared-files-list .drive-header{
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    background: rgba(0,0,0,0.02);
-    border-bottom: 1px solid rgba(0,0,0,0.08);
-  }
-  .shared-row{
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-    transition: background 0.15s ease;
-  }
-  .shared-row:hover{ background: rgba(0,0,0,0.02); }
-  .clickable-row{ cursor:pointer; }
-
-  .file-line{ display:flex; align-items:flex-start; gap:10px; }
-  .file-text{ min-width:0; }
-  .file-name{ font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .file-sub{ font-size: 11.5px; opacity: 0.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px; }
-
-  .size-num{ font-variant-numeric: tabular-nums; }
-  .col-size{ justify-self:end; }
-  .action-group{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .btn.xsmall { padding: 5px 9px; border-radius: 10px; line-height: 1; font-size: 12px; }
-
   @media (max-width: 900px) {
     .share-hero{ align-items:flex-start; flex-direction:column; }
   }
@@ -556,13 +401,10 @@
 
 <script>
   function initShareLinkShow() {
-    document.querySelectorAll(".clickable-folder-row").forEach((row) => {
-      row.addEventListener("click", (e) => {
-        if (e.target.closest("a, button")) return;
-        const url = row.getAttribute("data-open");
-        if (url) window.location.href = url;
-      });
-    });
+    // Turbo-safe: remove old listeners
+    if (window.__shareShowAbort) window.__shareShowAbort.abort();
+    window.__shareShowAbort = new AbortController();
+    const { signal } = window.__shareShowAbort;
 
     function humanSize(bytes) {
       const units = ["B","KB","MB","GB","TB"];
@@ -571,19 +413,14 @@
       while (b >= 1024 && i < units.length - 1) { b = b / 1024; i++; }
       return (i === 0 ? b.toFixed(0) : b.toFixed(1)) + " " + units[i];
     }
+
+    // Format sizes
     document.querySelectorAll("[data-size-text]").forEach((el) => {
       const raw = parseInt(el.textContent || "0", 10);
       el.textContent = humanSize(raw);
     });
 
-    document.querySelectorAll(".clickable-row").forEach((row) => {
-      row.addEventListener("click", (e) => {
-        if (e.target.closest(".col-actions")) return;
-        const url = row.getAttribute("data-preview");
-        if (url) window.open(url, "_blank", "noopener");
-      });
-    });
-
+    // Copy link
     document.querySelectorAll(".copy-btn").forEach((btn) => {
       if (btn.dataset.bound === "1") return;
       btn.dataset.bound = "1";
@@ -603,10 +440,178 @@
         const old = btn.textContent;
         btn.textContent = "Copied";
         setTimeout(() => (btn.textContent = old), 900);
-      });
+      }, { signal });
     });
+
+    // Row selection
+    const selectAll = document.getElementById("select-all");
+    const bulkBar = document.getElementById("bulk-actions");
+    const bulkOpen = document.getElementById("bulk-open");
+    const bulkPreview = document.getElementById("bulk-preview");
+    const bulkDownload = document.getElementById("bulk-download");
+    const bulkClear = document.getElementById("bulk-clear");
+
+    const fileChecks = Array.from(document.querySelectorAll(".cv-check"));
+    const folderChecks = Array.from(document.querySelectorAll(".folder-check"));
+
+    // stop click on checkbox from triggering row click logic twice
+    [...fileChecks, ...folderChecks].forEach((cb) => {
+      cb.addEventListener("click", (e) => e.stopPropagation(), { signal });
+    });
+
+    function selectedRows() {
+      const rows = [];
+      fileChecks.forEach((cb) => {
+        if (cb.checked) {
+          const row = cb.closest(".drive-row");
+          if (row) rows.push(row);
+        }
+      });
+      folderChecks.forEach((cb) => {
+        if (cb.checked) {
+          const row = cb.closest(".drive-row");
+          if (row) rows.push(row);
+        }
+      });
+      return rows;
+    }
+
+    function updateBulk() {
+      const any = selectedRows().length > 0;
+      if (bulkBar) bulkBar.style.display = any ? "flex" : "none";
+
+      if (selectAll) {
+        const all = [...fileChecks, ...folderChecks];
+        selectAll.checked = all.length > 0 && all.every((c) => c.checked);
+      }
+    }
+
+    if (selectAll) {
+      selectAll.addEventListener("change", () => {
+        const val = selectAll.checked;
+        fileChecks.forEach((c) => (c.checked = val));
+        folderChecks.forEach((c) => (c.checked = val));
+        updateBulk();
+      }, { signal });
+    }
+
+    fileChecks.forEach((c) => c.addEventListener("change", updateBulk, { signal }));
+    folderChecks.forEach((c) => c.addEventListener("change", updateBulk, { signal }));
+
+    // Click row opens item; checkboxes remain the selection mechanism
+    document.querySelectorAll(".drive-row").forEach((row) => {
+      // only rows that have a checkbox
+      const cb = row.querySelector(".cv-check, .folder-check");
+      if (!cb) return;
+
+      row.addEventListener("click", (e) => {
+        if (e.target.closest("a, button, input, label, form")) return;
+        if (e.target.closest(".col-cv-actions")) return;
+
+        const kind = row.getAttribute("data-kind");
+
+        if (kind === "folder") {
+          const url = row.getAttribute("data-open");
+          if (url) window.location.href = url;
+          return;
+        }
+
+        // file
+        const url = row.getAttribute("data-preview");
+        if (url) window.open(url, "_blank", "noopener");
+      }, { signal });
+    });
+
+    // Also keep your “folders pick list” behavior (when nothing selected)
+    document.querySelectorAll(".folders-pick-list .clickable-folder-row").forEach((row) => {
+      row.addEventListener("click", (e) => {
+        if (e.target.closest("a, button")) return;
+        const url = row.getAttribute("data-open");
+        if (url) window.location.href = url;
+      }, { signal });
+    });
+
+    function openMany(urls, newTab) {
+      const unique = Array.from(new Set(urls.filter(Boolean)));
+      unique.forEach((u, idx) => {
+        // small stagger helps popup blockers a bit
+        setTimeout(() => {
+          if (newTab) window.open(u, "_blank", "noopener");
+          else window.location.href = u;
+        }, idx * 120);
+      });
+    }
+
+    function collect(kind) {
+      const rows = selectedRows();
+      return rows.map((r) => r.getAttribute(kind)).filter(Boolean);
+    }
+
+    if (bulkOpen) {
+      bulkOpen.addEventListener("click", (e) => {
+        e.preventDefault();
+        const rows = selectedRows();
+        if (rows.length === 0) return;
+
+        const folderOpens = rows.filter(r => r.getAttribute("data-kind") === "folder").map(r => r.getAttribute("data-open"));
+        const filePreviews = rows.filter(r => r.getAttribute("data-kind") === "file").map(r => r.getAttribute("data-preview"));
+
+        // Open folders in same tab if only one folder; otherwise new tabs
+        if (folderOpens.length === 1 && filePreviews.length === 0) {
+          window.location.href = folderOpens[0];
+          return;
+        }
+
+        // Otherwise open everything in new tabs
+        openMany(folderOpens, true);
+        openMany(filePreviews, true);
+      }, { signal });
+    }
+
+    if (bulkPreview) {
+      bulkPreview.addEventListener("click", (e) => {
+        e.preventDefault();
+        const rows = selectedRows();
+        if (rows.length === 0) return;
+
+        const previews = rows
+          .filter(r => r.getAttribute("data-kind") === "file")
+          .map(r => r.getAttribute("data-preview"));
+
+        openMany(previews, true);
+      }, { signal });
+    }
+
+    if (bulkDownload) {
+      bulkDownload.addEventListener("click", (e) => {
+        e.preventDefault();
+        const rows = selectedRows();
+        if (rows.length === 0) return;
+
+        const downloads = rows.map(r => r.getAttribute("data-download")).filter(Boolean);
+        // downloads happen by navigation/new tabs
+        openMany(downloads, true);
+      }, { signal });
+    }
+
+    if (bulkClear) {
+      bulkClear.addEventListener("click", (e) => {
+        e.preventDefault();
+        fileChecks.forEach((c) => (c.checked = false));
+        folderChecks.forEach((c) => (c.checked = false));
+        if (selectAll) selectAll.checked = false;
+        updateBulk();
+      }, { signal });
+    }
+
+    updateBulk();
   }
 
   document.addEventListener("turbo:load", initShareLinkShow);
   document.addEventListener("DOMContentLoaded", initShareLinkShow);
+
+  document.addEventListener("turbo:before-cache", () => {
+    if (window.__shareShowAbort) window.__shareShowAbort.abort();
+    window.__shareShowAbort = null;
+  });
 </script>

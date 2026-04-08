@@ -7,8 +7,11 @@ Rails.application.routes.draw do
 
   get "/signup", to: "users#new"
   resources :users, only: [:create]
+  resource :profile, only: [:show, :edit, :update]
+  resources :password_resets, only: [:edit, :update], param: :token
 
   get "/dashboard", to: "folders#index"
+  get "/shared_with_me", to: "shared_with_me#index", as: :shared_with_me
 
   get "/search", to: "search#index", as: :search
 
@@ -58,4 +61,15 @@ Rails.application.routes.draw do
 
   get "/recents", to: "recents#index", as: :recents
   resources :recents, only: [:index]
+
+  namespace :admin do
+    root "dashboard#index"
+    resources :users, only: [:index, :new, :create, :edit, :update] do
+      member do
+        post :send_invite
+        post :reset_password
+        patch :toggle_suspended
+      end
+    end
+  end
 end

@@ -1,37 +1,119 @@
-<div class="page-head">
-  <div>
-    <h1 class="page-title">Admin</h1>
-    <div class="page-sub">Overview and management</div>
+<div class="admin-shell">
+  <div class="admin-hero">
+    <div class="admin-hero-copy">
+      <div class="admin-eyebrow">Control Center</div>
+      <h1 class="admin-title">Admin Panel</h1>
+      <div class="admin-subtitle">Overview, account operations, and platform health for the whole workspace.</div>
+      <div class="admin-hero-meta">
+        <span>Users <strong><%= @users_count %></strong></span>
+        <span>Files <strong><%= @files_count %></strong></span>
+        <span>Storage <strong><%= format_bytes(@storage_bytes) %></strong></span>
+      </div>
+    </div>
+
+    <div class="admin-hero-actions admin-hero-actions-vertical">
+      <%= link_to "Manage users", admin_users_path, class: "btn primary" %>
+      <%= link_to "Add user", new_admin_user_path, class: "btn secondary" %>
+    </div>
   </div>
 
-  <div style="display:flex; gap:10px; flex-wrap:wrap;">
-    <%= link_to "Manage users", admin_users_path, class: "btn primary" %>
-  </div>
-</div>
+  <div class="admin-stat-grid">
+    <div class="admin-stat-card">
+      <div class="admin-stat-label">Users</div>
+      <div class="admin-stat-value"><%= @users_count %></div>
+    </div>
 
-<div class="admin-grid">
-  <div class="card stat">
-    <div class="k">Users</div>
-    <div class="v"><%= @users_count %></div>
+    <div class="admin-stat-card">
+      <div class="admin-stat-label">Admins</div>
+      <div class="admin-stat-value"><%= @admins_count %></div>
+    </div>
+
+    <div class="admin-stat-card">
+      <div class="admin-stat-label">Suspended</div>
+      <div class="admin-stat-value"><%= @suspended_users_count %></div>
+    </div>
+
+    <div class="admin-stat-card">
+      <div class="admin-stat-label">Folders</div>
+      <div class="admin-stat-value"><%= @folders_count %></div>
+    </div>
+
+    <div class="admin-stat-card">
+      <div class="admin-stat-label">Files</div>
+      <div class="admin-stat-value"><%= @files_count %></div>
+    </div>
+
+    <div class="admin-stat-card">
+      <div class="admin-stat-label">Share links</div>
+      <div class="admin-stat-value"><%= @share_links_count %></div>
+    </div>
+
+    <div class="admin-stat-card admin-stat-card-wide">
+      <div class="admin-stat-label">Storage used</div>
+      <div class="admin-stat-value"><%= format_bytes(@storage_bytes) %></div>
+    </div>
   </div>
 
-  <div class="card stat">
-    <div class="k">Folders</div>
-    <div class="v"><%= @folders_count %></div>
-  </div>
+  <div class="admin-dashboard-grid">
+    <div class="admin-panel admin-panel-form admin-feature-panel">
+      <div class="admin-card-kicker">Operations</div>
+      <div class="admin-card-title">Quick actions</div>
+      <div class="admin-side-actions">
+        <%= link_to "Open user management", admin_users_path, class: "btn primary" %>
+        <%= link_to "Create a new user", new_admin_user_path, class: "btn secondary" %>
+      </div>
+      <div class="admin-note-list admin-note-list-spaced">
+        <div>Use this area to issue invites, reset passwords, suspend accounts, and review activity.</div>
+        <div>Suspended users cannot sign in or use password reset links until reactivated.</div>
+      </div>
+    </div>
 
-  <div class="card stat">
-    <div class="k">Files</div>
-    <div class="v"><%= @files_count %></div>
-  </div>
+    <div class="admin-panel admin-panel-form">
+      <div class="admin-card-kicker">Accounts</div>
+      <div class="admin-card-title">Recent users</div>
+      <div class="admin-list-stack">
+        <% if @recent_users.any? %>
+          <% @recent_users.each do |user| %>
+            <div class="admin-list-item">
+              <div>
+                <div class="admin-user-name"><%= user.name.presence || "Unnamed user" %></div>
+                <div class="admin-user-email"><%= user.email %></div>
+                <div class="admin-list-caption">Joined <%= user.created_at.strftime("%b %-d, %Y") %></div>
+              </div>
+              <div class="admin-list-meta">
+                <span class="admin-badge <%= user.admin? ? 'is-admin' : 'is-user' %>"><%= user.admin? ? "Admin" : "User" %></span>
+                <span class="admin-badge <%= user.suspended? ? 'is-suspended' : 'is-active' %>"><%= user.suspended? ? "Suspended" : "Active" %></span>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="admin-empty-copy">No users yet.</div>
+        <% end %>
+      </div>
+    </div>
 
-  <div class="card stat">
-    <div class="k">Share links</div>
-    <div class="v"><%= @share_links_count %></div>
-  </div>
-
-  <div class="card stat">
-    <div class="k">Storage used</div>
-    <div class="v"><%= format_bytes(@storage_bytes) %></div>
+    <div class="admin-panel admin-panel-form">
+      <div class="admin-card-kicker">Sharing</div>
+      <div class="admin-card-title">Recent share links</div>
+      <div class="admin-list-stack">
+        <% if @recent_share_links.any? %>
+          <% @recent_share_links.each do |share_link| %>
+            <div class="admin-list-item">
+              <div>
+                <div class="admin-user-name"><%= share_link.token %></div>
+                <div class="admin-user-email"><%= share_link.user&.email || "Unknown owner" %></div>
+                <div class="admin-list-caption">Created <%= share_link.created_at.strftime("%b %-d, %Y") %></div>
+              </div>
+              <div class="admin-list-meta">
+                <span class="admin-badge is-user"><%= share_link.expires_at.present? ? "Expiring" : "No expiry" %></span>
+                <span class="admin-side-label"><%= share_link.require_login? ? "Restricted" : "Open link" %></span>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="admin-empty-copy">No share links created yet.</div>
+        <% end %>
+      </div>
+    </div>
   </div>
 </div>

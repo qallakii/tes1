@@ -21,6 +21,15 @@ class ApplicationController < ActionController::Base
   def require_login
     return if logged_in?
 
+    session[:return_to] = request.fullpath if request.get?
     redirect_to login_path, alert: "Please log in to continue."
+  end
+
+  def require_admin
+    require_login
+    return if performed?
+    return if current_user&.admin?
+
+    redirect_to dashboard_path, alert: "Admin access required."
   end
 end

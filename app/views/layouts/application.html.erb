@@ -94,6 +94,30 @@
                     </span>
                     <span>Shared Links</span>
                   <% end %>
+
+                  <%= link_to shared_with_me_path, class: "drive-side-link #{'active' if controller_name == 'shared_with_me'}" do %>
+                    <span class="drive-side-ic" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                      </svg>
+                    </span>
+                    <span>Shared With Me</span>
+                  <% end %>
+
+                  <% if current_user&.admin? %>
+                    <%= link_to admin_root_path, class: "drive-side-link #{'active' if controller_path.start_with?('admin/')}" do %>
+                      <span class="drive-side-ic" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z"></path>
+                          <path d="M9.5 12.5l1.5 1.5 3.5-4"></path>
+                        </svg>
+                      </span>
+                      <span>Admin</span>
+                    <% end %>
+                  <% end %>
                 </div>
               </aside>
             <% end %>
@@ -106,6 +130,26 @@
 
             <% if flash[:alert] %>
               <p class="flash alert"><%= flash[:alert] %></p>
+            <% end %>
+
+            <% if flash[:share_url] %>
+              <div class="share-result-banner">
+                <div class="share-result-copy">
+                  <div class="share-result-title">Share link</div>
+                  <a class="share-result-url" href="<%= flash[:share_url] %>" target="_blank" rel="noopener"><%= flash[:share_url] %></a>
+                </div>
+                <button type="button" class="btn secondary xsmall" data-copy="<%= flash[:share_url] %>">Copy</button>
+              </div>
+            <% end %>
+
+            <% if flash[:admin_action_url] %>
+              <div class="share-result-banner">
+                <div class="share-result-copy">
+                  <div class="share-result-title"><%= flash[:admin_action_title].presence || "Generated link" %></div>
+                  <a class="share-result-url" href="<%= flash[:admin_action_url] %>" target="_blank" rel="noopener"><%= flash[:admin_action_url] %></a>
+                </div>
+                <button type="button" class="btn secondary xsmall" data-copy="<%= flash[:admin_action_url] %>">Copy</button>
+              </div>
             <% end %>
 
             <%= yield %>
@@ -122,6 +166,26 @@
 
       <% if flash[:alert] %>
         <p class="flash alert"><%= flash[:alert] %></p>
+      <% end %>
+
+      <% if flash[:share_url] %>
+        <div class="share-result-banner">
+          <div class="share-result-copy">
+            <div class="share-result-title">Share link</div>
+            <a class="share-result-url" href="<%= flash[:share_url] %>" target="_blank" rel="noopener"><%= flash[:share_url] %></a>
+          </div>
+          <button type="button" class="btn secondary xsmall" data-copy="<%= flash[:share_url] %>">Copy</button>
+        </div>
+      <% end %>
+
+      <% if flash[:admin_action_url] %>
+        <div class="share-result-banner">
+          <div class="share-result-copy">
+            <div class="share-result-title"><%= flash[:admin_action_title].presence || "Generated link" %></div>
+            <a class="share-result-url" href="<%= flash[:admin_action_url] %>" target="_blank" rel="noopener"><%= flash[:admin_action_url] %></a>
+          </div>
+          <button type="button" class="btn secondary xsmall" data-copy="<%= flash[:admin_action_url] %>">Copy</button>
+        </div>
       <% end %>
 
       <%= yield %>

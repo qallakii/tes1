@@ -2,6 +2,7 @@ class ShareLinksController < ApplicationController
   before_action :require_login, except: [ :show, :preview, :download, :unlock ]
   before_action :set_share_link_by_token, only: [ :show, :preview, :download, :unlock ]
   before_action :enforce_require_login_if_needed!, only: [ :show, :preview, :download, :unlock ]
+  before_action :enforce_specific_access_if_needed!, only: [ :show, :preview, :download, :unlock ]
   before_action :enforce_not_disabled!, only: [ :show, :preview, :download, :unlock ]
   before_action :enforce_password_if_needed!, only: [ :show, :preview, :download ]
 
@@ -9,6 +10,12 @@ class ShareLinksController < ApplicationController
     @share_links = ShareLink
       .left_joins(:folder)
       .where("folders.user_id = ? OR share_links.user_id = ?", current_user.id, current_user.id)
+      .distinct
+      .order(created_at: :desc)
+
+    @received_share_links = current_user.accessible_share_links
+      .includes(:user, :folders, :cvs)
+      .where.not(user_id: current_user.id)
       .distinct
       .order(created_at: :desc)
   end
@@ -39,7 +46,7 @@ class ShareLinksController < ApplicationController
     share_link.user_id = current_user.id if ShareLink.column_names.include?("user_id")
     share_link.save!
 
-    redirect_to share_links_path, notice: "Share link created."
+    redirect_after_share_created(share_link)
   end
 
   def bulk_create
@@ -59,7 +66,7 @@ class ShareLinksController < ApplicationController
       ShareLinkFolder.find_or_create_by!(share_link: share_link, folder: f)
     end
 
-    redirect_to share_links_path, notice: "Share link created."
+    redirect_after_share_created(share_link)
   end
 
   def bulk_create_files
@@ -86,7 +93,7 @@ class ShareLinksController < ApplicationController
       ShareLinkCv.find_or_create_by!(share_link: share_link, cv: cv)
     end
 
-    redirect_to share_links_path, notice: "Share link created."
+    redirect_after_share_created(share_link)
   end
 
   def bulk_create_items
@@ -104,7 +111,17 @@ class ShareLinksController < ApplicationController
             .where(id: cv_ids, folders: { user_id: current_user.id })
             .with_attached_file
 
-    share_link = ShareLink.new(expires_at: nil)
+    expires_at = parse_share_expires_at
+    return if performed?
+
+    audience = params[:share_audience].to_s
+    allowed_users = resolve_share_users(audience)
+    return if performed?
+
+    share_link = ShareLink.new(
+      expires_at: expires_at,
+      require_login: audience == "specific_people"
+    )
     share_link.user_id = current_user.id if ShareLink.column_names.include?("user_id")
     share_link.save!
 
@@ -116,7 +133,14 @@ class ShareLinksController < ApplicationController
       ShareLinkCv.find_or_create_by!(share_link: share_link, cv: cv)
     end
 
-    redirect_to share_links_path, notice: "Share link created."
+    allowed_users.each do |user|
+      ShareLinkAccess.find_or_create_by!(share_link: share_link, user: user)
+    end
+
+    respond_to do |format|
+      format.html { redirect_after_share_created(share_link) }
+      format.json { render json: { share_url: public_share_url(share_link.token) } }
+    end
   end
 
 
@@ -267,6 +291,13 @@ class ShareLinksController < ApplicationController
     redirect_to login_path, alert: "Please login to access this share link."
   end
 
+  def enforce_specific_access_if_needed!
+    return unless @share_link.restricted_to_specific_people?
+    return if current_user && @share_link.share_link_accesses.exists?(user_id: current_user.id)
+
+    redirect_to dashboard_path, alert: "You do not have access to this share link."
+  end
+
   def enforce_not_disabled!
     return unless @share_link.respond_to?(:disabled) && @share_link.disabled?
     render plain: "This share link is disabled.", status: :gone
@@ -298,5 +329,48 @@ class ShareLinksController < ApplicationController
     cv = Cv.joins(:folder).with_attached_file.where(id: cv_id, folders: { id: allowed_folder_ids }).first
     raise ActiveRecord::RecordNotFound unless cv&.file&.attached?
     cv
+  end
+
+  def parse_share_expires_at
+    raw_expires = params[:expires_at].to_s.strip
+    return nil if raw_expires.blank?
+
+    expires_at = Time.zone.parse(raw_expires)
+    return expires_at if expires_at.present?
+
+    redirect_back fallback_location: dashboard_path, alert: "Invalid expiry date."
+    nil
+  end
+
+  def resolve_share_users(audience)
+    return [] unless audience == "specific_people"
+
+    emails = params[:share_emails].to_s
+      .split(/[\n,;]/)
+      .map { |email| email.strip.downcase }
+      .reject(&:blank?)
+      .uniq
+
+    if emails.empty?
+      redirect_back fallback_location: dashboard_path, alert: "Enter at least one email address for specific people sharing."
+      return []
+    end
+
+    users = User.where("LOWER(email) IN (?)", emails).to_a
+    found_emails = users.map { |user| user.email.to_s.downcase }
+    missing_emails = emails - found_emails
+
+    if missing_emails.any?
+      redirect_back fallback_location: dashboard_path, alert: "These users do not exist: #{missing_emails.join(', ')}"
+      return []
+    end
+
+    users
+  end
+
+  def redirect_after_share_created(share_link)
+    flash[:notice] = "Share link created."
+    flash[:share_url] = public_share_url(share_link.token)
+    redirect_back fallback_location: share_links_path
   end
 end
