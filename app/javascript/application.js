@@ -1,9 +1,14 @@
 import "@hotwired/turbo-rails"
+import "admin_user_new"
 import "copy_buttons"
 import "controllers"
 import "folder_show"
+import "folders_index"
 import "profile_dropdown"
+import "recents_index"
 import "share_modal"
+import "share_links_new"
+import "shared_with_me"
 
 // IMPORTANT:
 // Do NOT import "@rails/ujs" when using importmap unless you explicitly pinned it.

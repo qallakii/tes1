@@ -1,7 +1,7 @@
-<div class="dashboard-page">
+<div class="dashboard-page" data-share-links-index>
 
   <% if @share_links.any? %>
-    <div style="margin-bottom:12px; font-weight:700; color:#111827;">Links you created</div>
+    <div class="share-links-section-title">Links you created</div>
     <div class="drive-card">
       <div class="drive-scroll">
         <div class="drive-list share-links-list">
@@ -32,7 +32,7 @@
                     <span class="folder-name">
                       <%= first_folder.name %>
                       <% if folder_count > 1 %>
-                        <span class="muted" style="font-weight:500;">(+<%= folder_count - 1 %>)</span>
+                        <span class="muted share-links-folder-extra">(+<%= folder_count - 1 %>)</span>
                       <% end %>
                     </span>
                   <% end %>
@@ -90,15 +90,15 @@
       </div>
     </div>
   <% else %>
-    <div class="drive-card" style="padding:16px;">
+    <div class="drive-card share-links-empty-card">
       <div class="muted">No share links yet.</div>
     </div>
   <% end %>
 
-  <div style="height:16px;"></div>
+  <div class="share-links-spacer"></div>
 
   <% if @received_share_links.any? %>
-    <div style="margin-bottom:12px; font-weight:700; color:#111827;">Shared with you</div>
+    <div class="share-links-section-title">Shared with you</div>
     <div class="drive-card">
       <div class="drive-scroll">
         <div class="drive-list share-links-list">
@@ -168,92 +168,9 @@
       </div>
     </div>
   <% else %>
-    <div class="drive-card" style="padding:16px;">
+    <div class="drive-card share-links-empty-card">
       <div class="muted">Nothing has been shared with you yet.</div>
     </div>
   <% end %>
 
 </div>
-
-<style>
-  .share-links-list { min-width: 980px; }
-
-  .share-links-list .drive-header,
-  .share-links-list .drive-row{
-    display:grid;
-    grid-template-columns: 220px 380px 150px 150px 190px;
-    gap: 12px;
-    padding: 10px 14px;
-    align-items:center;
-    font-size: 13px;
-    line-height: 1.35;
-  }
-
-  .share-links-list .drive-header{
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    background: rgba(0,0,0,0.02);
-    border-bottom: 1px solid rgba(0,0,0,0.08);
-  }
-
-  .share-row{
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-    transition: background 0.15s ease;
-  }
-  .share-row:hover{ background: rgba(0,0,0,0.02); }
-
-  .folder-link{ display:flex; align-items:center; gap:10px; min-width:0; }
-  .folder-icon{ opacity:0.85; display:flex; }
-  .folder-name{
-    font-weight:600;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    min-width:0;
-  }
-
-  .url-line{ min-width:0; }
-  .url-text{
-    display:block;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    color:#2563eb;
-    font-size: 12.5px;
-  }
-  .url-text:hover{ text-decoration: underline; }
-
-  .action-group{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .inline-form { display:inline-block; margin:0; }
-  .btn.xsmall { padding: 5px 9px; border-radius: 10px; line-height: 1; font-size: 12px; }
-</style>
-
-<script>
-  function initShareLinksIndex() {
-    document.querySelectorAll(".copy-btn").forEach((btn) => {
-      if (btn.dataset.bound === "1") return;
-      btn.dataset.bound = "1";
-
-      btn.addEventListener("click", async () => {
-        const text = btn.getAttribute("data-copy");
-        try {
-          await navigator.clipboard.writeText(text);
-        } catch (e) {
-          const ta = document.createElement("textarea");
-          ta.value = text;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand("copy");
-          document.body.removeChild(ta);
-        }
-        const old = btn.textContent;
-        btn.textContent = "Copied";
-        setTimeout(() => (btn.textContent = old), 900);
-      });
-    });
-  }
-
-  document.addEventListener("turbo:load", initShareLinksIndex);
-  document.addEventListener("DOMContentLoaded", initShareLinksIndex);
-</script>

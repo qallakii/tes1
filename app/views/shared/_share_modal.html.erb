@@ -1,11 +1,11 @@
-<div id="share-modal" class="share-modal-overlay" style="display:none;" data-share-modal>
+<div id="share-modal" class="share-modal-overlay" data-share-modal hidden>
   <div class="share-modal-card">
     <div class="share-modal-head">
-      <h3 style="margin:0;">Share items</h3>
+      <h3 class="share-modal-title">Share items</h3>
       <button type="button" class="btn secondary xsmall" data-share-close>Close</button>
     </div>
 
-    <div class="muted" style="font-size:13px; margin-top:6px;">
+    <div class="muted share-modal-subtitle">
       Choose how long the link should stay active and who can open it.
     </div>
 
@@ -27,20 +27,20 @@
           </label>
         </div>
 
-        <div class="share-modal-emails" data-share-emails-wrap style="display:none;">
+        <div class="share-modal-emails" data-share-emails-wrap hidden>
           <label class="share-modal-label" for="share-emails">Email addresses</label>
           <textarea
             id="share-emails"
             class="drive-input share-modal-textarea"
             data-share-emails
             placeholder="Enter one or more user emails, separated by commas or new lines"></textarea>
-          <div class="muted" style="font-size:12px; margin-top:6px;">
+          <div class="muted share-modal-help">
             Only existing registered users can be added.
           </div>
         </div>
       </div>
 
-      <div data-share-result-view style="display:none;">
+      <div data-share-result-view hidden>
         <div class="share-result-title">Share link created</div>
         <a class="share-result-url share-result-url-modal" href="#" target="_blank" rel="noopener" data-share-result-url></a>
       </div>
@@ -48,7 +48,7 @@
 
     <div class="share-modal-actions">
       <button type="button" class="btn secondary" data-share-cancel>Cancel</button>
-      <button type="button" class="btn secondary" data-share-copy style="display:none;">Copy link</button>
+      <button type="button" class="btn secondary" data-share-copy hidden>Copy link</button>
       <button type="button" class="btn primary" data-share-confirm>Create share link</button>
     </div>
   </div>

@@ -1,4 +1,4 @@
-<div class="dashboard-page">
+<div class="dashboard-page" data-folders-index>
 
   <div class="drive-page-head">
     <div class="drive-head-main">
@@ -8,15 +8,15 @@
         <%= form_with url: bulk_create_share_links_path, method: :post, local: true, data: { turbo: false }, id: "bulk-share-form", class: "dashboard-bulk-actions" do %>
           <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
 
-          <button id="bulk-share-btn" type="button" class="btn secondary" style="display:none;">
+          <button id="bulk-share-btn" type="button" class="btn secondary folders-index-bulk-btn" hidden>
             Share
           </button>
 
           <button
             id="bulk-download-btn"
             type="submit"
-            class="btn secondary"
-            style="display:none;"
+            class="btn secondary folders-index-bulk-btn"
+            hidden
             formaction="<%= bulk_download_folders_path %>"
             formmethod="post"
             data-turbo="false">
@@ -105,7 +105,7 @@
       </div>
     </div>
 
-    <div id="folder-no-results" class="no-results" style="display:none;">
+    <div id="folder-no-results" class="no-results folders-index-no-results" hidden>
       No folders match your search.
     </div>
 
@@ -118,244 +118,3 @@
 </div>
 
 <%= render "shared/share_modal" %>
-
-<style>
-  /* page header row */
-  .drive-page-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    flex-wrap:wrap;
-    margin: 8px 0 16px 0;
-  }
-  .drive-head-main{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:32px;
-    flex-wrap:wrap;
-    width:100%;
-  }
-  .drive-head-left{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-  .dashboard-bulk-actions{
-    display:inline-flex;
-    align-items:center;
-    gap:10px;
-    margin:0;
-  }
-  .drive-head-right{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    flex-wrap:wrap;
-    margin-left:auto;
-  }
-  .drive-input{
-    width: min(520px, 74vw);
-    padding: 9px 11px;
-    border: 1px solid rgba(0,0,0,0.12);
-    border-radius: 12px;
-    outline: none;
-    font-size: 13px;
-    background:#fff;
-  }
-  .drive-select{
-    padding: 9px 11px;
-    border: 1px solid rgba(0,0,0,0.12);
-    border-radius: 12px;
-    background:#fff;
-    font-size: 13px;
-  }
-
-  /* reuse drive card feel from your folder page */
-  .drive-card {
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 12px;
-    background: #fff;
-    overflow: hidden;
-  }
-  .drive-scroll { overflow-x: auto; overflow-y: hidden; }
-
-  .folders-list { min-width: 720px; }
-
-  .folders-list .drive-header,
-  .folders-list .drive-row{
-    display:grid;
-    grid-template-columns: 44px minmax(320px, 1fr) 220px 240px;
-    gap: 12px;
-    padding: 10px 14px;
-    align-items:center;
-    font-size: 13px;
-    line-height: 1.35;
-  }
-
-  .folders-list .drive-header{
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    background: rgba(0,0,0,0.02);
-    border-bottom: 1px solid rgba(0,0,0,0.08);
-  }
-  .folders-list .drive-row{
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-  }
-  .folders-list .drive-row:hover{ background: rgba(0,0,0,0.02); }
-
-  .col-folder-check{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
-  .col-folder-check input[type="checkbox"]{
-    width:16px;
-    height:16px;
-    cursor:pointer;
-  }
-
-  .folder-link{
-    display:flex;
-    align-items:center;
-    gap:10px;
-  }
-  .folder-icon{ opacity:0.85; display:flex; }
-  .folder-name{
-    font-weight:600;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    max-width:100%;
-  }
-
-  .col-folder-actions{ justify-self:end; }
-  .action-group{
-    display:flex;
-    gap:8px;
-    align-items:center;
-    flex-wrap:wrap;
-  }
-
-  .inline-form { display:inline-block; margin:0; }
-  .btn.xsmall { padding: 5px 9px; border-radius: 10px; line-height: 1; font-size: 12px; }
-
-  .no-results {
-    padding: 14px;
-    margin-top: 10px;
-    border-radius: 12px;
-    background: rgba(0,0,0,0.02);
-    border: 1px solid rgba(0,0,0,0.06);
-    font-size: 13px;
-  }
-</style>
-
-<script>
-  function initDashboardFolders() {
-    // If we already bound listeners on a previous Turbo visit, clean them first
-    if (window.__dashFoldersAbort) window.__dashFoldersAbort.abort();
-    window.__dashFoldersAbort = new AbortController();
-    const { signal } = window.__dashFoldersAbort;
-
-    const search = document.getElementById("folder-search");
-    const sort = document.getElementById("folder-sort");
-    const rows = Array.from(document.querySelectorAll(".folder-row"));
-    const list = document.querySelector(".folders-list");
-    const noResults = document.getElementById("folder-no-results");
-
-    const bulkShareBtn = document.getElementById("bulk-share-btn");
-    const bulkDownloadBtn = document.getElementById("bulk-download-btn");
-
-    const selectAll = document.getElementById("select-all-folders");
-    const checks = Array.from(document.querySelectorAll(".folder-select"));
-
-    if (!rows.length) return;
-
-    function updateBulkUI() {
-      const any = checks.some((c) => c.checked);
-
-      if (bulkShareBtn) bulkShareBtn.style.display = any ? "inline-flex" : "none";
-      if (bulkDownloadBtn) bulkDownloadBtn.style.display = any ? "inline-flex" : "none";
-
-      if (selectAll) {
-        const all = checks.length > 0 && checks.every((c) => c.checked);
-        const none = checks.every((c) => !c.checked);
-        selectAll.checked = all;
-        selectAll.indeterminate = !all && !none;
-      }
-    }
-
-    function sortRows(visibleRows) {
-      if (!list) return;
-
-      const mode = (sort && sort.value) ? sort.value : "updated_desc";
-      visibleRows.sort((a, b) => {
-        const an = a.getAttribute("data-name") || "";
-        const bn = b.getAttribute("data-name") || "";
-        const au = parseInt(a.getAttribute("data-updated") || "0", 10);
-        const bu = parseInt(b.getAttribute("data-updated") || "0", 10);
-
-        if (mode === "name_asc") return an.localeCompare(bn);
-        if (mode === "name_desc") return bn.localeCompare(an);
-        if (mode === "updated_asc") return au - bu;
-        return bu - au;
-      });
-
-      visibleRows.forEach(r => list.appendChild(r));
-    }
-
-    function apply() {
-      const q = (search && search.value ? search.value : "").trim().toLowerCase();
-      const visible = [];
-
-      rows.forEach((row) => {
-        const name = row.getAttribute("data-name") || "";
-        const match = !q || name.includes(q);
-        row.style.display = match ? "" : "none";
-        if (match) visible.push(row);
-      });
-
-      if (noResults) noResults.style.display = (q && visible.length === 0) ? "block" : "none";
-      sortRows(visible);
-    }
-
-    // Bind events every Turbo load (safe, because we abort old ones)
-    if (selectAll) {
-      selectAll.addEventListener("change", () => {
-        checks.forEach((c) => (c.checked = selectAll.checked));
-        updateBulkUI();
-      }, { signal });
-    }
-
-    checks.forEach((c) => c.addEventListener("change", updateBulkUI, { signal }));
-
-    if (search) search.addEventListener("input", apply, { signal });
-    if (sort) sort.addEventListener("change", apply, { signal });
-
-    if (bulkShareBtn) {
-      bulkShareBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        const folderIds = checks.filter((c) => c.checked).map((c) => c.value).filter(Boolean);
-        if (folderIds.length === 0) return;
-        if (typeof window.openShareModal === "function") {
-          window.openShareModal({ folderIds, cvIds: [] });
-        }
-      }, { signal });
-    }
-
-    updateBulkUI();
-    apply();
-  }
-
-  document.addEventListener("turbo:load", initDashboardFolders);
-  document.addEventListener("DOMContentLoaded", initDashboardFolders);
-
-  // IMPORTANT: when Turbo caches the page, kill listeners so next visit works perfectly
-  document.addEventListener("turbo:before-cache", () => {
-    if (window.__dashFoldersAbort) window.__dashFoldersAbort.abort();
-    window.__dashFoldersAbort = null;
-  });
-</script>

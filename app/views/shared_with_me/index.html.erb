@@ -1,11 +1,11 @@
-<div class="dashboard-page">
+<div class="dashboard-page" data-shared-with-me>
   <div class="drive-page-head">
     <div class="drive-head-main">
       <div class="drive-head-left">
         <div>
-          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #2563eb;">Recipient View</div>
-          <h1 style="margin: 6px 0 0; font-size: 28px; color: #0f172a;">Shared With Me</h1>
-          <div class="muted" style="margin-top: 4px;">Folders and files other users explicitly shared with your account.</div>
+          <div class="shared-with-me-kicker">Recipient View</div>
+          <h1 class="shared-with-me-title">Shared With Me</h1>
+          <div class="muted shared-with-me-subtitle">Folders and files other users explicitly shared with your account.</div>
         </div>
       </div>
     </div>
@@ -31,7 +31,7 @@
           <% @shared_entries.each do |entry| %>
             <% is_folder = entry.item_type == :folder %>
             <% item_name = is_folder ? entry.folder.name : (entry.cv.title.presence || entry.cv.file.filename.to_s) %>
-            <% open_url = is_folder ? public_share_path(entry.share_link.token, folder_id: entry.folder.id) : public_share_path(entry.share_link.token) %>
+            <% open_url = is_folder ? public_share_path(entry.share_link.token, folder_id: entry.folder.id) : share_link_file_preview_path(entry.share_link, cv_id: entry.cv.id) %>
             <div class="drive-row shared-item-row" data-open-url="<%= open_url %>">
               <div class="col-item-name">
                 <a href="<%= open_url %>" class="folder-link">
@@ -80,6 +80,8 @@
                   <% else %>
                     <%= link_to "Open",
                       open_url,
+                      target: "_blank",
+                      rel: "noopener",
                       class: "btn secondary xsmall" %>
                     <%= link_to "Download",
                       share_link_file_download_path(entry.share_link, cv_id: entry.cv.id),
@@ -98,113 +100,3 @@
     </div>
   <% end %>
 </div>
-
-<style>
-  .shared-section-head{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin: 0 0 10px;
-  }
-
-  .shared-section-head h2{
-    margin:0;
-    font-size: 18px;
-    color:#0f172a;
-  }
-
-  .shared-count{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    min-width: 28px;
-    height: 28px;
-    padding: 0 10px;
-    border-radius: 999px;
-    background: #eff6ff;
-    color: #1d4ed8;
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  .shared-items-list{
-    min-width: 860px;
-  }
-
-  .shared-items-list .drive-header,
-  .shared-items-list .shared-item-row{
-    display:grid;
-    grid-template-columns: minmax(260px, 1.1fr) 110px minmax(220px, 1fr) 180px 200px;
-    gap: 12px;
-    padding: 10px 14px;
-    align-items:center;
-    font-size: 13px;
-    line-height: 1.35;
-  }
-
-  .shared-items-list .drive-header{
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    background: rgba(0,0,0,0.02);
-    border-bottom: 1px solid rgba(0,0,0,0.08);
-  }
-
-  .shared-item-row{
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-    cursor: pointer;
-  }
-
-  .shared-item-row:last-child{
-    border-bottom: 0;
-  }
-
-  .shared-item-row:hover{
-    background: rgba(0,0,0,0.02);
-  }
-
-  .shared-empty-card{
-    padding: 16px;
-  }
-
-  .shared-type-badge{
-    display:inline-flex;
-    align-items:center;
-    padding: 5px 9px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-    border: 1px solid transparent;
-  }
-
-  .shared-type-badge.is-folder{
-    background: #eff6ff;
-    color: #1d4ed8;
-    border-color: #bfdbfe;
-  }
-
-  .shared-type-badge.is-file{
-    background: #f8fafc;
-    color: #334155;
-    border-color: #e2e8f0;
-  }
-</style>
-
-<script>
-  function initSharedWithMePage() {
-    document.querySelectorAll(".shared-item-row").forEach((row) => {
-      if (row.dataset.bound === "1") return;
-      row.dataset.bound = "1";
-
-      row.addEventListener("click", (event) => {
-        if (event.target.closest("a, button, form")) return;
-
-        const url = row.dataset.openUrl;
-        if (url) window.location.href = url;
-      });
-    });
-  }
-
-  document.addEventListener("turbo:load", initSharedWithMePage);
-  document.addEventListener("DOMContentLoaded", initSharedWithMePage);
-</script>

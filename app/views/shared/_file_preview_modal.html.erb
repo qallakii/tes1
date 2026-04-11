@@ -1,0 +1,30 @@
+<div id="file-preview-overlay" class="file-preview-overlay" hidden>
+  <div class="file-preview-card">
+    <div class="file-preview-head">
+      <div class="file-preview-title-wrap">
+        <div class="file-preview-kicker">Preview</div>
+        <div id="file-preview-title" class="file-preview-title">File preview</div>
+      </div>
+
+      <div class="file-preview-actions">
+        <a id="file-preview-download" class="btn secondary" href="#" data-turbo="false" data-turbo-frame="_top">Download</a>
+        <button id="file-preview-close" type="button" class="btn secondary">X</button>
+      </div>
+    </div>
+
+    <div class="file-preview-body">
+      <iframe id="file-preview-frame" class="file-preview-frame" title="File preview" hidden></iframe>
+      <video id="file-preview-video" class="file-preview-video" controls playsinline hidden></video>
+      <img id="file-preview-image" class="file-preview-image" alt="File preview" hidden />
+      <audio id="file-preview-audio" class="file-preview-audio" controls hidden></audio>
+
+      <div id="file-preview-fallback" class="file-preview-fallback" hidden>
+        <div class="muted">This file cannot be previewed directly in the page.</div>
+        <div class="file-preview-fallback-actions">
+          <a id="file-preview-open-new" class="btn secondary" href="#" target="_blank" rel="noopener">Open in new tab</a>
+          <a id="file-preview-download-fallback" class="btn primary" href="#" data-turbo="false" data-turbo-frame="_top">Download</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

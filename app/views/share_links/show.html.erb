@@ -41,7 +41,7 @@
         <% if @files_only %>
           Only the selected files are visible here.
         <% elsif selected_folder %>
-          You can preview files in a new tab and download them.
+          You can preview files directly here and download them when needed.
         <% else %>
           Click a folder to view the files inside.
         <% end %>
@@ -128,6 +128,7 @@
               <% ext = cv.file.filename.extension.to_s.upcase %>
               <% type_label = ext.present? ? ext : "FILE" %>
               <% size_bytes = blob.byte_size.to_i %>
+              <% content_type = blob.content_type.to_s %>
 
               <% preview_url  = file_preview_share_link_path(@share_link, cv_id: cv.id) %>
               <% download_url = file_download_share_link_path(@share_link, cv_id: cv.id) %>
@@ -135,7 +136,9 @@
               <div class="drive-row cv-row clickable-row"
                    data-kind="file"
                    data-preview="<%= preview_url || "" %>"
-                   data-download="<%= download_url || "" %>">
+                   data-download="<%= download_url || "" %>"
+                   data-preview-kind="<%= content_type %>"
+                   data-preview-title="<%= display_name %>">
 
                 <div class="col-cv-check">
                   <input class="cv-check" type="checkbox" value="<%= cv.id %>" />
@@ -164,7 +167,14 @@
                 <div class="col-cv-actions">
                   <div class="action-group">
                     <% if @share_link.allow_preview? && preview_url.present? %>
-                      <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
+                      <button type="button"
+                              class="btn secondary xsmall share-preview-btn"
+                              data-preview="<%= preview_url %>"
+                              data-download="<%= download_url %>"
+                              data-preview-kind="<%= content_type %>"
+                              data-preview-title="<%= display_name %>">
+                        Preview
+                      </button>
                     <% end %>
                     <% if @share_link.allow_download? && download_url.present? %>
                       <a class="btn secondary xsmall" href="<%= download_url %>" data-turbo="false" data-turbo-frame="_top">Download</a>
@@ -246,6 +256,7 @@
             <% ext = cv.file.filename.extension.to_s.upcase %>
             <% type_label = ext.present? ? ext : "FILE" %>
             <% size_bytes = blob.byte_size.to_i %>
+            <% content_type = blob.content_type.to_s %>
 
             <% preview_url  = @share_link.allow_preview?  ? file_preview_share_link_path(@share_link, cv_id: cv.id) : nil %>
             <% download_url = @share_link.allow_download? ? file_download_share_link_path(@share_link, cv_id: cv.id) : nil %>
@@ -253,7 +264,9 @@
             <div class="drive-row cv-row clickable-row"
                  data-kind="file"
                  data-preview="<%= preview_url || "" %>"
-                 data-download="<%= download_url || "" %>">
+                 data-download="<%= download_url || "" %>"
+                 data-preview-kind="<%= content_type %>"
+                 data-preview-title="<%= display_name %>">
 
               <div class="col-cv-check">
                 <input class="cv-check" type="checkbox" value="<%= cv.id %>" />
@@ -282,7 +295,14 @@
               <div class="col-cv-actions">
                 <div class="action-group">
                   <% if preview_url.present? %>
-                    <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
+                    <button type="button"
+                            class="btn secondary xsmall share-preview-btn"
+                            data-preview="<%= preview_url %>"
+                            data-download="<%= download_url %>"
+                            data-preview-kind="<%= content_type %>"
+                            data-preview-title="<%= display_name %>">
+                      Preview
+                    </button>
                   <% end %>
                   <% if download_url.present? %>
                     <a class="btn secondary xsmall" href="<%= download_url %>" data-turbo="false" data-turbo-frame="_top">Download</a>
@@ -302,6 +322,7 @@
               <% ext = cv.file.filename.extension.to_s.upcase %>
               <% type_label = ext.present? ? ext : "FILE" %>
               <% size_bytes = blob.byte_size.to_i %>
+              <% content_type = blob.content_type.to_s %>
 
               <% preview_url  = @share_link.allow_preview?  ? file_preview_share_link_path(@share_link, cv_id: cv.id) : nil %>
               <% download_url = @share_link.allow_download? ? file_download_share_link_path(@share_link, cv_id: cv.id) : nil %>
@@ -309,7 +330,9 @@
               <div class="drive-row cv-row clickable-row"
                    data-kind="file"
                    data-preview="<%= preview_url || "" %>"
-                   data-download="<%= download_url || "" %>">
+                   data-download="<%= download_url || "" %>"
+                   data-preview-kind="<%= content_type %>"
+                   data-preview-title="<%= display_name %>">
 
                 <div class="col-cv-check">
                   <input class="cv-check" type="checkbox" value="<%= cv.id %>" />
@@ -338,7 +361,14 @@
                 <div class="col-cv-actions">
                   <div class="action-group">
                     <% if preview_url.present? %>
-                      <a class="btn secondary xsmall" href="<%= preview_url %>" target="_blank" rel="noopener">Preview</a>
+                      <button type="button"
+                              class="btn secondary xsmall share-preview-btn"
+                              data-preview="<%= preview_url %>"
+                              data-download="<%= download_url %>"
+                              data-preview-kind="<%= content_type %>"
+                              data-preview-title="<%= display_name %>">
+                        Preview
+                      </button>
                     <% end %>
                     <% if download_url.present? %>
                       <a class="btn secondary xsmall" href="<%= download_url %>" data-turbo="false" data-turbo-frame="_top">Download</a>
@@ -358,6 +388,8 @@
   <% end %>
 
 </div>
+
+<%= render "shared/file_preview_modal" %>
 
 <style>
   .share-hero{
@@ -419,6 +451,107 @@
       const raw = parseInt(el.textContent || "0", 10);
       el.textContent = humanSize(raw);
     });
+
+    const previewOverlay = document.getElementById("file-preview-overlay");
+    const previewTitle = document.getElementById("file-preview-title");
+    const previewDownload = document.getElementById("file-preview-download");
+    const previewClose = document.getElementById("file-preview-close");
+    const previewFrame = document.getElementById("file-preview-frame");
+    const previewVideo = document.getElementById("file-preview-video");
+    const previewImage = document.getElementById("file-preview-image");
+    const previewAudio = document.getElementById("file-preview-audio");
+    const previewFallback = document.getElementById("file-preview-fallback");
+    const previewOpenNew = document.getElementById("file-preview-open-new");
+    const previewDownloadFallback = document.getElementById("file-preview-download-fallback");
+
+    function hidePreviewNodes() {
+      [previewFrame, previewVideo, previewImage, previewAudio, previewFallback].forEach((node) => {
+        if (!node) return;
+        node.hidden = true;
+      });
+
+      if (previewFrame) previewFrame.src = "";
+      if (previewVideo) {
+        previewVideo.pause();
+        previewVideo.removeAttribute("src");
+        previewVideo.load();
+      }
+      if (previewImage) previewImage.removeAttribute("src");
+      if (previewAudio) {
+        previewAudio.pause();
+        previewAudio.removeAttribute("src");
+        previewAudio.load();
+      }
+    }
+
+    function previewKind(contentType) {
+      const type = String(contentType || "").toLowerCase();
+      if (type.includes("pdf")) return "pdf";
+      if (type.startsWith("video/")) return "video";
+      if (type.startsWith("image/")) return "image";
+      if (type.startsWith("audio/")) return "audio";
+      return "fallback";
+    }
+
+    function closePreviewModal() {
+      hidePreviewNodes();
+      if (previewOverlay) previewOverlay.hidden = true;
+    }
+
+    function openPreviewModal({ previewUrl, downloadUrl, title, contentType }) {
+      if (!previewOverlay || !previewUrl) {
+        if (previewUrl) window.open(previewUrl, "_blank", "noopener");
+        return;
+      }
+
+      hidePreviewNodes();
+      if (previewTitle) previewTitle.textContent = title || "File preview";
+      if (previewDownload) previewDownload.href = downloadUrl || previewUrl;
+      if (previewOpenNew) previewOpenNew.href = previewUrl;
+      if (previewDownloadFallback) previewDownloadFallback.href = downloadUrl || previewUrl;
+
+      switch (previewKind(contentType)) {
+        case "pdf":
+          if (previewFrame) {
+            previewFrame.src = previewUrl;
+            previewFrame.hidden = false;
+          }
+          break;
+        case "video":
+          if (previewVideo) {
+            previewVideo.src = previewUrl;
+            previewVideo.hidden = false;
+          }
+          break;
+        case "image":
+          if (previewImage) {
+            previewImage.src = previewUrl;
+            previewImage.hidden = false;
+          }
+          break;
+        case "audio":
+          if (previewAudio) {
+            previewAudio.src = previewUrl;
+            previewAudio.hidden = false;
+          }
+          break;
+        default:
+          if (previewFallback) previewFallback.hidden = false;
+      }
+
+      previewOverlay.hidden = false;
+    }
+
+    if (previewClose) previewClose.addEventListener("click", closePreviewModal, { signal });
+    if (previewOverlay) {
+      previewOverlay.addEventListener("click", (event) => {
+        if (event.target === previewOverlay) closePreviewModal();
+      }, { signal });
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && previewOverlay && !previewOverlay.hidden) closePreviewModal();
+    }, { signal });
 
     // Copy link
     document.querySelectorAll(".copy-btn").forEach((btn) => {
@@ -518,7 +651,24 @@
 
         // file
         const url = row.getAttribute("data-preview");
-        if (url) window.open(url, "_blank", "noopener");
+        openPreviewModal({
+          previewUrl: url,
+          downloadUrl: row.getAttribute("data-download"),
+          title: row.getAttribute("data-preview-title"),
+          contentType: row.getAttribute("data-preview-kind")
+        });
+      }, { signal });
+    });
+
+    document.querySelectorAll(".share-preview-btn").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        openPreviewModal({
+          previewUrl: button.dataset.preview,
+          downloadUrl: button.dataset.download,
+          title: button.dataset.previewTitle,
+          contentType: button.dataset.previewKind
+        });
       }, { signal });
     });
 
@@ -577,6 +727,16 @@
         const previews = rows
           .filter(r => r.getAttribute("data-kind") === "file")
           .map(r => r.getAttribute("data-preview"));
+        const firstFileRow = rows.find((r) => r.getAttribute("data-kind") === "file");
+        if (previews.length === 1 && firstFileRow) {
+          openPreviewModal({
+            previewUrl: firstFileRow.getAttribute("data-preview"),
+            downloadUrl: firstFileRow.getAttribute("data-download"),
+            title: firstFileRow.getAttribute("data-preview-title"),
+            contentType: firstFileRow.getAttribute("data-preview-kind")
+          });
+          return;
+        }
 
         openMany(previews, true);
       }, { signal });
@@ -613,5 +773,7 @@
   document.addEventListener("turbo:before-cache", () => {
     if (window.__shareShowAbort) window.__shareShowAbort.abort();
     window.__shareShowAbort = null;
+    const previewOverlay = document.getElementById("file-preview-overlay");
+    if (previewOverlay) previewOverlay.hidden = true;
   });
 </script>

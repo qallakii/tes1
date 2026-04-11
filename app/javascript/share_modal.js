@@ -23,25 +23,25 @@ function initShareModal() {
 
   function updateAudienceUI() {
     if (!emailsWrap) return;
-    emailsWrap.style.display = selectedAudience() === "specific_people" ? "block" : "none";
+    emailsWrap.hidden = selectedAudience() !== "specific_people";
   }
 
   function closeModal() {
-    modal.style.display = "none";
+    modal.hidden = true;
     currentPayload = null;
     currentShareUrl = "";
     if (expiresInput) expiresInput.value = "";
     if (emailsInput) emailsInput.value = "";
     if (audienceInputs[0]) audienceInputs[0].checked = true;
-    if (formView) formView.style.display = "block";
-    if (resultView) resultView.style.display = "none";
+    if (formView) formView.hidden = false;
+    if (resultView) resultView.hidden = true;
     if (confirmBtn) {
-      confirmBtn.style.display = "";
+      confirmBtn.hidden = false;
       confirmBtn.disabled = false;
       confirmBtn.textContent = "Create share link";
     }
     if (copyBtn) {
-      copyBtn.style.display = "none";
+      copyBtn.hidden = true;
     }
     updateAudienceUI();
   }
@@ -99,15 +99,15 @@ function initShareModal() {
 
   function showResult(shareUrl) {
     currentShareUrl = shareUrl;
-    if (formView) formView.style.display = "none";
-    if (resultView) resultView.style.display = "block";
+    if (formView) formView.hidden = true;
+    if (resultView) resultView.hidden = false;
     if (resultUrl) {
       resultUrl.href = shareUrl;
       resultUrl.textContent = shareUrl;
     }
-    if (confirmBtn) confirmBtn.style.display = "none";
+    if (confirmBtn) confirmBtn.hidden = true;
     if (copyBtn) {
-      copyBtn.style.display = "";
+      copyBtn.hidden = false;
     }
   }
 
@@ -119,7 +119,7 @@ function initShareModal() {
       cvIds: cvIds.filter(Boolean)
     };
 
-    modal.style.display = "flex";
+    modal.hidden = false;
     updateAudienceUI();
   };
 

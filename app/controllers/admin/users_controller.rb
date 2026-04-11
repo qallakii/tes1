@@ -68,9 +68,10 @@ module Admin
 
     def send_invite
       user = User.find(params[:id])
-      invite_url = password_reset_url(user.generate_password_reset_token!)
+      invite_url = edit_password_reset_url(user.generate_password_reset_token!)
+      email_status = deliver_link_email(:invite_link, user, invite_url)
 
-      flash[:notice] = "Invite link generated."
+      flash[:notice] = email_status ? "Invite email sent." : "Invite link generated, but email delivery failed."
       flash[:admin_action_title] = "Invite link"
       flash[:admin_action_url] = invite_url
       redirect_back fallback_location: edit_admin_user_path(user)
@@ -78,9 +79,10 @@ module Admin
 
     def reset_password
       user = User.find(params[:id])
-      reset_url = password_reset_url(user.generate_password_reset_token!)
+      reset_url = edit_password_reset_url(user.generate_password_reset_token!)
+      email_status = deliver_link_email(:password_reset_link, user, reset_url)
 
-      flash[:notice] = "Password reset link generated."
+      flash[:notice] = email_status ? "Password reset email sent." : "Password reset link generated, but email delivery failed."
       flash[:admin_action_title] = "Password reset link"
       flash[:admin_action_url] = reset_url
       redirect_back fallback_location: edit_admin_user_path(user)
@@ -105,6 +107,10 @@ module Admin
       params.require(:user).permit(:name, :email, :admin)
     end
 
+    def admin_user_params
+      params.require(:user).permit(:name, :email, :admin, :password, :password_confirmation)
+    end
+
     def password_admin_user_params
       params.require(:user).permit(:password, :password_confirmation)
     end
@@ -116,6 +122,14 @@ module Admin
       @user_storage_bytes = ActiveStorage::Blob.joins(:attachments)
                                              .where(active_storage_attachments: { record_type: "Cv", record_id: @user.cvs.select(:id) })
                                              .sum(:byte_size)
+    end
+
+    def deliver_link_email(mail_type, user, url)
+      UserMailer.public_send(mail_type, user, url).deliver_now
+      true
+    rescue StandardError => e
+      Rails.logger.error("[admin_users] #{mail_type} email failed for #{user.email}: #{e.class} #{e.message}")
+      false
     end
   end
 end

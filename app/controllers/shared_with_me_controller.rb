@@ -8,6 +8,8 @@ class SharedWithMeController < ApplicationController
       .includes(:user, :folders, :cvs, :folder)
       .where.not(user_id: current_user.id)
       .order(created_at: :desc)
+      .to_a
+      .reject { |link| link.expired? || link.disabled? }
 
     @shared_entries = []
     seen_folders = {}

@@ -1,9 +1,9 @@
-<div class="dashboard-page">
+<div class="dashboard-page" data-recents-index>
 
   <div class="drive-page-head">
     <div class="drive-head-left">
-      <h1 style="margin:0;">Recents</h1>
-      <div class="muted" style="margin-top:4px;">Recently modified files</div>
+      <h1 class="recents-title">Recents</h1>
+      <div class="muted recents-subtitle">Recently modified files</div>
     </div>
 
     <div class="drive-head-right">
@@ -99,7 +99,7 @@
       </div>
     </div>
 
-    <div id="recent-no-results" class="no-results" style="display:none;">
+    <div id="recent-no-results" class="no-results" hidden>
       No recent files match your search.
     </div>
 
@@ -108,139 +108,3 @@
   <% end %>
 
 </div>
-
-<style>
-  .drive-page-head{
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    gap:12px;
-    flex-wrap:wrap;
-    margin: 8px 0 16px 0;
-  }
-  .drive-head-right{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-
-  .drive-input{
-    width: min(520px, 74vw);
-    padding: 9px 11px;
-    border: 1px solid rgba(0,0,0,0.12);
-    border-radius: 12px;
-    outline: none;
-    font-size: 13px;
-    background:#fff;
-  }
-
-  .drive-scroll { overflow-x: auto; overflow-y: hidden; }
-
-  .recents-list { min-width: 980px; }
-
-  .recents-list .drive-header,
-  .recents-list .drive-row{
-    display:grid;
-    grid-template-columns: minmax(240px, 1fr) 50px 65px 145px 110px 244px;
-    gap: 12px;
-    padding: 10px 14px;
-    align-items:center;
-    font-size: 13px;
-    line-height: 1.35;
-  }
-
-  .recents-list .drive-header{
-    font-size: 11.5px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    background: rgba(0,0,0,0.02);
-    border-bottom: 1px solid rgba(0,0,0,0.08);
-  }
-  .recents-list .drive-row{
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-  }
-  .recents-list .drive-row:hover{ background: rgba(0,0,0,0.02); }
-
-  .file-line { display:flex; align-items:flex-start; gap:10px; }
-  .file-icon { margin-top:2px; opacity:0.85; flex:0 0 auto; }
-  .file-text { min-width:0; }
-  .file-name { font-weight: 600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .file-sub  { font-size: 11.5px; opacity:0.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px; }
-
-  .muted { opacity: 0.75; font-size: 12px; }
-  .size-num { font-variant-numeric: tabular-nums; }
-  .col-size { justify-self: end; }
-
-  .pill {
-    display:inline-flex; align-items:center; justify-content:center;
-    padding: 5px 9px;
-    border-radius: 999px;
-    font-size: 11.5px;
-    border: 1px solid rgba(0,0,0,0.10);
-    background: rgba(0,0,0,0.02);
-    white-space: nowrap;
-  }
-
-  .location-link{
-    color: #c8102e;
-    font-weight: 500;
-  }
-  .location-link:hover{ text-decoration: underline; }
-
-  .action-group{
-    display:flex;
-    gap:8px;
-    align-items:center;
-    flex-wrap:wrap;
-  }
-
-  .btn.xsmall { padding: 5px 9px; border-radius: 10px; line-height: 1; font-size: 12px; }
-
-  .no-results {
-    padding: 14px;
-    margin-top: 10px;
-    border-radius: 12px;
-    background: rgba(0,0,0,0.02);
-    border: 1px solid rgba(0,0,0,0.06);
-    font-size: 13px;
-  }
-</style>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    function humanSize(bytes) {
-      const units = ["B","KB","MB","GB","TB"];
-      let b = Number(bytes || 0);
-      let i = 0;
-      while (b >= 1024 && i < units.length - 1) { b = b / 1024; i++; }
-      return (i === 0 ? b.toFixed(0) : b.toFixed(1)) + " " + units[i];
-    }
-    document.querySelectorAll("[data-size-text]").forEach((el) => {
-      const raw = parseInt(el.textContent || "0", 10);
-      el.textContent = humanSize(raw);
-    });
-
-    const search = document.getElementById("recent-search");
-    const rows = Array.from(document.querySelectorAll(".recent-row"));
-    const noResults = document.getElementById("recent-no-results");
-
-    function apply() {
-      const q = (search?.value || "").trim().toLowerCase();
-      let visible = 0;
-
-      rows.forEach((row) => {
-        const name = row.getAttribute("data-name") || "";
-        const type = row.getAttribute("data-type") || "";
-        const match = !q || name.includes(q) || type.includes(q);
-        row.style.display = match ? "" : "none";
-        if (match) visible++;
-      });
-
-      if (noResults) noResults.style.display = (q && visible === 0) ? "block" : "none";
-    }
-
-    if (search) search.addEventListener("input", apply);
-    apply();
-  });
-</script>
