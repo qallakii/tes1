@@ -1,22 +1,22 @@
 <!-- Upload modal -->
   <div id="upload-overlay" class="overlay" style="display:none;">
-    <div class="modal-card" style="width:min(720px, 95vw);">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-        <h3 style="margin:0;">Upload files</h3>
+    <div class="modal-card upload-modal-card">
+      <div class="modal-head">
+        <h3 class="modal-title">Upload files</h3>
         <button type="button" id="close-upload" class="btn secondary xsmall">Close</button>
       </div>
 
-      <div class="muted" style="font-size:13px; margin-top:6px;">
+      <div class="muted modal-copy">
         Drag & drop files here, or click “Choose files”.
       </div>
 
       <%= form_with url: folder_cvs_path(@folder), method: :post, local: true, html: { multipart: true }, id: "upload-form" do %>
-        <div id="upload-dropzone" class="upload-dropzone" style="margin-top:12px;">
+        <div id="upload-dropzone" class="upload-dropzone upload-dropzone-spaced">
           <div class="upload-dropzone-inner">
-            <div style="font-weight:600;">Drop files or a folder to upload</div>
-            <div class="muted" style="font-size:13px; margin-top:4px;">or</div>
+            <div class="upload-dropzone-title">Drop files or a folder to upload</div>
+            <div class="muted upload-dropzone-subtitle">or</div>
 
-            <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; justify-content:center;">
+            <div class="upload-dropzone-actions">
               <button type="button" id="choose-files" class="btn secondary">
                 Choose files
               </button>
@@ -26,19 +26,19 @@
               </button>
             </div>
 
-            <input id="upload-file-input" type="file" name="cv[files][]" multiple style="display:none;" />
-            <input id="upload-folder-input" type="file" name="cv[files][]" multiple webkitdirectory directory style="display:none;" />
+            <input id="upload-file-input" type="file" name="cv[files][]" multiple hidden />
+            <input id="upload-folder-input" type="file" name="cv[files][]" multiple webkitdirectory directory hidden />
 
             <div id="upload-paths"></div>
           </div>
         </div>
 
-        <div id="upload-file-list-wrap" style="margin-top:12px; display:none;">
-          <div class="muted" style="font-size:13px; margin-bottom:6px;">Selected</div>
-          <ul id="upload-file-list" style="margin:0; padding-left:18px;"></ul>
+        <div id="upload-file-list-wrap" class="upload-file-list-wrap" style="display:none;">
+          <div class="muted upload-file-list-label">Selected</div>
+          <ul id="upload-file-list" class="upload-file-list"></ul>
         </div>
 
-        <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+        <div class="modal-actions">
           <button type="button" id="cancel-upload" class="btn secondary">Cancel</button>
           <button type="submit" id="upload-submit" class="btn primary" disabled>Upload</button>
         </div>

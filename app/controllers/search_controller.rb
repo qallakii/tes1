@@ -15,7 +15,7 @@ class SearchController < ApplicationController
 
     @cvs = current_user.cvs
       .joins(:folder)
-      .where("cvs.title ILIKE ?", "%#{@q}%")
+      .where("cvs.title ILIKE ? OR folders.name ILIKE ?", "%#{@q}%", "%#{@q}%")
       .includes(:folder, file_attachment: :blob)
       .order(updated_at: :desc)
       .limit(50)

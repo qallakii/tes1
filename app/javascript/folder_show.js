@@ -126,9 +126,36 @@ function initFolderShowPage() {
   }, { signal });
 
   function closeAllMenus() {
-    page.querySelectorAll(".kebab-menu").forEach((menu) => {
+    document.querySelectorAll("[data-kebab-menu]").forEach((menu) => {
       menu.style.display = "none";
+      menu.style.top = "";
+      menu.style.left = "";
     });
+  }
+
+  function positionMenu(trigger, menu) {
+    const triggerRect = trigger.getBoundingClientRect();
+
+    menu.style.position = "fixed";
+    menu.style.zIndex = "12000";
+    menu.style.display = "block";
+
+    const menuRect = menu.getBoundingClientRect();
+    let top = triggerRect.bottom + 8;
+    let left = triggerRect.right - menuRect.width;
+
+    if (top + menuRect.height > window.innerHeight - 8) {
+      top = triggerRect.top - menuRect.height - 8;
+    }
+
+    if (left < 8) left = 8;
+    if (left + menuRect.width > window.innerWidth - 8) {
+      left = window.innerWidth - menuRect.width - 8;
+    }
+    if (top < 8) top = 8;
+
+    menu.style.top = `${top}px`;
+    menu.style.left = `${left}px`;
   }
 
   if (window.__folderKebabHandler) {
@@ -144,11 +171,7 @@ function initFolderShowPage() {
   window.__folderKebabHandler = (e) => {
     const kebabBtn = e.target.closest("[data-kebab]");
     const insideMenu = e.target.closest(".kebab-menu");
-
-    if (!page.contains(e.target)) {
-      closeAllMenus();
-      return;
-    }
+    if (insideMenu) return;
 
     if (!kebabBtn && !insideMenu) {
       closeAllMenus();
@@ -161,12 +184,18 @@ function initFolderShowPage() {
     e.stopPropagation();
 
     const key = kebabBtn.getAttribute("data-kebab");
-    const menu = page.querySelector(`[data-kebab-menu="${key}"]`);
+    const menu = document.querySelector(`[data-kebab-menu="${key}"]`);
     if (!menu) return;
 
     const isOpen = menu.style.display === "block";
     closeAllMenus();
-    menu.style.display = isOpen ? "none" : "block";
+    if (isOpen) return;
+
+    if (menu.parentElement !== document.body) {
+      document.body.appendChild(menu);
+    }
+
+    positionMenu(kebabBtn, menu);
   };
 
   window.__folderKebabKeyHandler = (e) => {
@@ -175,6 +204,8 @@ function initFolderShowPage() {
 
   document.addEventListener("click", window.__folderKebabHandler, { signal });
   document.addEventListener("keydown", window.__folderKebabKeyHandler, { signal });
+  window.addEventListener("resize", closeAllMenus, { signal });
+  window.addEventListener("scroll", closeAllMenus, { signal, capture: true });
 
   const selectAll = page.querySelector("#select-all");
   const fileChecks = Array.from(page.querySelectorAll(".cv-check"));
@@ -606,8 +637,10 @@ document.addEventListener("turbo:before-cache", () => {
   if (window.__folderShowAbort) window.__folderShowAbort.abort();
   window.__folderShowAbort = null;
 
-  document.querySelectorAll("[data-folder-show] .kebab-menu").forEach((menu) => {
+  document.querySelectorAll("[data-kebab-menu]").forEach((menu) => {
     menu.style.display = "none";
+    menu.style.top = "";
+    menu.style.left = "";
   });
 
   const previewOverlay = document.getElementById("file-preview-overlay");

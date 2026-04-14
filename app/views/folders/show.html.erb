@@ -2,14 +2,14 @@
 <div class="dashboard-page" data-folder-show>
 
   <div class="drive-page-head">
-    <div class="drive-head-left" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <div class="drive-head-left folder-show-head-left">
       <% back_path = @folder.parent_id.present? ? folder_path(@folder.parent_id) : dashboard_path %>
       <%= link_to "← Back", back_path, class: "btn secondary" %>
 
       <div>
-        <h2 style="margin-bottom:5px;"><%= @folder.name %></h2>
+        <h2 class="folder-show-title"><%= @folder.name %></h2>
 
-        <div class="muted" style="font-size:13px;">
+        <div class="muted folder-show-breadcrumbs">
           <%= link_to "Home", dashboard_path, class: "muted" %>
           <% @folder.ancestors.each do |anc| %>
             <span aria-hidden="true"> / </span>
@@ -21,12 +21,12 @@
       </div>
     </div>
 
-    <div class="drive-head-right" style="margin-bottom:5px;">
+    <div class="drive-head-right folder-show-head-right">
       <%= link_to "New Folder", new_folder_path(parent_id: @folder.id), class: "btn secondary" %>
 
       <button id="open-upload" class="btn primary" type="button">Upload</button>
 
-      <div id="bulk-actions" style="display:none; margin-top:5px; align-items:center; gap:8px;">
+      <div id="bulk-actions" class="folder-show-bulk-actions" style="display:none;">
         <button id="bulk-share" class="btn secondary" type="button">Share</button>
         <button id="bulk-download" class="btn secondary" type="button">Download</button>
         <button id="bulk-move" class="btn secondary" type="button">Move</button>
@@ -248,24 +248,24 @@
   <!-- Rename folder modal -->
   <div id="rename-folder-overlay" class="overlay" style="display:none;">
     <div class="modal-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-        <h3 style="margin:0;">Rename folder</h3>
+      <div class="modal-head">
+        <h3 class="modal-title">Rename folder</h3>
         <button type="button" id="close-rename-folder" class="btn secondary xsmall">Close</button>
       </div>
 
-      <div style="margin-top:12px;">
+      <div class="folder-show-modal-body">
         <%= form_with url: rename_folder_path(@folder), method: :patch, local: true, id: "rename-folder-form", data: { rename_prefix: folders_path } do %>
           <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
 
-          <div class="muted" style="font-size:13px; margin-bottom:6px;">New name</div>
+          <div class="muted folder-show-modal-label">New name</div>
 
           <input id="rename-folder-input"
                  name="folder[name]"
                  type="text"
                  required
-                 style="width:96%; padding:10px; border:1px solid #d1d5db; border-radius:8px;">
+                 class="folder-show-modal-input">
 
-          <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:10px;">
+          <div class="modal-actions">
             <button type="button" id="cancel-rename-folder" class="btn secondary">Cancel</button>
             <button type="submit" class="btn primary">Rename</button>
           </div>
@@ -276,21 +276,21 @@
 
   <!-- Move Tree modal -->
   <div id="move-overlay" class="overlay" style="display:none;">
-    <div class="modal-card" style="width:min(720px, 95vw);">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-        <h3 style="margin:0;">Move to…</h3>
+    <div class="modal-card folder-show-move-modal">
+      <div class="modal-head">
+        <h3 class="modal-title">Move to…</h3>
         <button type="button" id="close-move" class="btn secondary xsmall">Close</button>
       </div>
 
-      <div class="muted" style="font-size:13px; margin-top:6px;">
+      <div class="muted modal-copy">
         Choose a destination folder.
       </div>
 
-      <div id="move-selected" class="muted" style="font-size:13px; margin-top:10px;">
+      <div id="move-selected" class="muted folder-show-move-selected">
         Selected: <span id="move-selected-name">None</span>
       </div>
 
-      <div class="move-tree-wrap" style="margin-top:12px; border:1px solid rgba(0,0,0,0.10); border-radius:12px; padding:10px; max-height: 360px; overflow:auto;">
+      <div class="move-tree-wrap folder-show-move-tree">
         <% folders = (@all_folders_for_tree || []) %>
         <% children = Hash.new { |h,k| h[k] = [] } %>
         <% folders.each { |f| children[f.parent_id] << f } %>
@@ -299,7 +299,7 @@
         <% end %>
       </div>
 
-      <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:10px;">
+      <div class="modal-actions">
         <button type="button" id="move-cancel" class="btn secondary">Cancel</button>
         <button type="button" id="move-confirm" class="btn primary" disabled>Move</button>
       </div>

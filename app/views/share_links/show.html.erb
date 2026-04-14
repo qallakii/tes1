@@ -57,7 +57,7 @@
       <% end %>
 
       <!-- ✅ Bulk actions (shows only when something is selected) -->
-      <div id="bulk-actions" style="display:none; margin-top:10px; align-items:center; gap:8px; width:100%; flex-wrap:wrap;">
+      <div id="bulk-actions" class="share-bulk-actions" style="display:none;">
         <button id="bulk-open" class="btn secondary" type="button">Open</button>
         <button id="bulk-preview" class="btn secondary" type="button">Preview</button>
         <button id="bulk-download" class="btn secondary" type="button">Download</button>
@@ -68,13 +68,13 @@
 
   <%# ====== FOLDERS LIST (when nothing selected) ====== %>
   <% unless selected_folder || @files_only %>
-    <div class="drive-card" style="margin-bottom:12px;">
+    <div class="drive-card share-folder-picker-card">
       <div class="drive-scroll">
-        <div class="drive-list folders-pick-list" style="min-width:720px;">
+        <div class="drive-list folders-pick-list">
 
           <div class="drive-header folders-pick-header">
             <div>Folder</div>
-            <div style="text-align:right;">Action</div>
+            <div class="folders-pick-action-head">Action</div>
           </div>
 
           <% folders.each do |f| %>
@@ -89,14 +89,14 @@
                 <div class="folder-name"><%= f.name %></div>
               </div>
 
-              <div style="text-align:right;">
+              <div class="folders-pick-action-cell">
                 <%= link_to "Open", open_url, class: "btn secondary xsmall" %>
               </div>
             </div>
           <% end %>
 
           <% if folders.empty? %>
-            <div style="padding:16px;" class="muted">No folders found in this share link.</div>
+            <div class="muted share-empty-copy">No folders found in this share link.</div>
           <% end %>
 
         </div>
@@ -185,7 +185,7 @@
               </div>
             <% end %>
           <% else %>
-            <div style="padding:16px;" class="muted">No files found in this share link.</div>
+            <div class="muted share-empty-copy">No files found in this share link.</div>
           <% end %>
 
         </div>
@@ -379,7 +379,7 @@
               </div>
             <% end %>
           <% elsif (@subfolders || []).empty? && direct_files.empty? %>
-            <div style="padding:16px;" class="muted">This folder is empty.</div>
+            <div class="muted share-empty-copy">This folder is empty.</div>
           <% end %>
 
         </div>
@@ -390,46 +390,6 @@
 </div>
 
 <%= render "shared/file_preview_modal" %>
-
-<style>
-  .share-hero{
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    gap: 16px;
-    padding: 16px 6px 10px;
-    margin-bottom: 10px;
-  }
-  .share-title{
-    margin: 8px 0 6px;
-    font-size: 28px;
-    letter-spacing: -0.2px;
-  }
-  .share-sub{ font-size: 13px; }
-  .share-hero-right{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-
-  .clickable-row,
-  .clickable-folder-row{
-    cursor: pointer;
-  }
-
-  .share-badges{ display:flex; gap:8px; flex-wrap:wrap; }
-  .badge{
-    display:inline-flex;
-    align-items:center;
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-    background: rgba(0,0,0,0.06);
-  }
-  .badge.neutral{ background: rgba(37,99,235,0.10); }
-  .badge.danger{ background: rgba(185,28,28,0.12); }
-
-  @media (max-width: 900px) {
-    .share-hero{ align-items:flex-start; flex-direction:column; }
-  }
-</style>
 
 <script>
   function initShareLinkShow() {

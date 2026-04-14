@@ -50,6 +50,8 @@ class CvsController < ApplicationController
 
   def show
     @cv = current_user.cvs.joins(:folder).where(folders: { id: @folder.id }).find(params[:id])
+    @rating = @cv.ratings.find_or_initialize_by(user: current_user)
+    @ratings = @cv.ratings.includes(:user).order(created_at: :desc)
   end
 
   def update

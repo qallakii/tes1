@@ -4,6 +4,7 @@ class ShareLinksController < ApplicationController
   before_action :enforce_require_login_if_needed!, only: [ :show, :preview, :download, :unlock ]
   before_action :enforce_specific_access_if_needed!, only: [ :show, :preview, :download, :unlock ]
   before_action :enforce_not_disabled!, only: [ :show, :preview, :download, :unlock ]
+  before_action :enforce_not_expired!, only: [ :show, :preview, :download, :unlock ]
   before_action :enforce_password_if_needed!, only: [ :show, :preview, :download ]
 
   def index
@@ -30,17 +31,8 @@ class ShareLinksController < ApplicationController
 
   def create
     folder = current_user.folders.find(params[:folder_id])
-
-    expires_at = nil
-      raw_expires = params[:expires_at].to_s.strip
-
-      if raw_expires.present?
-        expires_at = Time.zone.parse(raw_expires)
-        if expires_at.nil?
-          redirect_back fallback_location: dashboard_path, alert: "Invalid expiry date."
-          return
-        end
-      end
+    expires_at = parse_share_expires_at
+    return if performed?
 
     share_link = ShareLink.new(expires_at: expires_at, folder: folder)
     share_link.user_id = current_user.id if ShareLink.column_names.include?("user_id")
@@ -57,6 +49,10 @@ class ShareLinksController < ApplicationController
     end
 
     folders = current_user.folders.where(id: folder_ids)
+    if folders.empty?
+      redirect_to dashboard_path, alert: "No valid folders were selected."
+      return
+    end
 
     share_link = ShareLink.new(expires_at: nil)
     share_link.user_id = current_user.id if ShareLink.column_names.include?("user_id")
@@ -76,14 +72,14 @@ class ShareLinksController < ApplicationController
       return
     end
 
-    expires_at =
-      if params[:expires_at].present?
-        Time.zone.parse(params[:expires_at])
-      else
-        nil
-      end
+    expires_at = parse_share_expires_at
+    return if performed?
 
-    cvs = Cv.joins(:folder).where(id: cv_ids, folders: { user_id: current_user.id }).with_attached_file
+    cvs = current_user.cvs.where(id: cv_ids).with_attached_file
+    if cvs.empty?
+      redirect_back fallback_location: dashboard_path, alert: "No valid files were selected."
+      return
+    end
 
     share_link = ShareLink.new(expires_at: expires_at)
     share_link.user_id = current_user.id if ShareLink.column_names.include?("user_id")
@@ -107,12 +103,15 @@ class ShareLinksController < ApplicationController
 
     folders = current_user.folders.where(id: folder_ids)
 
-    cvs = Cv.joins(:folder)
-            .where(id: cv_ids, folders: { user_id: current_user.id })
-            .with_attached_file
+    cvs = current_user.cvs.where(id: cv_ids).with_attached_file
 
     expires_at = parse_share_expires_at
     return if performed?
+
+    if folders.empty? && cvs.empty?
+      redirect_back fallback_location: dashboard_path, alert: "No valid folders or files were selected."
+      return
+    end
 
     audience = params[:share_audience].to_s
     allowed_users = resolve_share_users(audience)
@@ -301,6 +300,12 @@ class ShareLinksController < ApplicationController
   def enforce_not_disabled!
     return unless @share_link.respond_to?(:disabled) && @share_link.disabled?
     render plain: "This share link is disabled.", status: :gone
+  end
+
+  def enforce_not_expired!
+    return unless @share_link.expired?
+
+    render :expired, status: :gone
   end
 
   def enforce_password_if_needed!

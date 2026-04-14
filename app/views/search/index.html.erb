@@ -1,34 +1,37 @@
-<div class="dashboard-page">
-  <div class="drive-page-head" style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-    <h2 style="margin:0;">Search</h2>
+<div class="dashboard-page search-page">
+  <div class="drive-page-head search-page-head">
+    <div class="profile-page-title">
+      <h2>Search</h2>
+      <p>Find folders and files across your workspace.</p>
+    </div>
 
-    <%= form_with url: search_path, method: :get, local: true, style: "display:flex; gap:8px;" do %>
-      <input class="drive-input" type="text" name="q" value="<%= @q %>" placeholder="Search folders or files…" />
+    <%= form_with url: search_path, method: :get, local: true, class: "search-form" do %>
+      <input class="drive-input search-form-input" type="text" name="q" value="<%= @q %>" placeholder="Search folders or files…" />
       <button class="btn primary" type="submit">Search</button>
     <% end %>
   </div>
 
   <% if @q.present? %>
-    <div class="drive-card" style="padding:14px; margin-top:12px;">
-      <div style="font-weight:700;">Folders</div>
+    <div class="drive-card search-results-card">
+      <div class="search-section-title">Folders</div>
       <% if @folders.any? %>
-        <ul>
+        <ul class="search-results-list">
           <% @folders.each do |f| %>
-            <li><%= link_to f.name, folder_path(f) %></li>
+            <li><%= link_to f.name, folder_path(f), class: "search-result-link" %></li>
           <% end %>
         </ul>
       <% else %>
         <div class="muted">No folders found.</div>
       <% end %>
 
-      <div style="height:10px;"></div>
+      <div class="search-section-spacer"></div>
 
-      <div style="font-weight:700;">Files</div>
+      <div class="search-section-title">Files</div>
       <% if @cvs.any? %>
-        <ul>
+        <ul class="search-results-list">
           <% @cvs.each do |cv| %>
             <li>
-              <%= link_to(cv.title.presence || cv.file.filename.to_s, folder_path(cv.folder)) %>
+              <%= link_to(cv.title.presence || cv.file.filename.to_s, folder_path(cv.folder), class: "search-result-link") %>
               <span class="muted">in <%= cv.folder.name %></span>
             </li>
           <% end %>
@@ -36,6 +39,10 @@
       <% else %>
         <div class="muted">No files found.</div>
       <% end %>
+    </div>
+  <% else %>
+    <div class="drive-card search-results-card">
+      <div class="muted">Enter a keyword to search your folders and files.</div>
     </div>
   <% end %>
 </div>

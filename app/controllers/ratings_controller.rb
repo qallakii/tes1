@@ -1,18 +1,14 @@
 class RatingsController < ApplicationController
   before_action :require_login
   before_action :set_rating, only: [:edit, :update, :destroy]
+  before_action :set_cv, only: [:create]
 
   def index
-    @ratings = Rating.order(created_at: :desc).page(params[:page]).per(10)
-  end
-
-
-    # Filter by stars
+    @ratings = rating_scope.includes(:cv, :user)
     if params[:stars].present?
       @ratings = @ratings.where(stars: params[:stars])
     end
 
-    # Sort ratings
     case params[:sort]
     when "newest"
       @ratings = @ratings.order(created_at: :desc)
@@ -25,16 +21,18 @@ class RatingsController < ApplicationController
     else
       @ratings = @ratings.order(created_at: :desc)
     end
+
+    @ratings = @ratings.page(params[:page]).per(10)
   end
 
   def create
-    @cv = Cv.find(params[:cv_id])
-    @rating = @cv.ratings.new(stars: params[:stars], comment: params[:comment], user: current_user)
+    @rating = @cv.ratings.find_or_initialize_by(user: current_user)
+    @rating.assign_attributes(rating_params)
 
     if @rating.save
-      redirect_back fallback_location: folder_path(@cv.folder), notice: "Rating submitted!"
+      redirect_to folder_cv_path(@folder, @cv), notice: "Rating submitted!"
     else
-      redirect_back fallback_location: folder_path(@cv.folder), alert: @rating.errors.full_messages.join(", ")
+      redirect_to folder_cv_path(@folder, @cv), alert: @rating.errors.full_messages.join(", ")
     end
   end
 
@@ -44,7 +42,7 @@ class RatingsController < ApplicationController
     if @rating.update(rating_params)
       redirect_to ratings_path, notice: "Rating updated!"
     else
-      render :edit
+      render :edit, status: :unprocessable_entity
     end
   end
 
@@ -55,8 +53,17 @@ class RatingsController < ApplicationController
 
   private
 
+  def set_cv
+    @folder = current_user.folders.find(params[:folder_id])
+    @cv = @folder.cvs.find(params[:cv_id])
+  end
+
   def set_rating
-    @rating = Rating.find(params[:id])
+    @rating = rating_scope.find(params[:id])
+  end
+
+  def rating_scope
+    current_user.admin? ? Rating.all : current_user.ratings
   end
 
   def rating_params

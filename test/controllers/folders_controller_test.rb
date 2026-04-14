@@ -1,23 +1,27 @@
 require "test_helper"
 
 class FoldersControllerTest < ActionDispatch::IntegrationTest
-  test "should get index" do
-    get folders_index_url
-    assert_response :success
+  setup do
+    @user = User.create!(
+      name: "Folder User",
+      email: "folders@example.com",
+      password: "password123",
+      password_confirmation: "password123"
+    )
   end
 
-  test "should get show" do
-    get folders_show_url
-    assert_response :success
+  test "dashboard redirects unauthenticated users" do
+    get dashboard_path
+
+    assert_redirected_to login_path
   end
 
-  test "should get new" do
-    get folders_new_url
-    assert_response :success
-  end
+  test "new folder page loads for authenticated users" do
+    post login_path, params: { email: @user.email, password: "password123" }
 
-  test "should get create" do
-    get folders_create_url
+    get new_folder_path
+
     assert_response :success
+    assert_match "New", response.body
   end
 end

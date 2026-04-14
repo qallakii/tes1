@@ -14,6 +14,10 @@ Rails.application.routes.draw do
   get "/shared_with_me", to: "shared_with_me#index", as: :shared_with_me
 
   get "/search", to: "search#index", as: :search
+  get "/about", to: "pages#about", as: :about
+  get "/contact", to: "pages#contact", as: :contact
+  get "/privacy", to: "pages#privacy", as: :privacy
+  get "/terms", to: "pages#terms", as: :terms
 
   get "/s/:token", to: "share_links#show", as: :public_share
 
@@ -39,8 +43,12 @@ Rails.application.routes.draw do
       collection do
         delete :bulk_destroy
       end
+
+      resources :ratings, only: [:create]
     end
   end
+
+  resources :ratings, only: [:index, :edit, :update, :destroy]
 
   resources :share_links, only: [:index, :new, :create, :destroy, :show] do
     collection do

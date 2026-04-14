@@ -1,6 +1,7 @@
 class Cv < ApplicationRecord
   belongs_to :folder
   belongs_to :user, optional: true
+  has_many :ratings, dependent: :destroy
   has_one_attached :file
 
   # ✅ auto title so uploads never fail

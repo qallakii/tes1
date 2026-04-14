@@ -2,8 +2,10 @@
 
 one:
   cv: one
+  user: one
   stars: 1
 
 two:
   cv: two
+  user: two
   stars: 1

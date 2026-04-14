@@ -1,18 +1,54 @@
 require "test_helper"
 
 class CvsControllerTest < ActionDispatch::IntegrationTest
-  test "should get new" do
-    get cvs_new_url
+  setup do
+    @user = User.create!(
+      name: "CV User",
+      email: "cvs@example.com",
+      password: "password123",
+      password_confirmation: "password123"
+    )
+    @folder = @user.folders.create!(name: "Candidate Files")
+    @cv = @user.cvs.create!(folder: @folder, title: "Existing CV")
+  end
+
+  test "new redirects unauthenticated users" do
+    get new_folder_cv_path(@folder)
+
+    assert_redirected_to login_path
+  end
+
+  test "authenticated user can open new cv page" do
+    post login_path, params: { email: @user.email, password: "password123" }
+
+    get new_folder_cv_path(@folder)
+
     assert_response :success
   end
 
-  test "should get create" do
-    get cvs_create_url
-    assert_response :success
+  test "authenticated user can upload a cv" do
+    post login_path, params: { email: @user.email, password: "password123" }
+
+    file = fixture_file_upload("sample_resume.txt", "text/plain")
+
+    assert_difference("Cv.count", 1) do
+      post folder_cvs_path(@folder), params: {
+        cv: {
+          files: [ file ],
+          paths: [ "sample_resume.txt" ]
+        }
+      }
+    end
+
+    assert_redirected_to folder_path(@folder)
   end
 
-  test "should get show" do
-    get cvs_show_url
+  test "authenticated user can view a cv" do
+    post login_path, params: { email: @user.email, password: "password123" }
+
+    get folder_cv_path(@folder, @cv)
+
     assert_response :success
+    assert_match "Existing CV", response.body
   end
 end

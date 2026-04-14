@@ -1,12 +1,12 @@
 <div class="dashboard-page">
   <div class="breadcrumb-bar">
-    <button class="btn secondary" onclick="window.history.back()">← Back</button>
+    <%= link_to "← Back", folder_path(@folder), class: "btn secondary" %>
     <span>CV: <%= @cv.title %></span>
   </div>
 
   <h2>Rate this CV</h2>
 
-  <%= form_with(model: [@cv, @rating], local: true) do |f| %>
+  <%= form_with(model: [@folder, @cv, @rating], local: true) do |f| %>
     <div class="rating-form">
       <%= f.label :stars, "Stars (1-5):" %>
       <%= f.number_field :stars, in: 1..5, class: "input-field" %>

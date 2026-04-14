@@ -6,6 +6,7 @@ class User < ApplicationRecord
 
   has_many :folders, dependent: :destroy
   has_many :cvs, dependent: :destroy
+  has_many :ratings, dependent: :destroy
 
   validates :name, presence: true
   validates :email, presence: true, uniqueness: true

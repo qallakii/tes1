@@ -40,16 +40,17 @@ class Folder < ApplicationRecord
 
   # ✅ REQUIRED by controllers:
   # returns [self.id, child.id, grandchild.id...] FOR THIS USER ONLY
-  def self_and_descendant_ids
+  def self_and_descendant_ids(limit: 10_000)
     ids = [ id ]
     queue = [ id ]
 
-    while queue.any?
+    while queue.any? && ids.length < limit
       # Load children for ALL parents in the queue at once (batch)
       child_ids = Folder.where(parent_id: queue).pluck(:id)
       break if child_ids.empty?
 
       ids.concat(child_ids)
+      ids = ids.take(limit)
       queue = child_ids
     end
 
