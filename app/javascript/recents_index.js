@@ -2,9 +2,102 @@ function initRecentsIndexPage() {
   const page = document.querySelector("[data-recents-index]");
   if (!page) return;
 
+  if (window.__recentsIndexAbort) window.__recentsIndexAbort.abort();
+  window.__recentsIndexAbort = new AbortController();
+  const { signal } = window.__recentsIndexAbort;
+
   const searchInput = page.querySelector("#recent-search");
   const rows = Array.from(page.querySelectorAll(".recent-row"));
   const noResults = page.querySelector("#recent-no-results");
+  const previewOverlay = document.getElementById("file-preview-overlay");
+  const previewTitle = document.getElementById("file-preview-title");
+  const previewDownload = document.getElementById("file-preview-download");
+  const previewClose = document.getElementById("file-preview-close");
+  const previewFrame = document.getElementById("file-preview-frame");
+  const previewVideo = document.getElementById("file-preview-video");
+  const previewImage = document.getElementById("file-preview-image");
+  const previewAudio = document.getElementById("file-preview-audio");
+  const previewFallback = document.getElementById("file-preview-fallback");
+  const previewOpenNew = document.getElementById("file-preview-open-new");
+  const previewDownloadFallback = document.getElementById("file-preview-download-fallback");
+
+  function hidePreviewNodes() {
+    [previewFrame, previewVideo, previewImage, previewAudio, previewFallback].forEach((node) => {
+      if (!node) return;
+      node.hidden = true;
+    });
+
+    if (previewFrame) previewFrame.src = "";
+    if (previewVideo) {
+      previewVideo.pause();
+      previewVideo.removeAttribute("src");
+      previewVideo.load();
+    }
+    if (previewImage) previewImage.removeAttribute("src");
+    if (previewAudio) {
+      previewAudio.pause();
+      previewAudio.removeAttribute("src");
+      previewAudio.load();
+    }
+  }
+
+  function closePreviewModal() {
+    hidePreviewNodes();
+    if (previewOverlay) previewOverlay.hidden = true;
+  }
+
+  function previewKind(contentType) {
+    const type = String(contentType || "").toLowerCase();
+    if (type.includes("pdf")) return "pdf";
+    if (type.startsWith("video/")) return "video";
+    if (type.startsWith("image/")) return "image";
+    if (type.startsWith("audio/")) return "audio";
+    return "fallback";
+  }
+
+  function openPreviewModal({ previewUrl, downloadUrl, title, contentType }) {
+    if (!previewOverlay || !previewUrl) {
+      if (previewUrl) window.open(previewUrl, "_blank", "noopener");
+      return;
+    }
+
+    hidePreviewNodes();
+    if (previewTitle) previewTitle.textContent = title || "File preview";
+    if (previewDownload) previewDownload.href = downloadUrl || previewUrl;
+    if (previewOpenNew) previewOpenNew.href = previewUrl;
+    if (previewDownloadFallback) previewDownloadFallback.href = downloadUrl || previewUrl;
+
+    switch (previewKind(contentType)) {
+      case "pdf":
+        if (previewFrame) {
+          previewFrame.src = previewUrl;
+          previewFrame.hidden = false;
+        }
+        break;
+      case "video":
+        if (previewVideo) {
+          previewVideo.src = previewUrl;
+          previewVideo.hidden = false;
+        }
+        break;
+      case "image":
+        if (previewImage) {
+          previewImage.src = previewUrl;
+          previewImage.hidden = false;
+        }
+        break;
+      case "audio":
+        if (previewAudio) {
+          previewAudio.src = previewUrl;
+          previewAudio.hidden = false;
+        }
+        break;
+      default:
+        if (previewFallback) previewFallback.hidden = false;
+    }
+
+    previewOverlay.hidden = false;
+  }
 
   function humanSize(bytes) {
     const units = ["B", "KB", "MB", "GB", "TB"];
@@ -39,7 +132,52 @@ function initRecentsIndexPage() {
     if (noResults) noResults.hidden = !(query && visibleCount === 0);
   }
 
-  if (searchInput) searchInput.addEventListener("input", applyFilters);
+  rows.forEach((row) => {
+    row.addEventListener("click", (event) => {
+      if (event.target.closest("a, button, input, label, form")) return;
+      if (event.target.closest(".col-actions")) return;
+
+      openPreviewModal({
+        previewUrl: row.dataset.preview,
+        downloadUrl: row.dataset.download,
+        title: row.dataset.previewTitle,
+        contentType: row.dataset.previewKind
+      });
+    }, { signal });
+  });
+
+  page.querySelectorAll(".preview-file-btn").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      openPreviewModal({
+        previewUrl: button.dataset.preview,
+        downloadUrl: button.dataset.download,
+        title: button.dataset.previewTitle,
+        contentType: button.dataset.previewKind
+      });
+    }, { signal });
+  });
+
+  if (previewClose) previewClose.addEventListener("click", closePreviewModal, { signal });
+  if (previewOverlay) {
+    previewOverlay.addEventListener("click", (event) => {
+      if (event.target === previewOverlay) closePreviewModal();
+    }, { signal });
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && previewOverlay && !previewOverlay.hidden) closePreviewModal();
+  }, { signal });
+
+  if (searchInput) searchInput.addEventListener("input", applyFilters, { signal });
+
+  document.addEventListener("turbo:before-cache", () => {
+    if (window.__recentsIndexAbort) window.__recentsIndexAbort.abort();
+    window.__recentsIndexAbort = null;
+    if (previewOverlay) previewOverlay.hidden = true;
+    hidePreviewNodes();
+  }, { signal, once: true });
+
   applyFilters();
 }
 

@@ -14,6 +14,39 @@ function initFoldersIndexPage() {
   const noResults = page.querySelector("#folder-no-results");
   const list = page.querySelector(".folders-list");
 
+  const createOverlay = page.querySelector("#create-folder-overlay");
+  const openCreateButton = page.querySelector("#open-create-folder");
+  const closeCreateButton = page.querySelector("#close-create-folder");
+  const cancelCreateButton = page.querySelector("#cancel-create-folder");
+  const createInput = page.querySelector(".folder-create-modal-input");
+
+  function openCreateModal() {
+    if (!createOverlay) return;
+    createOverlay.style.display = "flex";
+    if (createInput) {
+      createInput.focus();
+      createInput.select();
+    }
+  }
+
+  function closeCreateModal() {
+    if (createOverlay) createOverlay.style.display = "none";
+  }
+
+  if (openCreateButton) openCreateButton.addEventListener("click", openCreateModal, { signal });
+  if (closeCreateButton) closeCreateButton.addEventListener("click", closeCreateModal, { signal });
+  if (cancelCreateButton) cancelCreateButton.addEventListener("click", closeCreateModal, { signal });
+  if (createOverlay) {
+    createOverlay.addEventListener("click", (event) => {
+      if (event.target === createOverlay) closeCreateModal();
+    }, { signal });
+  }
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && createOverlay && createOverlay.style.display === "flex") {
+      closeCreateModal();
+    }
+  }, { signal });
+
   if (!list) return;
 
   const rows = Array.from(list.querySelectorAll(".folder-row"));

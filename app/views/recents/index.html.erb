@@ -31,11 +31,16 @@
             <% ext = cv.file.filename.extension.to_s.upcase %>
             <% type_label = ext.present? ? ext : "FILE" %>
             <% size_bytes = blob&.byte_size.to_i %>
+            <% content_type = blob&.content_type.to_s %>
             <% folder = cv.folder %>
 
             <div class="drive-row recent-row"
                  data-name="<%= display_name.to_s.downcase %>"
-                 data-type="<%= type_label.to_s.downcase %>">
+                 data-type="<%= type_label.to_s.downcase %>"
+                 data-preview="<%= rails_blob_path(cv.file, disposition: "inline") %>"
+                 data-download="<%= rails_blob_path(cv.file, disposition: "attachment") %>"
+                 data-preview-kind="<%= content_type %>"
+                 data-preview-title="<%= display_name %>">
 
               <div class="col-name">
                 <div class="file-line">
@@ -75,10 +80,14 @@
 
               <div class="col-actions">
                 <div class="action-group">
-                  <%= link_to "Preview",
-                    rails_blob_path(cv.file, disposition: "inline"),
-                    target: "_blank",
-                    class: "btn secondary xsmall" %>
+                  <button type="button"
+                    class="btn secondary xsmall preview-file-btn"
+                    data-preview="<%= rails_blob_path(cv.file, disposition: "inline") %>"
+                    data-download="<%= rails_blob_path(cv.file, disposition: "attachment") %>"
+                    data-preview-kind="<%= content_type %>"
+                    data-preview-title="<%= display_name %>">
+                    Preview
+                  </button>
 
                   <%= link_to "Download",
                     rails_blob_path(cv.file, disposition: "attachment"),
@@ -106,5 +115,7 @@
   <% else %>
     <p class="empty-message">Nothing recent yet.</p>
   <% end %>
+
+  <%= render "shared/file_preview_modal" %>
 
 </div>

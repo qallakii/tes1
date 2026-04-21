@@ -35,6 +35,11 @@ function initFolderShowPage() {
   const previewFallback = document.getElementById("file-preview-fallback");
   const previewOpenNew = document.getElementById("file-preview-open-new");
   const previewDownloadFallback = document.getElementById("file-preview-download-fallback");
+  const createOverlay = page.querySelector("#create-folder-overlay");
+  const openCreateButton = page.querySelector("#open-create-folder");
+  const closeCreateButton = page.querySelector("#close-create-folder");
+  const cancelCreateButton = page.querySelector("#cancel-create-folder");
+  const createInput = page.querySelector(".folder-create-modal-input");
 
   function hidePreviewNodes() {
     [previewFrame, previewVideo, previewImage, previewAudio, previewFallback].forEach((node) => {
@@ -125,6 +130,28 @@ function initFolderShowPage() {
     if (event.key === "Escape" && previewOverlay && !previewOverlay.hidden) closePreviewModal();
   }, { signal });
 
+  function openCreateModal() {
+    if (!createOverlay) return;
+    createOverlay.style.display = "flex";
+    if (createInput) {
+      createInput.focus();
+      createInput.select();
+    }
+  }
+
+  function closeCreateModal() {
+    if (createOverlay) createOverlay.style.display = "none";
+  }
+
+  if (openCreateButton) openCreateButton.addEventListener("click", openCreateModal, { signal });
+  if (closeCreateButton) closeCreateButton.addEventListener("click", closeCreateModal, { signal });
+  if (cancelCreateButton) cancelCreateButton.addEventListener("click", closeCreateModal, { signal });
+  if (createOverlay) {
+    createOverlay.addEventListener("click", (event) => {
+      if (event.target === createOverlay) closeCreateModal();
+    }, { signal });
+  }
+
   function closeAllMenus() {
     document.querySelectorAll("[data-kebab-menu]").forEach((menu) => {
       menu.style.display = "none";
@@ -199,7 +226,10 @@ function initFolderShowPage() {
   };
 
   window.__folderKebabKeyHandler = (e) => {
-    if (e.key === "Escape") closeAllMenus();
+    if (e.key === "Escape") {
+      closeAllMenus();
+      closeCreateModal();
+    }
   };
 
   document.addEventListener("click", window.__folderKebabHandler, { signal });
@@ -642,6 +672,9 @@ document.addEventListener("turbo:before-cache", () => {
     menu.style.top = "";
     menu.style.left = "";
   });
+
+  const createOverlay = document.getElementById("create-folder-overlay");
+  if (createOverlay) createOverlay.style.display = "none";
 
   const previewOverlay = document.getElementById("file-preview-overlay");
   if (previewOverlay) previewOverlay.style.display = "none";

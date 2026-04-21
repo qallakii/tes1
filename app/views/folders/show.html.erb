@@ -22,7 +22,7 @@
     </div>
 
     <div class="drive-head-right folder-show-head-right">
-      <%= link_to "New Folder", new_folder_path(parent_id: @folder.id), class: "btn secondary" %>
+      <button id="open-create-folder" class="btn secondary" type="button">New Folder</button>
 
       <button id="open-upload" class="btn primary" type="button">Upload</button>
 
@@ -244,6 +244,34 @@
     <%= hidden_field_tag :target_folder_id, "", id: "move-target-folder-id-one" %>
     <div id="move-one-file-id"></div>
   <% end %>
+
+  <!-- Rename folder modal -->
+  <div id="create-folder-overlay" class="overlay" style="display:none;">
+    <div class="modal-card folder-create-modal">
+      <div class="modal-head">
+        <h3 class="modal-title">Create folder</h3>
+        <button type="button" id="close-create-folder" class="btn secondary xsmall">Close</button>
+      </div>
+
+      <div class="folder-create-modal-body">
+        <%= form_with model: current_user.folders.new(parent_id: @folder.id), local: true do |form| %>
+          <%= form.hidden_field :parent_id %>
+
+          <div class="muted folder-create-modal-label">Folder name</div>
+          <%= form.text_field :name,
+            required: true,
+            autofocus: true,
+            placeholder: "Folder name",
+            class: "folder-create-modal-input" %>
+
+          <div class="modal-actions">
+            <button type="button" id="cancel-create-folder" class="btn secondary">Cancel</button>
+            <%= form.submit "Create Folder", class: "btn primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
 
   <!-- Rename folder modal -->
   <div id="rename-folder-overlay" class="overlay" style="display:none;">
