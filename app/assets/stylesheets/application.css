@@ -836,6 +836,12 @@ a { text-decoration: none; color: inherit; }
   margin-top: 6px;
 }
 
+.share-modal-options-inline{
+  flex-direction:row;
+  flex-wrap:wrap;
+  gap:12px;
+}
+
 .share-modal-option{
   display:flex;
   align-items:center;
@@ -844,6 +850,11 @@ a { text-decoration: none; color: inherit; }
 }
 
 .share-modal-emails{
+  margin-top: 14px;
+}
+
+.share-modal-permission-wrap,
+.share-modal-existing{
   margin-top: 14px;
 }
 
@@ -876,6 +887,79 @@ a { text-decoration: none; color: inherit; }
   border: 1px solid #bfdbfe;
   border-radius: 12px;
   background: #f8fbff;
+}
+
+.share-modal-existing-head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.share-modal-existing-state{
+  font-size:12px;
+}
+
+.share-modal-existing-list{
+  list-style:none;
+  margin: 10px 0 0;
+  padding: 0;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.share-modal-existing-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,0.08);
+  background: #f8fafc;
+}
+
+.share-modal-existing-copy{
+  min-width:0;
+}
+
+.share-modal-existing-name{
+  font-size: 13px;
+  font-weight: 600;
+  color:#0f172a;
+  overflow-wrap:anywhere;
+}
+
+.share-modal-existing-meta{
+  margin-top: 2px;
+  font-size: 12px;
+  color:#64748b;
+  overflow-wrap:anywhere;
+}
+
+.share-modal-existing-badge,
+.shared-permission-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.share-modal-existing-badge.is-editor,
+.shared-permission-badge.is-editor{
+  background: rgba(5,150,105,0.12);
+  color:#047857;
+}
+
+.share-modal-existing-badge.is-viewer,
+.shared-permission-badge.is-viewer{
+  background: rgba(59,130,246,0.12);
+  color:#1d4ed8;
 }
 
 /* ===============================
@@ -940,6 +1024,13 @@ a { text-decoration: none; color: inherit; }
 
 [data-share-links-index] .share-links-folder-extra{
   margin-left: 4px;
+}
+
+[data-share-links-index] .share-links-targets{
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap:anywhere;
 }
 
 [data-share-links-index] .share-links-empty-card{
@@ -1178,7 +1269,7 @@ a { text-decoration: none; color: inherit; }
 [data-shared-with-me] .shared-items-list .drive-header,
 [data-shared-with-me] .shared-items-list .drive-row{
   display:grid;
-  grid-template-columns: minmax(260px, 1fr) 90px 220px 150px 180px;
+  grid-template-columns: minmax(240px, 1fr) 90px 220px 130px 150px 180px;
   gap:12px;
 }
 
@@ -1370,6 +1461,7 @@ a { text-decoration: none; color: inherit; }
   min-height: 0;
   padding: 0;
   background: #f8fafc;
+  position: relative;
 }
 
 .file-preview-frame,
@@ -1413,6 +1505,42 @@ a { text-decoration: none; color: inherit; }
   justify-content:center;
 }
 
+.file-preview-nav{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:2;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15,23,42,0.74);
+  color: #fff;
+  font-size: 34px;
+  line-height: 1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+
+.file-preview-nav:hover{
+  background: rgba(15,23,42,0.88);
+}
+
+.file-preview-nav:disabled{
+  opacity: 0.45;
+  cursor: default;
+}
+
+.file-preview-nav-prev{
+  left: 18px;
+}
+
+.file-preview-nav-next{
+  right: 18px;
+}
+
 @media (max-width: 900px) {
   .file-preview-overlay{
     padding: 12px;
@@ -1426,6 +1554,20 @@ a { text-decoration: none; color: inherit; }
   .file-preview-head{
     align-items:flex-start;
     flex-direction:column;
+  }
+
+  .file-preview-nav{
+    width: 42px;
+    height: 42px;
+    font-size: 30px;
+  }
+
+  .file-preview-nav-prev{
+    left: 10px;
+  }
+
+  .file-preview-nav-next{
+    right: 10px;
   }
 }
 
@@ -2499,7 +2641,7 @@ a { text-decoration: none; color: inherit; }
 
   [data-shared-with-me] .shared-items-list .drive-header,
   [data-shared-with-me] .shared-items-list .drive-row {
-    grid-template-columns: minmax(220px, 1fr) 90px 180px 140px 160px;
+    grid-template-columns: minmax(220px, 1fr) 90px 180px 120px 140px 160px;
   }
 
   [data-recents-index] .recents-list .drive-header,
@@ -2528,6 +2670,12 @@ a { text-decoration: none; color: inherit; }
   .dashboard-page {
     margin: 16px auto;
     padding: 0 10px;
+  }
+
+  .share-modal-existing-head,
+  .share-modal-existing-item {
+    align-items:flex-start;
+    flex-direction:column;
   }
 
   .profile-toggle .profile-name {

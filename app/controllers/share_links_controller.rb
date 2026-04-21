@@ -9,13 +9,14 @@ class ShareLinksController < ApplicationController
 
   def index
     @share_links = ShareLink
+      .includes(:folder, :folders, share_link_accesses: :user)
       .left_joins(:folder)
       .where("folders.user_id = ? OR share_links.user_id = ?", current_user.id, current_user.id)
       .distinct
       .order(created_at: :desc)
 
     @received_share_links = current_user.accessible_share_links
-      .includes(:user, :folders, :cvs)
+      .includes(:user, :folders, :cvs, share_link_accesses: :user)
       .where.not(user_id: current_user.id)
       .distinct
       .order(created_at: :desc)
@@ -116,6 +117,7 @@ class ShareLinksController < ApplicationController
     audience = params[:share_audience].to_s
     allowed_users = resolve_share_users(audience)
     return if performed?
+    share_permission = requested_share_permission(audience, folder_ids)
 
     share_link = ShareLink.new(
       expires_at: expires_at,
@@ -133,13 +135,25 @@ class ShareLinksController < ApplicationController
     end
 
     allowed_users.each do |user|
-      ShareLinkAccess.find_or_create_by!(share_link: share_link, user: user)
+      access = ShareLinkAccess.find_or_initialize_by(share_link: share_link, user: user)
+      access.permission = share_permission
+      access.save!
     end
 
     respond_to do |format|
       format.html { redirect_after_share_created(share_link) }
       format.json { render json: { share_url: public_share_url(share_link.token) } }
     end
+  end
+
+  def selection_details
+    folder_ids = current_user.folders.where(id: Array(params[:folder_ids])).pluck(:id)
+    cv_ids = current_user.cvs.where(id: Array(params[:cv_ids])).pluck(:id)
+
+    render json: {
+      scope_label: selection_scope_label(folder_ids, cv_ids),
+      entries: serialize_share_targets(selection_share_links(folder_ids, cv_ids))
+    }
   end
 
 
@@ -231,6 +245,11 @@ class ShareLinksController < ApplicationController
       # 2) multi-folder share → first root folder
       @folder = single_folder || roots.first
     end
+
+    @current_share_permission =
+      if current_user && @share_link.access_for(current_user)
+        @share_link.permission_for(current_user)
+      end
 
     # Files-only view
     if @files_only
@@ -371,6 +390,96 @@ class ShareLinksController < ApplicationController
     end
 
     users
+  end
+
+  def requested_share_permission(audience, folder_ids)
+    return ShareLinkAccess::PERMISSION_VIEWER unless audience == "specific_people"
+    return ShareLinkAccess::PERMISSION_VIEWER if folder_ids.empty?
+
+    requested = params[:share_permission].to_s
+    ShareLinkAccess::PERMISSIONS.include?(requested) ? requested : ShareLinkAccess::PERMISSION_VIEWER
+  end
+
+  def selection_scope_label(folder_ids, cv_ids)
+    if folder_ids.one? && cv_ids.empty?
+      "This folder"
+    elsif cv_ids.one? && folder_ids.empty?
+      "This file"
+    else
+      "These selected items"
+    end
+  end
+
+  def selection_share_links(folder_ids, cv_ids)
+    return [] if folder_ids.empty? && cv_ids.empty?
+
+    selected_folder_ids = folder_ids.map(&:to_i)
+    selected_cv_ids = cv_ids.map(&:to_i)
+
+    ShareLink
+      .includes(:folder, :folders, :cvs, share_link_accesses: :user)
+      .left_joins(:folder)
+      .where("folders.user_id = ? OR share_links.user_id = ?", current_user.id, current_user.id)
+      .distinct
+      .select do |share_link|
+        share_folder_ids = share_link.all_folders.map(&:id)
+        share_cv_ids = share_link.cvs.map(&:id)
+
+        (share_folder_ids & selected_folder_ids).any? || (share_cv_ids & selected_cv_ids).any?
+      end
+  end
+
+  def serialize_share_targets(share_links)
+    entries_by_key = {}
+    public_link_count = 0
+
+    share_links.each do |share_link|
+      targets = share_link.share_targets
+
+      if targets.one? && targets.first[:kind] == :public
+        public_link_count += 1
+        next
+      end
+
+      targets.each do |target|
+        next unless target[:kind] == :user
+
+        key = target[:label].to_s.downcase
+        existing = entries_by_key[key]
+        next_permission =
+          if existing&.dig(:permission) == ShareLinkAccess::PERMISSION_EDITOR || target[:permission] == ShareLinkAccess::PERMISSION_EDITOR
+            ShareLinkAccess::PERMISSION_EDITOR
+          else
+            ShareLinkAccess::PERMISSION_VIEWER
+          end
+
+        entries_by_key[key] = {
+          kind: "user",
+          label: target[:label],
+          name: target[:name],
+          permission: next_permission
+        }
+      end
+    end
+
+    entries = entries_by_key.values.sort_by do |entry|
+      [
+        entry[:permission] == ShareLinkAccess::PERMISSION_EDITOR ? 0 : 1,
+        entry[:label].to_s
+      ]
+    end
+
+    if public_link_count.positive?
+      entries.unshift(
+        {
+          kind: "public",
+          label: "Anyone with the link",
+          permission: ShareLinkAccess::PERMISSION_VIEWER
+        }
+      )
+    end
+
+    entries
   end
 
   def redirect_after_share_created(share_link)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_08_133000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_21_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -88,9 +88,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_08_133000) do
 
   create_table "share_link_accesses", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.string "permission", default: "viewer", null: false
     t.bigint "share_link_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["permission"], name: "index_share_link_accesses_on_permission"
     t.index ["share_link_id", "user_id"], name: "index_share_link_accesses_on_share_link_id_and_user_id", unique: true
     t.index ["share_link_id"], name: "index_share_link_accesses_on_share_link_id"
     t.index ["user_id"], name: "index_share_link_accesses_on_user_id"

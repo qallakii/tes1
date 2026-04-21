@@ -1,7 +1,7 @@
 class SharedWithMeController < ApplicationController
   before_action :require_login
 
-  SharedEntry = Struct.new(:share_link, :sender, :item_type, :folder, :cv, keyword_init: true)
+  SharedEntry = Struct.new(:share_link, :sender, :item_type, :folder, :cv, :permission, keyword_init: true)
 
   def index
     received_links = current_user.accessible_share_links
@@ -17,6 +17,7 @@ class SharedWithMeController < ApplicationController
 
     received_links.each do |share_link|
       sender = share_link.user
+      permission = share_link.permission_for(current_user)
 
       share_link.all_folders.each do |folder|
         next if seen_folders[folder.id]
@@ -27,6 +28,7 @@ class SharedWithMeController < ApplicationController
           sender: sender,
           item_type: :folder,
           folder: folder,
+          permission: permission
         )
       end
 
@@ -39,6 +41,7 @@ class SharedWithMeController < ApplicationController
           sender: sender,
           item_type: :file,
           cv: cv,
+          permission: permission
         )
       end
     end

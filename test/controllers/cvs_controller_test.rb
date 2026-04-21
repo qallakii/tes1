@@ -43,6 +43,27 @@ class CvsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to folder_path(@folder)
   end
 
+  test "uploading a folder keeps the selected top-level folder" do
+    post login_path, params: { email: @user.email, password: "password123" }
+
+    file = fixture_file_upload("sample_resume.txt", "text/plain")
+
+    assert_difference("Cv.count", 1) do
+      assert_difference("Folder.count", 1) do
+        post folder_cvs_path(@folder), params: {
+          cv: {
+            files: [ file ],
+            paths: [ "Team Docs/sample_resume.txt" ]
+          }
+        }
+      end
+    end
+
+    uploaded_folder = @user.folders.find_by!(name: "Team Docs", parent_id: @folder.id)
+    assert_equal uploaded_folder.id, Cv.order(:created_at).last.folder_id
+    assert_redirected_to folder_path(@folder)
+  end
+
   test "authenticated user can view a cv" do
     post login_path, params: { email: @user.email, password: "password123" }
 

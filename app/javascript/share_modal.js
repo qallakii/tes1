@@ -2,10 +2,19 @@ function initShareModal() {
   const modal = document.querySelector("[data-share-modal]");
   if (!modal) return;
 
+  if (window.__shareModalAbort) window.__shareModalAbort.abort();
+  window.__shareModalAbort = new AbortController();
+  const { signal } = window.__shareModalAbort;
+
   const expiresInput = modal.querySelector("[data-share-expires]");
   const audienceInputs = Array.from(modal.querySelectorAll("[data-share-audience]"));
   const emailsWrap = modal.querySelector("[data-share-emails-wrap]");
   const emailsInput = modal.querySelector("[data-share-emails]");
+  const permissionWrap = modal.querySelector("[data-share-permission-wrap]");
+  const permissionInputs = Array.from(modal.querySelectorAll("[data-share-permission]"));
+  const existingWrap = modal.querySelector("[data-share-existing-wrap]");
+  const existingState = modal.querySelector("[data-share-existing-state]");
+  const existingList = modal.querySelector("[data-share-existing-list]");
   const confirmBtn = modal.querySelector("[data-share-confirm]");
   const copyBtn = modal.querySelector("[data-share-copy]");
   const formView = modal.querySelector("[data-share-form-view]");
@@ -15,24 +24,50 @@ function initShareModal() {
 
   let currentPayload = null;
   let currentShareUrl = "";
+  let detailsRequestId = 0;
 
   function selectedAudience() {
     const checked = audienceInputs.find((input) => input.checked);
     return checked ? checked.value : "anyone";
   }
 
+  function selectedPermission() {
+    const checked = permissionInputs.find((input) => input.checked);
+    return checked ? checked.value : "viewer";
+  }
+
+  function setSelectedPermission(permission) {
+    const next = permissionInputs.find((input) => input.value === permission) || permissionInputs[0];
+    if (next) next.checked = true;
+  }
+
+  function supportsEditorPermission() {
+    return selectedAudience() === "specific_people" && currentPayload && currentPayload.folderIds.length > 0;
+  }
+
   function updateAudienceUI() {
-    if (!emailsWrap) return;
-    emailsWrap.hidden = selectedAudience() !== "specific_people";
+    if (emailsWrap) emailsWrap.hidden = selectedAudience() !== "specific_people";
+
+    if (permissionWrap) permissionWrap.hidden = !supportsEditorPermission();
+    if (!supportsEditorPermission()) setSelectedPermission("viewer");
+  }
+
+  function resetExistingShares() {
+    if (existingList) existingList.innerHTML = "";
+    if (existingState) existingState.textContent = "Loading...";
+    if (existingWrap) existingWrap.hidden = true;
   }
 
   function closeModal() {
     modal.hidden = true;
     currentPayload = null;
     currentShareUrl = "";
+    detailsRequestId += 1;
+
     if (expiresInput) expiresInput.value = "";
     if (emailsInput) emailsInput.value = "";
     if (audienceInputs[0]) audienceInputs[0].checked = true;
+    setSelectedPermission("viewer");
     if (formView) formView.hidden = false;
     if (resultView) resultView.hidden = true;
     if (confirmBtn) {
@@ -40,14 +75,12 @@ function initShareModal() {
       confirmBtn.disabled = false;
       confirmBtn.textContent = "Create share link";
     }
-    if (copyBtn) {
-      copyBtn.hidden = true;
-    }
+    if (copyBtn) copyBtn.hidden = true;
+    resetExistingShares();
     updateAudienceUI();
   }
 
-  async function createShareLink(payload) {
-    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+  function buildParams(payload) {
     const params = new URLSearchParams();
 
     payload.folderIds.forEach((id) => params.append("folder_ids[]", id));
@@ -55,7 +88,13 @@ function initShareModal() {
     params.append("expires_at", expiresInput ? expiresInput.value : "");
     params.append("share_audience", selectedAudience());
     params.append("share_emails", emailsInput ? emailsInput.value : "");
+    params.append("share_permission", selectedPermission());
 
+    return params;
+  }
+
+  async function createShareLink(payload) {
+    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
     const response = await fetch("/share_links/bulk_create_items", {
       method: "POST",
       headers: {
@@ -63,7 +102,7 @@ function initShareModal() {
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
         "X-CSRF-Token": tokenMeta ? tokenMeta.getAttribute("content") : ""
       },
-      body: params.toString(),
+      body: buildParams(payload).toString(),
       credentials: "same-origin"
     });
 
@@ -81,20 +120,106 @@ function initShareModal() {
     return response.json();
   }
 
-  async function copyCurrentLink() {
-    if (!currentShareUrl) return;
+  async function fetchSelectionDetails(payload) {
+    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+    const response = await fetch("/share_links/selection_details", {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        "X-CSRF-Token": tokenMeta ? tokenMeta.getAttribute("content") : ""
+      },
+      body: buildParams(payload).toString(),
+      credentials: "same-origin"
+    });
+
+    if (!response.ok) throw new Error("Could not load current shares.");
+    return response.json();
+  }
+
+  function permissionLabel(permission) {
+    return permission === "editor" ? "Can edit" : "Can view";
+  }
+
+  function renderExistingShares(data) {
+    if (!existingWrap || !existingState || !existingList) return;
+
+    const entries = Array.isArray(data?.entries) ? data.entries : [];
+    existingWrap.hidden = false;
+    existingList.innerHTML = "";
+
+    if (entries.length === 0) {
+      existingState.textContent = `${data?.scope_label || "This selection"} is not shared yet.`;
+      return;
+    }
+
+    existingState.textContent = `${data?.scope_label || "This selection"} is already shared with:`;
+
+    entries.forEach((entry) => {
+      const item = document.createElement("li");
+      item.className = "share-modal-existing-item";
+
+      const copy = document.createElement("div");
+      copy.className = "share-modal-existing-copy";
+
+      const title = document.createElement("div");
+      title.className = "share-modal-existing-name";
+      title.textContent = entry.kind === "public" ? "Anyone with the link" : (entry.name || entry.label || "Unknown user");
+      copy.appendChild(title);
+
+      if (entry.kind === "user" && entry.name && entry.label) {
+        const meta = document.createElement("div");
+        meta.className = "share-modal-existing-meta";
+        meta.textContent = entry.label;
+        copy.appendChild(meta);
+      }
+
+      const badge = document.createElement("span");
+      badge.className = `share-modal-existing-badge ${entry.permission === "editor" ? "is-editor" : "is-viewer"}`;
+      badge.textContent = permissionLabel(entry.permission);
+
+      item.appendChild(copy);
+      item.appendChild(badge);
+      existingList.appendChild(item);
+    });
+  }
+
+  async function loadExistingShares() {
+    const requestId = detailsRequestId + 1;
+    detailsRequestId = requestId;
+
+    if (!currentPayload || !existingWrap || !existingState || !existingList) return;
+
+    existingWrap.hidden = false;
+    existingList.innerHTML = "";
+    existingState.textContent = "Loading...";
 
     try {
-      await navigator.clipboard.writeText(currentShareUrl);
-      if (!copyBtn) return;
-      const originalText = copyBtn.textContent;
-      copyBtn.textContent = "Copied";
-      window.setTimeout(() => {
-        copyBtn.textContent = originalText;
-      }, 1200);
+      const data = await fetchSelectionDetails(currentPayload);
+      if (requestId !== detailsRequestId) return;
+      renderExistingShares(data);
     } catch (_error) {
-      window.alert("Copy failed. Please copy the link manually.");
+      if (requestId !== detailsRequestId) return;
+      existingList.innerHTML = "";
+      existingState.textContent = "Couldn't load current shares.";
     }
+  }
+
+  async function copyCurrentLink() {
+    if (!currentShareUrl || !copyBtn) return;
+
+    const copy = typeof window.copyTextToClipboard === "function"
+      ? window.copyTextToClipboard(currentShareUrl)
+      : Promise.resolve(false);
+
+    const copied = await copy;
+    if (!copied) return;
+
+    const originalText = copyBtn.textContent;
+    copyBtn.textContent = "Copied";
+    window.setTimeout(() => {
+      copyBtn.textContent = originalText;
+    }, 1200);
   }
 
   function showResult(shareUrl) {
@@ -106,9 +231,7 @@ function initShareModal() {
       resultUrl.textContent = shareUrl;
     }
     if (confirmBtn) confirmBtn.hidden = true;
-    if (copyBtn) {
-      copyBtn.hidden = false;
-    }
+    if (copyBtn) copyBtn.hidden = false;
   }
 
   window.openShareModal = ({ folderIds = [], cvIds = [] }) => {
@@ -119,21 +242,32 @@ function initShareModal() {
       cvIds: cvIds.filter(Boolean)
     };
 
+    currentShareUrl = "";
+    if (formView) formView.hidden = false;
+    if (resultView) resultView.hidden = true;
+    if (confirmBtn) {
+      confirmBtn.hidden = false;
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "Create share link";
+    }
+    if (copyBtn) copyBtn.hidden = true;
+
     modal.hidden = false;
     updateAudienceUI();
+    loadExistingShares();
   };
 
   audienceInputs.forEach((input) => {
-    input.addEventListener("change", updateAudienceUI);
+    input.addEventListener("change", updateAudienceUI, { signal });
   });
 
   closeButtons.forEach((button) => {
-    button.addEventListener("click", closeModal);
+    button.addEventListener("click", closeModal, { signal });
   });
 
   modal.addEventListener("click", (e) => {
     if (e.target === modal) closeModal();
-  });
+  }, { signal });
 
   if (confirmBtn) {
     confirmBtn.addEventListener("click", async () => {
@@ -154,15 +288,17 @@ function initShareModal() {
         confirmBtn.disabled = false;
         confirmBtn.textContent = "Create share link";
       }
-    });
+    }, { signal });
   }
 
-  if (copyBtn) {
-    copyBtn.addEventListener("click", copyCurrentLink);
-  }
+  if (copyBtn) copyBtn.addEventListener("click", copyCurrentLink, { signal });
 
   updateAudienceUI();
 }
 
 document.addEventListener("turbo:load", initShareModal);
 document.addEventListener("DOMContentLoaded", initShareModal);
+document.addEventListener("turbo:before-cache", () => {
+  if (window.__shareModalAbort) window.__shareModalAbort.abort();
+  window.__shareModalAbort = null;
+});

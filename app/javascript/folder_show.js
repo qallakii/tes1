@@ -35,11 +35,36 @@ function initFolderShowPage() {
   const previewFallback = document.getElementById("file-preview-fallback");
   const previewOpenNew = document.getElementById("file-preview-open-new");
   const previewDownloadFallback = document.getElementById("file-preview-download-fallback");
+  const previewPrev = document.getElementById("file-preview-prev");
+  const previewNext = document.getElementById("file-preview-next");
   const createOverlay = page.querySelector("#create-folder-overlay");
   const openCreateButton = page.querySelector("#open-create-folder");
   const closeCreateButton = page.querySelector("#close-create-folder");
   const cancelCreateButton = page.querySelector("#cancel-create-folder");
   const createInput = page.querySelector(".folder-create-modal-input");
+  let activePreviewIndex = -1;
+
+  function previewEntries() {
+    return Array.from(page.querySelectorAll(".cv-row.clickable-row"))
+      .map((row) => ({
+        previewUrl: row.getAttribute("data-preview"),
+        downloadUrl: row.getAttribute("data-download"),
+        title: row.getAttribute("data-preview-title"),
+        contentType: row.getAttribute("data-preview-kind")
+      }))
+      .filter((entry) => ["image", "video"].includes(previewKind(entry.contentType)) && entry.previewUrl);
+  }
+
+  function updatePreviewNavigation() {
+    const galleryEntries = previewEntries();
+    const hasActiveMedia = activePreviewIndex >= 0 && galleryEntries.length > 0;
+
+    [previewPrev, previewNext].forEach((button) => {
+      if (!button) return;
+      button.hidden = !hasActiveMedia;
+      button.disabled = !hasActiveMedia || galleryEntries.length < 2;
+    });
+  }
 
   function hidePreviewNodes() {
     [previewFrame, previewVideo, previewImage, previewAudio, previewFallback].forEach((node) => {
@@ -63,6 +88,8 @@ function initFolderShowPage() {
 
   function closePreviewModal() {
     hidePreviewNodes();
+    activePreviewIndex = -1;
+    updatePreviewNavigation();
     if (previewOverlay) previewOverlay.hidden = true;
   }
 
@@ -80,6 +107,10 @@ function initFolderShowPage() {
       if (previewUrl) window.open(previewUrl, "_blank", "noopener");
       return;
     }
+
+    const galleryEntries = previewEntries();
+    const nextIndex = galleryEntries.findIndex((entry) => entry.previewUrl === previewUrl);
+    activePreviewIndex = ["image", "video"].includes(previewKind(contentType)) ? nextIndex : -1;
 
     hidePreviewNodes();
     if (previewTitle) previewTitle.textContent = title || "File preview";
@@ -116,10 +147,24 @@ function initFolderShowPage() {
         if (previewFallback) previewFallback.hidden = false;
     }
 
+    updatePreviewNavigation();
     previewOverlay.hidden = false;
   }
 
+  function stepPreview(direction) {
+    const galleryEntries = previewEntries();
+    if (activePreviewIndex < 0 || galleryEntries.length === 0) return;
+
+    const nextIndex = (activePreviewIndex + direction + galleryEntries.length) % galleryEntries.length;
+    const nextEntry = galleryEntries[nextIndex];
+    if (!nextEntry) return;
+
+    openPreviewModal(nextEntry);
+  }
+
   if (previewClose) previewClose.addEventListener("click", closePreviewModal, { signal });
+  if (previewPrev) previewPrev.addEventListener("click", () => stepPreview(-1), { signal });
+  if (previewNext) previewNext.addEventListener("click", () => stepPreview(1), { signal });
   if (previewOverlay) {
     previewOverlay.addEventListener("click", (event) => {
       if (event.target === previewOverlay) closePreviewModal();
@@ -128,6 +173,8 @@ function initFolderShowPage() {
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && previewOverlay && !previewOverlay.hidden) closePreviewModal();
+    if (event.key === "ArrowLeft" && previewOverlay && !previewOverlay.hidden) stepPreview(-1);
+    if (event.key === "ArrowRight" && previewOverlay && !previewOverlay.hidden) stepPreview(1);
   }, { signal });
 
   function openCreateModal() {
@@ -353,6 +400,7 @@ function initFolderShowPage() {
     const any = selectedFileIds().length > 0 || selectedFolderIds().length > 0;
     if (bulkBar) bulkBar.style.display = any ? "inline-flex" : "none";
     if (openUploadBtn) openUploadBtn.style.display = any ? "none" : "";
+    if (openCreateButton) openCreateButton.style.display = any ? "none" : "";
 
     if (selectAll) {
       const all = [...fileChecks, ...folderChecks];
@@ -677,5 +725,5 @@ document.addEventListener("turbo:before-cache", () => {
   if (createOverlay) createOverlay.style.display = "none";
 
   const previewOverlay = document.getElementById("file-preview-overlay");
-  if (previewOverlay) previewOverlay.style.display = "none";
+  if (previewOverlay) previewOverlay.hidden = true;
 });

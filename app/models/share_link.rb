@@ -32,4 +32,51 @@ class ShareLink < ApplicationRecord
   def restricted_to_specific_people?
     share_link_accesses.exists?
   end
+
+  def access_for(user)
+    return nil unless user
+
+    if association(:share_link_accesses).loaded?
+      share_link_accesses.find { |access| access.user_id == user.id }
+    else
+      share_link_accesses.find_by(user_id: user.id)
+    end
+  end
+
+  def permission_for(user)
+    access_for(user)&.permission.presence || ShareLinkAccess::PERMISSION_VIEWER
+  end
+
+  def editor_for?(user)
+    permission_for(user) == ShareLinkAccess::PERMISSION_EDITOR
+  end
+
+  def share_targets
+    accesses =
+      if association(:share_link_accesses).loaded?
+        share_link_accesses
+      else
+        share_link_accesses.includes(:user)
+      end
+
+    entries = accesses.filter_map do |access|
+      next unless access.user
+
+      {
+        kind: :user,
+        label: access.user.email,
+        name: access.user.name.presence,
+        permission: access.permission.presence || ShareLinkAccess::PERMISSION_VIEWER
+      }
+    end
+
+    return [ { kind: :public, label: "Anyone with the link", permission: ShareLinkAccess::PERMISSION_VIEWER } ] if entries.empty?
+
+    entries.sort_by do |entry|
+      [
+        entry[:permission] == ShareLinkAccess::PERMISSION_EDITOR ? 0 : 1,
+        entry[:label].to_s
+      ]
+    end
+  end
 end

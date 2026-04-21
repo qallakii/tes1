@@ -38,6 +38,32 @@
             Only existing registered users can be added.
           </div>
         </div>
+
+        <div class="share-modal-permission-wrap" data-share-permission-wrap hidden>
+          <div class="share-modal-label">Permission</div>
+          <div class="share-modal-options share-modal-options-inline">
+            <label class="share-modal-option">
+              <input type="radio" name="share_permission" value="viewer" checked data-share-permission>
+              <span>Can view</span>
+            </label>
+
+            <label class="share-modal-option">
+              <input type="radio" name="share_permission" value="editor" data-share-permission>
+              <span>Can edit</span>
+            </label>
+          </div>
+          <div class="muted share-modal-help">
+            Edit permission is only available for specific people on shared folders.
+          </div>
+        </div>
+
+        <div class="share-modal-existing" data-share-existing-wrap hidden>
+          <div class="share-modal-existing-head">
+            <div class="share-modal-label">Currently shared with</div>
+            <div class="muted share-modal-existing-state" data-share-existing-state>Loading…</div>
+          </div>
+          <ul class="share-modal-existing-list" data-share-existing-list></ul>
+        </div>
       </div>
 
       <div data-share-result-view hidden>

@@ -8,8 +8,14 @@ class ShareLinksControllerTest < ActionDispatch::IntegrationTest
       password: "password123",
       password_confirmation: "password123"
     )
+    @recipient = User.create!(
+      name: "Share Recipient",
+      email: "share-recipient@example.com",
+      password: "password123",
+      password_confirmation: "password123"
+    )
     @folder = @user.folders.create!(name: "Shared Folder")
-    @share_link = @user.share_links.create!(folder: @folder)
+    @share_link = @user.share_links.create!(folder: @folder, user: @user)
   end
 
   test "public share page is accessible by token" do
@@ -27,5 +33,44 @@ class ShareLinksControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to share_links_path
+  end
+
+  test "bulk item sharing stores editor permission for specific people" do
+    post login_path, params: { email: @user.email, password: "password123" }
+
+    assert_difference("ShareLink.count", 1) do
+      post bulk_create_items_share_links_path,
+        params: {
+          folder_ids: [ @folder.id ],
+          share_audience: "specific_people",
+          share_emails: @recipient.email,
+          share_permission: "editor"
+        },
+        as: :json
+    end
+
+    assert_response :success
+    link = ShareLink.order(:created_at).last
+    assert_equal "editor", link.share_link_accesses.find_by!(user: @recipient).permission
+  end
+
+  test "selection details lists existing recipients and permissions" do
+    ShareLinkAccess.create!(share_link: @share_link, user: @recipient, permission: "editor")
+    post login_path, params: { email: @user.email, password: "password123" }
+
+    post selection_details_share_links_path,
+      params: { folder_ids: [ @folder.id ] },
+      as: :json
+
+    assert_response :success
+
+    body = JSON.parse(response.body)
+    assert_equal "This folder", body["scope_label"]
+    assert_includes body["entries"], {
+      "kind" => "user",
+      "label" => @recipient.email,
+      "name" => @recipient.name,
+      "permission" => "editor"
+    }
   end
 end

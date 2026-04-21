@@ -25,6 +25,12 @@
         <% else %>
           <span class="badge neutral">Expires: <%= @share_link.expires_at.strftime("%b %d, %Y %H:%M") %></span>
         <% end %>
+
+        <% if @current_share_permission.present? %>
+          <span class="badge neutral">
+            <%= @current_share_permission == "editor" ? "Permission: Can edit" : "Permission: Can view" %>
+          </span>
+        <% end %>
       </div>
 
       <h1 class="share-title">
@@ -51,7 +57,13 @@
     <div class="share-hero-right">
       <button type="button" class="btn secondary copy-btn" data-copy="<%= share_url %>">Copy link</button>
       <a class="btn primary" href="<%= share_url %>" target="_blank" rel="noopener">Open</a>
-      <%= link_to "Back to folders", public_share_path(@share_link.token), class: "btn secondary" %>
+      <button
+        type="button"
+        class="btn secondary"
+        data-go-back
+        data-fallback-url="<%= request.referer.presence || (current_user ? share_links_path : public_share_path(@share_link.token)) %>">
+        Back
+      </button>
       <% unless current_user %>
         <%= link_to "Login", login_path, class: "btn secondary" %>
       <% end %>
@@ -423,6 +435,31 @@
     const previewFallback = document.getElementById("file-preview-fallback");
     const previewOpenNew = document.getElementById("file-preview-open-new");
     const previewDownloadFallback = document.getElementById("file-preview-download-fallback");
+    const previewPrev = document.getElementById("file-preview-prev");
+    const previewNext = document.getElementById("file-preview-next");
+    let activePreviewIndex = -1;
+
+    function previewEntries() {
+      return Array.from(document.querySelectorAll(".drive-row[data-kind='file']"))
+        .map((row) => ({
+          previewUrl: row.getAttribute("data-preview"),
+          downloadUrl: row.getAttribute("data-download"),
+          title: row.getAttribute("data-preview-title"),
+          contentType: row.getAttribute("data-preview-kind")
+        }))
+        .filter((entry) => ["image", "video"].includes(previewKind(entry.contentType)) && entry.previewUrl);
+    }
+
+    function updatePreviewNavigation() {
+      const galleryEntries = previewEntries();
+      const hasActiveMedia = activePreviewIndex >= 0 && galleryEntries.length > 0;
+
+      [previewPrev, previewNext].forEach((button) => {
+        if (!button) return;
+        button.hidden = !hasActiveMedia;
+        button.disabled = !hasActiveMedia || galleryEntries.length < 2;
+      });
+    }
 
     function hidePreviewNodes() {
       [previewFrame, previewVideo, previewImage, previewAudio, previewFallback].forEach((node) => {
@@ -455,6 +492,8 @@
 
     function closePreviewModal() {
       hidePreviewNodes();
+      activePreviewIndex = -1;
+      updatePreviewNavigation();
       if (previewOverlay) previewOverlay.hidden = true;
     }
 
@@ -463,6 +502,10 @@
         if (previewUrl) window.open(previewUrl, "_blank", "noopener");
         return;
       }
+
+      const galleryEntries = previewEntries();
+      const nextIndex = galleryEntries.findIndex((entry) => entry.previewUrl === previewUrl);
+      activePreviewIndex = ["image", "video"].includes(previewKind(contentType)) ? nextIndex : -1;
 
       hidePreviewNodes();
       if (previewTitle) previewTitle.textContent = title || "File preview";
@@ -499,10 +542,24 @@
           if (previewFallback) previewFallback.hidden = false;
       }
 
+      updatePreviewNavigation();
       previewOverlay.hidden = false;
     }
 
+    function stepPreview(direction) {
+      const galleryEntries = previewEntries();
+      if (activePreviewIndex < 0 || galleryEntries.length === 0) return;
+
+      const nextIndex = (activePreviewIndex + direction + galleryEntries.length) % galleryEntries.length;
+      const nextEntry = galleryEntries[nextIndex];
+      if (!nextEntry) return;
+
+      openPreviewModal(nextEntry);
+    }
+
     if (previewClose) previewClose.addEventListener("click", closePreviewModal, { signal });
+    if (previewPrev) previewPrev.addEventListener("click", () => stepPreview(-1), { signal });
+    if (previewNext) previewNext.addEventListener("click", () => stepPreview(1), { signal });
     if (previewOverlay) {
       previewOverlay.addEventListener("click", (event) => {
         if (event.target === previewOverlay) closePreviewModal();
@@ -511,7 +568,23 @@
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && previewOverlay && !previewOverlay.hidden) closePreviewModal();
+      if (event.key === "ArrowLeft" && previewOverlay && !previewOverlay.hidden) stepPreview(-1);
+      if (event.key === "ArrowRight" && previewOverlay && !previewOverlay.hidden) stepPreview(1);
     }, { signal });
+
+    document.querySelectorAll("[data-go-back]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const referrer = document.referrer || "";
+        const sameOriginReferrer = referrer.startsWith(window.location.origin);
+        if (window.history.length > 1 && sameOriginReferrer) {
+          window.history.back();
+          return;
+        }
+
+        const fallbackUrl = button.getAttribute("data-fallback-url");
+        if (fallbackUrl) window.location.href = fallbackUrl;
+      }, { signal });
+    });
 
     // Copy link
     document.querySelectorAll(".copy-btn").forEach((btn) => {
@@ -520,16 +593,10 @@
 
       btn.addEventListener("click", async () => {
         const text = btn.getAttribute("data-copy");
-        try {
-          await navigator.clipboard.writeText(text);
-        } catch (e) {
-          const ta = document.createElement("textarea");
-          ta.value = text;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand("copy");
-          document.body.removeChild(ta);
-        }
+        const copied = typeof window.copyTextToClipboard === "function"
+          ? await window.copyTextToClipboard(text)
+          : false;
+        if (!copied) return;
         const old = btn.textContent;
         btn.textContent = "Copied";
         setTimeout(() => (btn.textContent = old), 900);
@@ -570,8 +637,14 @@
     }
 
     function updateBulk() {
-      const any = selectedRows().length > 0;
+      const rows = selectedRows();
+      const fileRows = rows.filter((row) => row.getAttribute("data-kind") === "file");
+      const any = rows.length > 0;
+
       if (bulkBar) bulkBar.style.display = any ? "flex" : "none";
+      if (bulkOpen) bulkOpen.hidden = rows.length !== 1;
+      if (bulkPreview) bulkPreview.hidden = fileRows.length !== 1 || rows.length !== 1;
+      if (bulkDownload) bulkDownload.hidden = !any || fileRows.length !== rows.length;
 
       if (selectAll) {
         const all = [...fileChecks, ...folderChecks];
@@ -652,29 +725,21 @@
       });
     }
 
-    function collect(kind) {
-      const rows = selectedRows();
-      return rows.map((r) => r.getAttribute(kind)).filter(Boolean);
-    }
-
     if (bulkOpen) {
       bulkOpen.addEventListener("click", (e) => {
         e.preventDefault();
         const rows = selectedRows();
-        if (rows.length === 0) return;
+        if (rows.length !== 1) return;
 
-        const folderOpens = rows.filter(r => r.getAttribute("data-kind") === "folder").map(r => r.getAttribute("data-open"));
-        const filePreviews = rows.filter(r => r.getAttribute("data-kind") === "file").map(r => r.getAttribute("data-preview"));
-
-        // Open folders in same tab if only one folder; otherwise new tabs
-        if (folderOpens.length === 1 && filePreviews.length === 0) {
-          window.location.href = folderOpens[0];
+        const row = rows[0];
+        if (row.getAttribute("data-kind") === "folder") {
+          const folderUrl = row.getAttribute("data-open");
+          if (folderUrl) window.location.href = folderUrl;
           return;
         }
 
-        // Otherwise open everything in new tabs
-        openMany(folderOpens, true);
-        openMany(filePreviews, true);
+        const previewUrl = row.getAttribute("data-preview");
+        if (previewUrl) window.open(previewUrl, "_blank", "noopener");
       }, { signal });
     }
 
@@ -682,23 +747,16 @@
       bulkPreview.addEventListener("click", (e) => {
         e.preventDefault();
         const rows = selectedRows();
-        if (rows.length === 0) return;
+        const fileRows = rows.filter((row) => row.getAttribute("data-kind") === "file");
+        if (rows.length !== 1 || fileRows.length !== 1) return;
 
-        const previews = rows
-          .filter(r => r.getAttribute("data-kind") === "file")
-          .map(r => r.getAttribute("data-preview"));
-        const firstFileRow = rows.find((r) => r.getAttribute("data-kind") === "file");
-        if (previews.length === 1 && firstFileRow) {
-          openPreviewModal({
-            previewUrl: firstFileRow.getAttribute("data-preview"),
-            downloadUrl: firstFileRow.getAttribute("data-download"),
-            title: firstFileRow.getAttribute("data-preview-title"),
-            contentType: firstFileRow.getAttribute("data-preview-kind")
-          });
-          return;
-        }
-
-        openMany(previews, true);
+        const fileRow = fileRows[0];
+        openPreviewModal({
+          previewUrl: fileRow.getAttribute("data-preview"),
+          downloadUrl: fileRow.getAttribute("data-download"),
+          title: fileRow.getAttribute("data-preview-title"),
+          contentType: fileRow.getAttribute("data-preview-kind")
+        });
       }, { signal });
     }
 
@@ -706,9 +764,10 @@
       bulkDownload.addEventListener("click", (e) => {
         e.preventDefault();
         const rows = selectedRows();
-        if (rows.length === 0) return;
+        const fileRows = rows.filter((row) => row.getAttribute("data-kind") === "file");
+        if (fileRows.length === 0 || fileRows.length !== rows.length) return;
 
-        const downloads = rows.map(r => r.getAttribute("data-download")).filter(Boolean);
+        const downloads = fileRows.map((row) => row.getAttribute("data-download")).filter(Boolean);
         // downloads happen by navigation/new tabs
         openMany(downloads, true);
       }, { signal });

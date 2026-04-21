@@ -27,7 +27,7 @@ class CvsController < ApplicationController
 
       dir_parts =
         if parts.length >= 2
-          parts[1..-2] || []
+          parts[0..-2] || []
         else
           []
         end

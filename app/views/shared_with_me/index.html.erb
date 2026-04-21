@@ -24,6 +24,7 @@
             <div class="col-item-name">Name</div>
             <div class="col-item-type">Type</div>
             <div class="col-item-owner">Shared by</div>
+            <div class="col-item-permission">Permission</div>
             <div class="col-item-expiry">Expires</div>
             <div class="col-item-actions">Actions</div>
           </div>
@@ -57,6 +58,12 @@
 
               <div class="col-item-owner">
                 <span class="muted"><%= entry.sender&.email || "Unknown sender" %></span>
+              </div>
+
+              <div class="col-item-permission">
+                <span class="shared-permission-badge <%= entry.permission == "editor" ? "is-editor" : "is-viewer" %>">
+                  <%= entry.permission == "editor" ? "Can edit" : "Can view" %>
+                </span>
               </div>
 
               <div class="col-item-expiry">

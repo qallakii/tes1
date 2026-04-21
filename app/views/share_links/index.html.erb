@@ -19,6 +19,7 @@
             <% first_folder = folders.first || link.folder %>
             <% folder_count = folders.size %>
             <% share_url = public_share_url(link.token) %>
+            <% share_targets = link.share_targets %>
 
             <div class="drive-row share-row">
               <div class="col-folder">
@@ -39,6 +40,14 @@
                 <% else %>
                   <span class="muted">No folder</span>
                 <% end %>
+
+                <div class="muted share-links-targets">
+                  <% if share_targets.one? && share_targets.first[:kind] == :public %>
+                    Anyone with the link
+                  <% else %>
+                    <%= share_targets.map { |target| "#{target[:label]} (#{target[:permission] == "editor" ? "Can edit" : "Can view"})" }.join(", ") %>
+                  <% end %>
+                </div>
               </div>
 
               <div class="col-url">
