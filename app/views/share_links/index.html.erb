@@ -25,11 +25,7 @@
               <div class="col-folder">
                 <% if first_folder %>
                   <%= link_to folder_path(first_folder), class: "folder-link" do %>
-                    <span class="folder-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                      </svg>
-                    </span>
+                    <%= folder_icon_tag %>
                     <span class="folder-name">
                       <%= first_folder.name %>
                       <% if folder_count > 1 %>
