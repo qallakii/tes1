@@ -107,6 +107,8 @@
                       Rename
                     </button>
 
+                    <button type="button" class="kebab-item move-folder-btn" data-folder-id="<%= sf.id %>">Move</button>
+
                     <%= button_to "Delete",
                       folder_path(sf),
                       method: :delete,
@@ -230,9 +232,10 @@
     <div id="bulk-move-file-ids"></div>
   <% end %>
 
-  <!-- Move ONE file -->
+  <!-- Move ONE folder or file -->
   <%= form_with url: bulk_move_items_folder_path(@folder), method: :post, local: true, id: "move-one-form" do %>
     <%= hidden_field_tag :target_folder_id, "", id: "move-target-folder-id-one" %>
+    <div id="move-one-folder-id"></div>
     <div id="move-one-file-id"></div>
   <% end %>
 

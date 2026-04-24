@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <%= favicon_link_tag "crewitfavicon.png" %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
@@ -33,26 +34,26 @@
               </button>
             <% end %>
             <%= link_to (current_user ? dashboard_path : root_path), class: "drive-logo" do %>
-              <%= image_tag "image.png", alt: "Logo", class: "app-logo" %>
+              <%= image_tag "crewitlogo.png", alt: "CrewitDrive", class: "app-logo" %>
             <% end %>
           </div>
 
+          <div class="drive-top-center <%= 'is-empty' if public_share_page && !current_user %>">
+            <% unless public_share_page && !current_user %>
+              <div class="drive-searchbar">
+                <span class="drive-search-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <path d="M21 21l-4.3-4.3"></path>
+                  </svg>
+                </span>
 
-
-          <div class="drive-top-center">
-            <div class="drive-searchbar">
-              <span class="drive-search-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="11" cy="11" r="7"></circle>
-                  <path d="M21 21l-4.3-4.3"></path>
-                </svg>
-              </span>
-
-              <!-- ✅ REAL GLOBAL SEARCH -->
-              <%= form_with url: search_path, method: :get, local: true, class: "drive-search-form" do %>
-                <%= text_field_tag :q, params[:q], placeholder: "Search in CrewitDrive", class: "drive-search-input" %>
-              <% end %>
-            </div>
+                <!-- ✅ REAL GLOBAL SEARCH -->
+                <%= form_with url: search_path, method: :get, local: true, class: "drive-search-form" do %>
+                  <%= text_field_tag :q, params[:q], placeholder: "Search in CrewitDrive", class: "drive-search-input" %>
+                <% end %>
+              </div>
+            <% end %>
           </div>
 
           <div class="drive-top-right">

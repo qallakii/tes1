@@ -25,6 +25,35 @@ class ShareLinksControllerTest < ActionDispatch::IntegrationTest
     assert_match "Shared Folder", response.body
   end
 
+  test "public folder share opens at folder level before showing files" do
+    cv = @folder.cvs.create!(user: @user)
+    cv.file.attach(fixture_file_upload("sample_resume.txt", "text/plain"))
+    cv.save!
+
+    get public_share_path(@share_link.token)
+
+    assert_response :success
+    assert_match "Shared Folder", response.body
+    assert_no_match "sample_resume", response.body
+
+    get public_share_path(@share_link.token, folder_id: @folder.id)
+
+    assert_response :success
+    assert_match "sample_resume", response.body
+  end
+
+  test "public folder share allows downloading the folder as a zip" do
+    cv = @folder.cvs.create!(user: @user)
+    cv.file.attach(fixture_file_upload("sample_resume.txt", "text/plain"))
+    cv.save!
+
+    get folder_download_share_link_path(@share_link, folder_id: @folder.id)
+
+    assert_response :success
+    assert_equal "application/zip", response.media_type
+    assert_match(/attachment/, response.headers["Content-Disposition"])
+  end
+
   test "authenticated user can create a share link for a folder" do
     post login_path, params: { email: @user.email, password: "password123" }
 

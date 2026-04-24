@@ -24,4 +24,21 @@ class FoldersControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match "New", response.body
   end
+
+  test "authenticated users can move a subfolder into another folder" do
+    post login_path, params: { email: @user.email, password: "password123" }
+
+    source = @user.folders.create!(name: "Source")
+    child = @user.folders.create!(name: "Child", parent: source)
+    destination = @user.folders.create!(name: "Destination")
+
+    post bulk_move_items_folder_path(source),
+      params: {
+        target_folder_id: destination.id,
+        folder_ids: [ child.id ]
+      }
+
+    assert_redirected_to folder_path(source)
+    assert_equal destination.id, child.reload.parent_id
+  end
 end

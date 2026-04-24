@@ -33,7 +33,7 @@ module ApplicationHelper
     unit_index.zero? ? "#{value.to_i} #{units[unit_index]}" : "#{format('%.1f', value)} #{units[unit_index]}"
   end
 
-  def folder_icon_tag(css_class: "folder-icon", size: 18)
+  def folder_icon_tag(css_class: "folder-icon", size: 22)
     content_tag(
       :span,
       class: css_class,
@@ -60,7 +60,7 @@ module ApplicationHelper
     end
   end
 
-  def file_icon_tag(file, content_type: nil, css_class: "file-icon", size: 18)
+  def file_icon_tag(file, content_type: nil, css_class: "file-icon", size: 22)
     family, title_label, icon_label = file_icon_details(file, content_type: content_type)
 
     content_tag(

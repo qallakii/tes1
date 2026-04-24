@@ -563,18 +563,21 @@ function initFolderShowPage() {
   const bulkMoveFileIds = page.querySelector("#bulk-move-file-ids");
   const moveTarget = page.querySelector("#move-target-folder-id");
   const moveOneForm = page.querySelector("#move-one-form");
+  const moveOneFolderId = page.querySelector("#move-one-folder-id");
   const moveOneFileId = page.querySelector("#move-one-file-id");
   const moveTargetOne = page.querySelector("#move-target-folder-id-one");
 
   let pickedTargetId = null;
   let moveMode = "bulk";
+  let oneFolderId = null;
   let oneCvId = null;
 
-  function openMoveModal(mode, cvId = null) {
+  function openMoveModal(mode, itemId = null) {
     if (!moveOverlay) return;
 
     moveMode = mode;
-    oneCvId = cvId;
+    oneFolderId = mode === "one-folder" ? itemId : null;
+    oneCvId = mode === "one-file" ? itemId : null;
     pickedTargetId = null;
 
     if (moveSelectedName) moveSelectedName.textContent = "None";
@@ -634,7 +637,14 @@ function initFolderShowPage() {
   page.querySelectorAll(".move-one-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
-      openMoveModal("one", btn.dataset.cvId);
+      openMoveModal("one-file", btn.dataset.cvId);
+    }, { signal });
+  });
+
+  page.querySelectorAll(".move-folder-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      openMoveModal("one-folder", btn.dataset.folderId);
     }, { signal });
   });
 
@@ -662,11 +672,12 @@ function initFolderShowPage() {
         return;
       }
 
-      if (moveMode === "one") {
-        if (!moveOneForm || !moveTargetOne || !moveOneFileId) return;
+      if (moveMode === "one-file" || moveMode === "one-folder") {
+        if (!moveOneForm || !moveTargetOne || !moveOneFileId || !moveOneFolderId) return;
 
         moveTargetOne.value = pickedTargetId;
-        fillHiddenInputs(moveOneFileId, "cv_ids[]", [oneCvId]);
+        fillHiddenInputs(moveOneFolderId, "folder_ids[]", oneFolderId ? [oneFolderId] : []);
+        fillHiddenInputs(moveOneFileId, "cv_ids[]", oneCvId ? [oneCvId] : []);
         moveOneForm.submit();
         closeMoveModal();
       }

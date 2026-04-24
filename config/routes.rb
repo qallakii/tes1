@@ -63,6 +63,7 @@ Rails.application.routes.draw do
       # Public, permission-checked preview/download (uses existing controller actions)
       get "files/:cv_id/preview",  to: "share_links#preview",  as: :file_preview
       get "files/:cv_id/download", to: "share_links#download", as: :file_download
+      get "folders/:folder_id/download", to: "share_links#download_folder", as: :folder_download
     end
   end
 

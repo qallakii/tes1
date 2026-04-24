@@ -69,6 +69,7 @@ a { text-decoration: none; color: inherit; }
 .drive-logo-text { font-size: 16px; color: #111827; }
 
 .drive-top-center { display:flex; justify-content:center; }
+.drive-top-center.is-empty { min-height: 1px; }
 .drive-searchbar {
   width: min(720px, 78vw);
   height: 42px;
@@ -687,6 +688,10 @@ a { text-decoration: none; color: inherit; }
 }
 [data-folder-show] .cvs-list .drive-row{ border-bottom: 1px solid rgba(0,0,0,0.06); }
 [data-folder-show] .cvs-list .drive-row:hover{ background: rgba(0,0,0,0.02); }
+[data-folder-show] .clickable-folder,
+[data-folder-show] .clickable-row{
+  cursor: pointer;
+}
 [data-folder-show] .file-line{ display:flex; align-items:center; gap:10px; }
 [data-folder-show] .file-text{
   min-width:0;
@@ -736,6 +741,7 @@ a { text-decoration: none; color: inherit; }
   z-index: 12000;
 }
 .kebab-item{
+  box-sizing: border-box;
   width:100%;
   display:block;
   text-align:left;
@@ -922,18 +928,22 @@ a { text-decoration: none; color: inherit; }
   margin: 0;
   padding-left: 18px;
 }
+.folder-show-head-left,
 [data-folder-show] .folder-show-head-left{
   display:flex;
   gap:10px;
   align-items:center;
   flex-wrap:wrap;
 }
+.folder-show-title,
 [data-folder-show] .folder-show-title{
   margin: 0 0 5px;
 }
+.folder-show-breadcrumbs,
 [data-folder-show] .folder-show-breadcrumbs{
   font-size: 13px;
 }
+.folder-show-head-right,
 [data-folder-show] .folder-show-head-right{
   margin-bottom: 5px;
 }
@@ -941,6 +951,11 @@ a { text-decoration: none; color: inherit; }
   margin-top: 5px;
   align-items:center;
   gap:8px;
+}
+.folder-show-bulk-actions{
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
 }
 [data-folder-show] .folder-show-modal-body{
   margin-top: 12px;
@@ -1385,10 +1400,10 @@ a { text-decoration: none; color: inherit; }
 }
 
 .share-bulk-actions{
-  margin-top:10px;
+  margin-top:0;
   align-items:center;
   gap:8px;
-  width:100%;
+  width:auto;
   flex-wrap:wrap;
 }
 
@@ -1415,19 +1430,6 @@ a { text-decoration: none; color: inherit; }
 
 .badge.neutral{ background: rgba(37,99,235,0.10); }
 .badge.danger{ background: rgba(185,28,28,0.12); }
-
-.share-folder-picker-card{
-  margin-bottom: 12px;
-}
-
-.folders-pick-list{
-  min-width: 720px;
-}
-
-.folders-pick-action-head,
-.folders-pick-action-cell{
-  text-align: right;
-}
 
 .share-empty-copy{
   padding: 16px;
@@ -3552,6 +3554,7 @@ a { text-decoration: none; color: inherit; }
   [data-share-links-new] .share-links-new-actions,
   [data-share-links-new] .share-links-new-toolbar,
   [data-share-links-new] .share-links-new-split,
+  .folder-show-bulk-actions,
   [data-folder-show] .folder-show-bulk-actions,
   [data-folders-index] .dashboard-bulk-actions {
     width: 100%;
@@ -3573,6 +3576,7 @@ a { text-decoration: none; color: inherit; }
   [data-share-links-new] .share-links-new-toolbar .btn,
   [data-share-links-new] .share-links-new-toolbar .drive-select,
   [data-share-links-new] .share-links-new-split .btn,
+  .folder-show-bulk-actions .btn,
   [data-folder-show] .folder-show-bulk-actions .btn,
   [data-folders-index] .dashboard-bulk-actions .btn,
   [data-folders-index] .dashboard-bulk-actions .inline-form,

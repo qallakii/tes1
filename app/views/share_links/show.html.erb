@@ -5,100 +5,100 @@
   <% selected_folder = @folder %>
   <% direct_files = defined?(@direct_cvs) ? (@direct_cvs || []) : [] %>
 
-  <div class="share-hero">
-    <div class="share-hero-left">
-      <div class="share-badges">
-        <span class="badge">
+  <div class="drive-page-head">
+    <div class="drive-head-left folder-show-head-left">
+      <% if selected_folder && !@files_only %>
+        <%= link_to "← Back", public_share_path(@share_link.token), class: "btn secondary" %>
+      <% end %>
+
+      <div>
+        <h2 class="folder-show-title">
           <% if @files_only %>
             Shared files
-          <% elsif folders.size > 1 %>
-            Shared folders
+          <% elsif selected_folder %>
+            <%= selected_folder.name %>
           <% else %>
-            Shared folder
+            Shared folders
           <% end %>
-        </span>
+        </h2>
 
-        <% if @share_link.expires_at.nil? %>
-          <span class="badge neutral">Expires: Never</span>
-        <% elsif @share_link.expires_at < Time.current %>
-          <span class="badge danger">Expired</span>
-        <% else %>
-          <span class="badge neutral">Expires: <%= @share_link.expires_at.strftime("%b %d, %Y %H:%M") %></span>
-        <% end %>
-
-        <% if @current_share_permission.present? %>
-          <span class="badge neutral">
-            <%= @current_share_permission == "editor" ? "Permission: Can edit" : "Permission: Can view" %>
-          </span>
-        <% end %>
-      </div>
-
-      <h1 class="share-title">
-        <% if @files_only %>
-          Shared files
-        <% elsif selected_folder %>
-          <%= selected_folder.name %>
-        <% else %>
-          Shared folders
-        <% end %>
-      </h1>
-
-      <div class="share-sub muted">
-        <% if @files_only %>
-          Only the selected files are visible here.
-        <% elsif selected_folder %>
-          You can preview files directly here and download them when needed.
-        <% else %>
-          Click a folder to view the files inside.
-        <% end %>
+        <div class="muted folder-show-breadcrumbs">
+          <% if selected_folder && !@files_only %>
+            <%= link_to "Shared folders", public_share_path(@share_link.token), class: "muted" %>
+            <span aria-hidden="true"> / </span>
+            <span><%= selected_folder.name %></span>
+          <% elsif @files_only %>
+            <span>Only the selected files are visible here.</span>
+          <% else %>
+            <span>Open a folder to view its files.</span>
+          <% end %>
+          <span aria-hidden="true"> · </span>
+          <% if @share_link.expires_at.nil? %>
+            <span>Expires: Never</span>
+          <% else %>
+            <span>Expires: <%= @share_link.expires_at.strftime("%b %d, %Y %H:%M") %></span>
+          <% end %>
+        </div>
       </div>
     </div>
 
-    <div class="share-hero-right">
-      <button type="button" class="btn secondary copy-btn" data-copy="<%= share_url %>">Copy link</button>
-      <a class="btn primary" href="<%= share_url %>" target="_blank" rel="noopener">Open</a>
-      <button
-        type="button"
-        class="btn secondary"
-        data-go-back
-        data-fallback-url="<%= request.referer.presence || (current_user ? share_links_path : public_share_path(@share_link.token)) %>">
-        Back
-      </button>
-      <% unless current_user %>
-        <%= link_to "Login", login_path, class: "btn secondary" %>
-      <% end %>
-
+    <div class="drive-head-right folder-show-head-right">
       <!-- ✅ Bulk actions (shows only when something is selected) -->
-      <div id="bulk-actions" class="share-bulk-actions" style="display:none;">
-        <button id="bulk-open" class="btn secondary" type="button">Open</button>
-        <button id="bulk-preview" class="btn secondary" type="button">Preview</button>
-        <button id="bulk-download" class="btn secondary" type="button">Download</button>
+      <div id="bulk-actions" class="folder-show-bulk-actions" style="display:none;">
         <button id="bulk-clear" class="btn secondary" type="button">Clear</button>
+        <button id="bulk-open" class="btn secondary" type="button">Open</button>
+        <button id="bulk-download" class="btn secondary" type="button">Download</button>
       </div>
     </div>
   </div>
 
   <%# ====== FOLDERS LIST (when nothing selected) ====== %>
   <% unless selected_folder || @files_only %>
-    <div class="drive-card share-folder-picker-card">
+    <div class="drive-card">
       <div class="drive-scroll">
-        <div class="drive-list folders-pick-list">
+        <div class="drive-list cvs-list">
 
-          <div class="drive-header folders-pick-header">
-            <div>Folder</div>
-            <div class="folders-pick-action-head">Action</div>
+          <div class="drive-header">
+            <div class="col-cv-check"><input type="checkbox" id="select-all" /></div>
+            <div class="col-cv-name">Name</div>
+            <div class="col-cv-type">Type</div>
+            <div class="col-cv-size">Size</div>
+            <div class="col-cv-modified">Last modified</div>
+            <div class="col-cv-actions">Actions</div>
           </div>
 
           <% folders.each do |f| %>
             <% open_url = public_share_path(@share_link.token, folder_id: f.id) %>
-            <div class="drive-row folder-pick-row clickable-folder-row" data-open="<%= open_url %>">
-              <div class="folder-cell">
-                <%= folder_icon_tag %>
-                <div class="folder-name"><%= f.name %></div>
+            <% download_url = @share_link.allow_download? ? folder_download_share_link_path(@share_link, folder_id: f.id) : nil %>
+            <div class="drive-row folder-row clickable-folder-row"
+                 data-kind="folder"
+                 data-open="<%= open_url %>"
+                 data-download="<%= download_url || "" %>">
+              <div class="col-cv-check">
+                <input class="folder-check" type="checkbox" value="<%= f.id %>" />
               </div>
 
-              <div class="folders-pick-action-cell">
-                <%= link_to "Open", open_url, class: "btn secondary xsmall" %>
+              <div class="col-cv-name">
+                <div class="file-line">
+                  <%= folder_icon_tag %>
+                  <div class="file-text">
+                    <div class="file-name"><%= f.name %></div>
+                    <div class="file-sub">Folder</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-cv-type"><span class="pill">FOLDER</span></div>
+              <div class="col-cv-size"><span class="muted">—</span></div>
+              <div class="col-cv-modified"><span class="muted"><%= f.updated_at.strftime("%b %d, %Y %H:%M") %></span></div>
+
+              <div class="col-cv-actions">
+                <div class="action-group">
+                  <%= link_to "Open", open_url, class: "btn secondary xsmall" %>
+                  <% if download_url.present? %>
+                    <%= link_to "Download", download_url, class: "btn secondary xsmall", data: { turbo: false, turbo_frame: "_top" } %>
+                  <% end %>
+                </div>
               </div>
             </div>
           <% end %>
@@ -214,11 +214,12 @@
           <%# Subfolders %>
           <% (@subfolders || []).each do |sf| %>
             <% open_url = public_share_path(@share_link.token, folder_id: sf.id) %>
+            <% download_url = @share_link.allow_download? ? folder_download_share_link_path(@share_link, folder_id: sf.id) : nil %>
 
             <div class="drive-row folder-row clickable-folder-row"
                  data-kind="folder"
                  data-open="<%= open_url %>"
-                 data-download="<%= open_url %>">
+                 data-download="<%= download_url || "" %>">
               <div class="col-cv-check">
                 <input class="folder-check" type="checkbox" value="<%= sf.id %>" />
               </div>
@@ -241,6 +242,9 @@
               <div class="col-cv-actions">
                 <div class="action-group">
                   <%= link_to "Open", open_url, class: "btn secondary xsmall" %>
+                  <% if download_url.present? %>
+                    <%= link_to "Download", download_url, class: "btn secondary xsmall", data: { turbo: false, turbo_frame: "_top" } %>
+                  <% end %>
                 </div>
               </div>
             </div>
@@ -616,12 +620,13 @@
     function updateBulk() {
       const rows = selectedRows();
       const fileRows = rows.filter((row) => row.getAttribute("data-kind") === "file");
+      const downloadableRows = rows.filter((row) => row.getAttribute("data-download"));
       const any = rows.length > 0;
 
       if (bulkBar) bulkBar.style.display = any ? "flex" : "none";
       if (bulkOpen) bulkOpen.hidden = rows.length !== 1;
       if (bulkPreview) bulkPreview.hidden = fileRows.length !== 1 || rows.length !== 1;
-      if (bulkDownload) bulkDownload.hidden = !any || fileRows.length !== rows.length;
+      if (bulkDownload) bulkDownload.hidden = !any || downloadableRows.length !== rows.length;
 
       if (selectAll) {
         const all = [...fileChecks, ...folderChecks];
@@ -682,15 +687,6 @@
       }, { signal });
     });
 
-    // Also keep your “folders pick list” behavior (when nothing selected)
-    document.querySelectorAll(".folders-pick-list .clickable-folder-row").forEach((row) => {
-      row.addEventListener("click", (e) => {
-        if (e.target.closest("a, button")) return;
-        const url = row.getAttribute("data-open");
-        if (url) window.location.href = url;
-      }, { signal });
-    });
-
     function openMany(urls, newTab) {
       const unique = Array.from(new Set(urls.filter(Boolean)));
       unique.forEach((u, idx) => {
@@ -741,10 +737,10 @@
       bulkDownload.addEventListener("click", (e) => {
         e.preventDefault();
         const rows = selectedRows();
-        const fileRows = rows.filter((row) => row.getAttribute("data-kind") === "file");
-        if (fileRows.length === 0 || fileRows.length !== rows.length) return;
+        const downloadableRows = rows.filter((row) => row.getAttribute("data-download"));
+        if (downloadableRows.length === 0 || downloadableRows.length !== rows.length) return;
 
-        const downloads = fileRows.map((row) => row.getAttribute("data-download")).filter(Boolean);
+        const downloads = downloadableRows.map((row) => row.getAttribute("data-download")).filter(Boolean);
         // downloads happen by navigation/new tabs
         openMany(downloads, true);
       }, { signal });

@@ -1,11 +1,14 @@
+require "zip"
+require "tempfile"
+
 class ShareLinksController < ApplicationController
-  before_action :require_login, except: [ :show, :preview, :download, :unlock ]
-  before_action :set_share_link_by_token, only: [ :show, :preview, :download, :unlock ]
-  before_action :enforce_require_login_if_needed!, only: [ :show, :preview, :download, :unlock ]
-  before_action :enforce_specific_access_if_needed!, only: [ :show, :preview, :download, :unlock ]
-  before_action :enforce_not_disabled!, only: [ :show, :preview, :download, :unlock ]
-  before_action :enforce_not_expired!, only: [ :show, :preview, :download, :unlock ]
-  before_action :enforce_password_if_needed!, only: [ :show, :preview, :download ]
+  before_action :require_login, except: [ :show, :preview, :download, :download_folder, :unlock ]
+  before_action :set_share_link_by_token, only: [ :show, :preview, :download, :download_folder, :unlock ]
+  before_action :enforce_require_login_if_needed!, only: [ :show, :preview, :download, :download_folder, :unlock ]
+  before_action :enforce_specific_access_if_needed!, only: [ :show, :preview, :download, :download_folder, :unlock ]
+  before_action :enforce_not_disabled!, only: [ :show, :preview, :download, :download_folder, :unlock ]
+  before_action :enforce_not_expired!, only: [ :show, :preview, :download, :download_folder, :unlock ]
+  before_action :enforce_password_if_needed!, only: [ :show, :preview, :download, :download_folder ]
 
   def index
     @share_links = ShareLink
@@ -214,17 +217,15 @@ class ShareLinksController < ApplicationController
 
   # Public show (token)
   def show
-    # Roots from join table (multi-folder share)
+    # Root folders for this share. Keep single-folder shares at the folder-picker
+    # level until the visitor explicitly opens that folder.
     @folders = (@share_link.respond_to?(:all_folders) ? @share_link.all_folders : @share_link.folders).to_a
-
-    # Single-folder share (share_links.folder_id)
-    single_folder = (@share_link.respond_to?(:folder) && @share_link.folder.present?) ? @share_link.folder : nil
 
     # ✅ Directly shared files (ShareLinkCv) — used for files-only and mixed shares
     @direct_cvs = @share_link.cvs.with_attached_file.order(updated_at: :desc)
 
     # ✅ Files-only mode ONLY when there are direct files AND there are NO folders at all
-    @files_only = @direct_cvs.any? && @folders.empty? && single_folder.nil?
+    @files_only = @direct_cvs.any? && @folders.empty?
 
     # Pick which folder we are viewing
     roots = @folders
@@ -239,11 +240,6 @@ class ShareLinksController < ApplicationController
       end
 
       @folder = Folder.find(wanted_id)
-    else
-      # ✅ Default folder when opening link:
-      # 1) single-folder share → that folder
-      # 2) multi-folder share → first root folder
-      @folder = single_folder || roots.first
     end
 
     @current_share_permission =
@@ -283,6 +279,13 @@ class ShareLinksController < ApplicationController
 
     cv = find_shared_cv!(params[:cv_id])
     redirect_to rails_blob_path(cv.file, disposition: "attachment")
+  end
+
+  def download_folder
+    return head :forbidden unless @share_link.allow_download?
+
+    folder = find_shared_folder!(params[:folder_id])
+    send_shared_folder_zip(folder)
   end
 
   private
@@ -353,6 +356,76 @@ class ShareLinksController < ApplicationController
     cv = Cv.joins(:folder).with_attached_file.where(id: cv_id, folders: { id: allowed_folder_ids }).first
     raise ActiveRecord::RecordNotFound unless cv&.file&.attached?
     cv
+  end
+
+  def find_shared_folder!(folder_id)
+    wanted_id = folder_id.to_i
+    roots = @share_link.all_folders
+    allowed_folder_ids = roots.flat_map { |folder| folder.self_and_descendant_ids }.uniq
+    raise ActiveRecord::RecordNotFound unless allowed_folder_ids.include?(wanted_id)
+
+    Folder.find(wanted_id)
+  end
+
+  def send_shared_folder_zip(folder)
+    tempfile = Tempfile.new(["shared-folder-", ".zip"])
+    tempfile.binmode
+
+    Zip::File.open(tempfile.path, Zip::File::CREATE) do |zip|
+      add_shared_folder_to_zip(zip, folder, "#{safe_zip_name(folder.name)}/")
+    end
+
+    tempfile.close
+
+    data = File.binread(tempfile.path)
+    File.delete(tempfile.path) if File.exist?(tempfile.path)
+
+    timestamp = Time.zone.now.strftime("%Y%m%d-%H%M%S")
+    send_data data,
+      filename: "#{safe_zip_name(folder.name)}-#{timestamp}.zip",
+      type: "application/zip",
+      disposition: "attachment"
+  end
+
+  def add_shared_folder_to_zip(zip, folder, path_prefix)
+    zip.mkdir(path_prefix) unless zip.find_entry(path_prefix)
+
+    folder.cvs.includes(file_attachment: :blob).find_each do |cv|
+      next unless cv.file.attached?
+
+      entry_name = uniquify_zip_entry(zip, "#{path_prefix}#{safe_zip_name(cv.file.filename.to_s)}")
+      zip.get_output_stream(entry_name) do |out|
+        cv.file.blob.open do |io|
+          while (chunk = io.read(1024 * 1024))
+            out.write(chunk)
+          end
+        end
+      end
+    end
+
+    folder.subfolders.find_each do |child|
+      add_shared_folder_to_zip(zip, child, "#{path_prefix}#{safe_zip_name(child.name)}/")
+    end
+  end
+
+  def safe_zip_name(name)
+    base = name.to_s.strip
+    base = "folder" if base.empty?
+    base.gsub(/[\/\\:\*\?"<>\|\x00-\x1F]/, "_")[0, 120]
+  end
+
+  def uniquify_zip_entry(zip, entry_name)
+    return entry_name unless zip.find_entry(entry_name)
+
+    ext = File.extname(entry_name)
+    base = entry_name.delete_suffix(ext)
+    i = 2
+
+    loop do
+      candidate = "#{base} (#{i})#{ext}"
+      return candidate unless zip.find_entry(candidate)
+      i += 1
+    end
   end
 
   def parse_share_expires_at
