@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>CV Share</title>
+    <title>CrewitDrive</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -37,7 +37,7 @@
 
               <!-- ✅ REAL GLOBAL SEARCH -->
               <%= form_with url: search_path, method: :get, local: true, class: "drive-search-form" do %>
-                <%= text_field_tag :q, params[:q], placeholder: "Search in CV Share", class: "drive-search-input" %>
+                <%= text_field_tag :q, params[:q], placeholder: "Search in CrewitDrive", class: "drive-search-input" %>
               <% end %>
             </div>
           </div>

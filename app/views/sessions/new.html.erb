@@ -1,25 +1,42 @@
 <div class="auth-page">
-  <div class="auth-card">
-    <h2>Login</h2>
-
-    <%= form_with(url: login_path, local: true) do |form| %>
-      <div class="field">
-        <%= form.label :email %>
-        <%= form.email_field :email, placeholder: "Enter your email" %>
+  <div class="auth-card auth-login-card">
+    <div class="auth-login-brand">
+      <div class="auth-login-brand-mark">
+        <%= image_tag "image.png", alt: "CrewitDrive", class: "auth-login-logo" %>
       </div>
-
-      <div class="field">
-        <%= form.label :password %>
-        <%= form.password_field :password, placeholder: "Enter your password" %>
+      <div class="auth-login-brand-copy">
+        <p class="auth-login-eyebrow">CrewitDrive</p>
+        <h1>Secure access for your crew files</h1>
+        <p>Sign in to manage folders, documents, and shared access from one place.</p>
+        <div class="auth-login-pills">
+          <span class="auth-login-pill">Admin managed</span>
+          <span class="auth-login-pill">Secure sharing</span>
+        </div>
       </div>
+    </div>
+    <div class="auth-login-form-panel">
+      <h2>Login</h2>
+      <p class="auth-login-copy">Use your account credentials to continue.</p>
 
-      <div class="actions">
-        <%= form.submit "Login", class: "btn primary" %>
+      <%= form_with(url: login_path, local: true, class: "auth-form") do |form| %>
+        <div class="field">
+          <%= form.label :email %>
+          <%= form.email_field :email, placeholder: "Enter your email" %>
+        </div>
+
+        <div class="field">
+          <%= form.label :password %>
+          <%= form.password_field :password, placeholder: "Enter your password" %>
+        </div>
+
+        <div class="actions auth-login-actions">
+          <%= form.submit "Login", class: "btn primary btn-block" %>
+        </div>
+      <% end %>
+
+      <div class="auth-footer auth-login-footer">
+        <p>Need access? Contact an administrator to receive an invite.</p>
       </div>
-    <% end %>
-
-    <div class="auth-footer">
-      <p>Don't have an account? <%= link_to "Sign Up", signup_path %></p>
     </div>
   </div>
 </div>

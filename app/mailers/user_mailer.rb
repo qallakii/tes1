@@ -3,13 +3,13 @@ class UserMailer < ApplicationMailer
     @user = user
     @url = url
 
-    mail(to: @user.email, subject: "You're invited to CV Share")
+    mail(to: @user.email, subject: "You're invited to CrewitDrive")
   end
 
   def password_reset_link(user, url)
     @user = user
     @url = url
 
-    mail(to: @user.email, subject: "Reset your CV Share password")
+    mail(to: @user.email, subject: "Reset your CrewitDrive password")
   end
 end

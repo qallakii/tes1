@@ -1,6 +1,6 @@
 <div class="auth-page">
   <div class="auth-card">
-    <h2>Welcome to CV Share</h2>
+    <h2>Welcome to CrewitDrive</h2>
     <p class="mb-6">
       Upload, share, and manage your CVs easily.
     </p>
@@ -9,9 +9,12 @@
       <% if logged_in? %>
         <%= link_to "Go to Dashboard", dashboard_path, class: "btn primary" %>
       <% else %>
-        <%= link_to "Sign Up", signup_path, class: "btn primary" %>
-        <%= link_to "Login", login_path, class: "btn secondary" %>
+        <%= link_to "Login", login_path, class: "btn primary" %>
       <% end %>
     </div>
+
+    <% unless logged_in? %>
+      <p class="mb-0">Platform access is granted by an administrator.</p>
+    <% end %>
   </div>
 </div>

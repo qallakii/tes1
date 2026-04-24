@@ -426,23 +426,13 @@ function initFolderShowPage() {
   updateBulk();
 
   page.querySelectorAll(".clickable-folder").forEach((row) => {
-    const checkbox = row.querySelector(".folder-check");
     const url = row.getAttribute("data-folder-url");
 
     row.addEventListener("click", (e) => {
       if (e.target.closest(".kebab-wrap")) return;
+      if (e.target.closest("a, button, input, label, form")) return;
       if (e.target.closest(".col-cv-actions")) return;
-      if (!checkbox) return;
-      if (e.detail && e.detail > 1) return;
-
-      checkbox.checked = !checkbox.checked;
-      checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-    }, { signal });
-
-    row.addEventListener("dblclick", (e) => {
-      if (e.target.closest(".kebab-wrap")) return;
-      if (e.target.closest(".col-cv-actions")) return;
-      if (url) window.location = url;
+      if (url) window.location.href = url;
     }, { signal });
   });
 

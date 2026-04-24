@@ -114,7 +114,7 @@ Use this as the final pre-launch review before going live.
 
 Run this full manual pass before production release:
 
-1. Sign up, log in, and log out.
+1. Create a user from the admin area, then verify login and logout.
 2. Create top-level folders and nested folders.
 3. Upload files and upload a full folder structure.
 4. Select rows and verify bulk toolbar behavior.
