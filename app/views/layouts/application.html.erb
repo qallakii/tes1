@@ -19,6 +19,19 @@
         <!-- Top bar -->
         <header class="drive-topbar">
           <div class="drive-top-left">
+            <% if current_user %>
+              <button
+                type="button"
+                class="drive-mobile-nav-toggle"
+                data-mobile-nav-toggle
+                aria-controls="driveMobileNavPanel"
+                aria-expanded="false"
+                aria-label="Open navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+              </button>
+            <% end %>
             <%= link_to (current_user ? dashboard_path : root_path), class: "drive-logo" do %>
               <%= image_tag "image.png", alt: "Logo", class: "app-logo" %>
             <% end %>
@@ -67,74 +80,26 @@
 
         </header>
 
+        <% if current_user %>
+          <div class="drive-mobile-nav" data-mobile-nav>
+            <button type="button" class="drive-mobile-nav-backdrop" data-mobile-nav-close aria-label="Close navigation"></button>
+
+            <div class="drive-mobile-nav-panel" id="driveMobileNavPanel" role="dialog" aria-modal="true" aria-label="Navigation" aria-hidden="true">
+              <div class="drive-mobile-nav-head">
+                <div class="drive-mobile-nav-title">Navigation</div>
+                <button type="button" class="drive-mobile-nav-close" data-mobile-nav-close aria-label="Close navigation">×</button>
+              </div>
+
+              <%= render "shared/drive_nav_links", mobile: true %>
+            </div>
+          </div>
+        <% end %>
+
         <div class="drive-body <%= 'no-sidebar' unless current_user %>">
             <%if current_user %>
               <!-- Sidebar -->
               <aside class="drive-sidebar">
-                <div class="drive-side-section">
-                  <%= link_to dashboard_path, class: "drive-side-link #{'active' if controller_name == 'folders' && action_name == 'index'}" do %>
-                    <span class="drive-side-ic" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path>
-                      </svg>
-                    </span>
-                    <span>Home</span>
-                  <% end %>
-
-                  <%= link_to recents_path, class: "drive-side-link #{'active' if controller_name == 'recents'}" do %>
-                    <span class="drive-side-ic" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 8v5l3 2"></path>
-                        <circle cx="12" cy="12" r="9"></circle>
-                      </svg>
-                    </span>
-                    <span>Recents</span>
-                  <% end %>
-
-                  <%= link_to share_links_path, class: "drive-side-link #{'active' if controller_name == 'share_links'}" do %>
-                    <span class="drive-side-ic" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"></path>
-                        <path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"></path>
-                      </svg>
-                    </span>
-                    <span>Shared Links</span>
-                  <% end %>
-
-                  <%= link_to shared_with_me_path, class: "drive-side-link #{'active' if controller_name == 'shared_with_me'}" do %>
-                    <span class="drive-side-ic" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                      </svg>
-                    </span>
-                    <span>Shared With Me</span>
-                  <% end %>
-
-                  <%= link_to profile_path, class: "drive-side-link #{'active' if controller_name == 'profiles'}" do %>
-                    <span class="drive-side-ic" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 21a8 8 0 0 0-16 0"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                      </svg>
-                    </span>
-                    <span>Profile</span>
-                  <% end %>
-
-                  <% if current_user&.admin? %>
-                    <%= link_to admin_root_path, class: "drive-side-link #{'active' if controller_path.start_with?('admin/')}" do %>
-                      <span class="drive-side-ic" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4z"></path>
-                          <path d="M9.5 12.5l1.5 1.5 3.5-4"></path>
-                        </svg>
-                      </span>
-                      <span>Admin</span>
-                    <% end %>
-                  <% end %>
-                </div>
+                <%= render "shared/drive_nav_links" %>
               </aside>
             <% end %>
 

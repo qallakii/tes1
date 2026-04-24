@@ -2689,6 +2689,156 @@ a { text-decoration: none; color: inherit; }
   color: #b91c1c;
 }
 
+@media (max-width: 1360px) {
+  [data-share-links-index] .drive-scroll,
+  [data-shared-with-me] .drive-scroll,
+  [data-recents-index] .drive-scroll {
+    overflow: visible;
+  }
+
+  [data-share-links-index] .share-links-list,
+  [data-shared-with-me] .shared-items-list,
+  [data-recents-index] .recents-list {
+    min-width: 0 !important;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  [data-share-links-index] .share-links-list .drive-header,
+  [data-shared-with-me] .shared-items-list .drive-header,
+  [data-recents-index] .recents-list .drive-header {
+    display: none;
+  }
+
+  [data-share-links-index] .share-links-list .drive-row,
+  [data-shared-with-me] .shared-items-list .drive-row,
+  [data-recents-index] .recents-list .drive-row {
+    display: grid;
+    margin: 12px;
+    padding: 16px;
+    border: 1px solid rgba(101, 21, 40, 0.12);
+    border-radius: 18px;
+    border-bottom: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,249,250,0.90));
+    box-shadow:
+      0 12px 24px rgba(77, 18, 33, 0.06),
+      inset 0 1px 0 rgba(255,255,255,0.82);
+  }
+
+  [data-share-links-index] .share-links-list .drive-row > div,
+  [data-shared-with-me] .shared-items-list .drive-row > div,
+  [data-recents-index] .recents-list .drive-row > div {
+    min-width: 0;
+  }
+
+  [data-recents-index] .recent-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "name name"
+      "type size"
+      "location modified"
+      "actions actions";
+    gap: 12px;
+  }
+
+  [data-recents-index] .col-name { grid-area: name; }
+  [data-recents-index] .col-type { grid-area: type; }
+  [data-recents-index] .col-size { grid-area: size; }
+  [data-recents-index] .col-location { grid-area: location; }
+  [data-recents-index] .col-modified { grid-area: modified; }
+  [data-recents-index] .col-actions { grid-area: actions; justify-self: stretch; }
+
+  [data-recents-index] .col-type::before,
+  [data-recents-index] .col-size::before,
+  [data-recents-index] .col-location::before,
+  [data-recents-index] .col-modified::before,
+  [data-share-links-index] .col-url::before,
+  [data-share-links-index] .col-expires::before,
+  [data-share-links-index] .col-created::before,
+  [data-shared-with-me] .col-item-type::before,
+  [data-shared-with-me] .col-item-permission::before,
+  [data-shared-with-me] .col-item-owner::before,
+  [data-shared-with-me] .col-item-expiry::before {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a6673;
+  }
+
+  [data-recents-index] .col-type::before { content: "Type"; }
+  [data-recents-index] .col-size::before { content: "Size"; }
+  [data-recents-index] .col-location::before { content: "Location"; }
+  [data-recents-index] .col-modified::before { content: "Updated"; }
+
+  [data-share-links-index] .share-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "folder folder"
+      "url url"
+      "expires created"
+      "actions actions";
+    gap: 12px;
+  }
+
+  [data-share-links-index] .col-folder { grid-area: folder; }
+  [data-share-links-index] .col-url { grid-area: url; }
+  [data-share-links-index] .col-expires { grid-area: expires; }
+  [data-share-links-index] .col-created { grid-area: created; }
+  [data-share-links-index] .col-actions { grid-area: actions; justify-self: stretch; }
+  [data-share-links-index] .col-url::before { content: "Details"; }
+  [data-share-links-index] .col-expires::before { content: "Expires"; }
+  [data-share-links-index] .col-created::before { content: "Created"; }
+
+  [data-shared-with-me] .shared-item-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "name name"
+      "type permission"
+      "owner expiry"
+      "actions actions";
+    gap: 12px;
+  }
+
+  [data-shared-with-me] .col-item-name { grid-area: name; }
+  [data-shared-with-me] .col-item-type { grid-area: type; }
+  [data-shared-with-me] .col-item-permission { grid-area: permission; }
+  [data-shared-with-me] .col-item-owner { grid-area: owner; }
+  [data-shared-with-me] .col-item-expiry { grid-area: expiry; }
+  [data-shared-with-me] .col-item-actions { grid-area: actions; justify-self: stretch; }
+  [data-shared-with-me] .col-item-type::before { content: "Type"; }
+  [data-shared-with-me] .col-item-permission::before { content: "Permission"; }
+  [data-shared-with-me] .col-item-owner::before { content: "Shared by"; }
+  [data-shared-with-me] .col-item-expiry::before { content: "Expires"; }
+
+  [data-recents-index] .file-line,
+  [data-share-links-index] .folder-link,
+  [data-shared-with-me] .folder-link,
+  [data-share-links-index] .url-line {
+    width: 100%;
+    min-width: 0;
+    align-items: flex-start;
+  }
+
+  [data-recents-index] .file-name,
+  [data-recents-index] .file-sub,
+  [data-share-links-index] .folder-name,
+  [data-share-links-index] .share-links-targets,
+  [data-share-links-index] .url-text,
+  [data-recents-index] .location-link,
+  [data-shared-with-me] .folder-name,
+  [data-shared-with-me] .col-item-owner .muted,
+  [data-shared-with-me] .col-item-expiry .muted {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
 @media (max-width: 900px) {
   .drive-topbar {
     height: auto;
@@ -2859,7 +3009,7 @@ a { text-decoration: none; color: inherit; }
   .modal-actions,
   .share-access-actions,
   .search-form {
-    justify-content: stretch;
+    justify-content: flex-start;
   }
 
   .share-modal-actions .btn,
@@ -3106,4 +3256,1193 @@ a { text-decoration: none; color: inherit; }
 
 .btn-block {
   width: 100%;
+}
+
+/* ===============================
+   Responsive App Fit
+=============================== */
+@media (max-width: 820px) {
+  .drive-topbar {
+    height: auto;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .drive-top-left {
+    min-width: 0;
+  }
+
+  .drive-top-center {
+    grid-column: 1 / -1;
+    order: 3;
+    width: 100%;
+  }
+
+  .drive-top-right {
+    justify-content: flex-end;
+    align-self: start;
+  }
+
+  .drive-searchbar {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .drive-body {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .drive-sidebar {
+    min-height: auto;
+    position: static;
+    padding: 10px;
+  }
+
+  .drive-main {
+    padding-bottom: 36px;
+  }
+
+  .drive-page-head,
+  .drive-head-main,
+  .drive-head-left,
+  .drive-head-right {
+    align-items: stretch;
+  }
+
+  .drive-head-left,
+  .drive-head-right,
+  .drive-input,
+  .drive-select,
+  .search-form-input,
+  .admin-search {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .share-result-banner {
+    align-items: stretch;
+  }
+
+  [data-share-links-index] .drive-scroll,
+  [data-shared-with-me] .drive-scroll,
+  [data-recents-index] .drive-scroll {
+    overflow: visible;
+  }
+
+  [data-share-links-index] .share-links-list,
+  [data-shared-with-me] .shared-items-list,
+  [data-recents-index] .recents-list {
+    min-width: 0 !important;
+  }
+
+  [data-share-links-index] .share-links-list .drive-header,
+  [data-shared-with-me] .shared-items-list .drive-header,
+  [data-recents-index] .recents-list .drive-header {
+    display: none;
+  }
+
+  [data-share-links-index] .share-links-list .drive-row,
+  [data-shared-with-me] .shared-items-list .drive-row,
+  [data-recents-index] .recents-list .drive-row {
+    margin: 12px;
+    padding: 16px;
+    border: 1px solid rgba(101, 21, 40, 0.12);
+    border-radius: 18px;
+    border-bottom: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,249,250,0.90));
+    box-shadow:
+      0 12px 24px rgba(77, 18, 33, 0.06),
+      inset 0 1px 0 rgba(255,255,255,0.82);
+  }
+
+  [data-share-links-index] .share-links-list .drive-row > div,
+  [data-shared-with-me] .shared-items-list .drive-row > div,
+  [data-recents-index] .recents-list .drive-row > div {
+    min-width: 0;
+  }
+
+  [data-recents-index] .recent-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "name name"
+      "type size"
+      "location modified"
+      "actions actions";
+    gap: 12px;
+  }
+
+  [data-recents-index] .col-name { grid-area: name; }
+  [data-recents-index] .col-type { grid-area: type; }
+  [data-recents-index] .col-size { grid-area: size; }
+  [data-recents-index] .col-location { grid-area: location; }
+  [data-recents-index] .col-modified { grid-area: modified; }
+  [data-recents-index] .col-actions { grid-area: actions; justify-self: stretch; }
+
+  [data-recents-index] .col-type::before,
+  [data-recents-index] .col-size::before,
+  [data-recents-index] .col-location::before,
+  [data-recents-index] .col-modified::before,
+  [data-share-links-index] .col-url::before,
+  [data-share-links-index] .col-expires::before,
+  [data-share-links-index] .col-created::before,
+  [data-shared-with-me] .col-item-type::before,
+  [data-shared-with-me] .col-item-permission::before,
+  [data-shared-with-me] .col-item-owner::before,
+  [data-shared-with-me] .col-item-expiry::before {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a6673;
+  }
+
+  [data-recents-index] .col-type::before { content: "Type"; }
+  [data-recents-index] .col-size::before { content: "Size"; }
+  [data-recents-index] .col-location::before { content: "Location"; }
+  [data-recents-index] .col-modified::before { content: "Updated"; }
+
+  [data-share-links-index] .share-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "folder folder"
+      "url url"
+      "expires created"
+      "actions actions";
+    gap: 12px;
+  }
+
+  [data-share-links-index] .col-folder { grid-area: folder; }
+  [data-share-links-index] .col-url { grid-area: url; }
+  [data-share-links-index] .col-expires { grid-area: expires; }
+  [data-share-links-index] .col-created { grid-area: created; }
+  [data-share-links-index] .col-actions { grid-area: actions; justify-self: stretch; }
+  [data-share-links-index] .col-url::before { content: "Details"; }
+  [data-share-links-index] .col-expires::before { content: "Expires"; }
+  [data-share-links-index] .col-created::before { content: "Created"; }
+
+  [data-shared-with-me] .shared-item-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "name name"
+      "type permission"
+      "owner expiry"
+      "actions actions";
+    gap: 12px;
+  }
+
+  [data-shared-with-me] .col-item-name { grid-area: name; }
+  [data-shared-with-me] .col-item-type { grid-area: type; }
+  [data-shared-with-me] .col-item-permission { grid-area: permission; }
+  [data-shared-with-me] .col-item-owner { grid-area: owner; }
+  [data-shared-with-me] .col-item-expiry { grid-area: expiry; }
+  [data-shared-with-me] .col-item-actions { grid-area: actions; justify-self: stretch; }
+  [data-shared-with-me] .col-item-type::before { content: "Type"; }
+  [data-shared-with-me] .col-item-permission::before { content: "Permission"; }
+  [data-shared-with-me] .col-item-owner::before { content: "Shared by"; }
+  [data-shared-with-me] .col-item-expiry::before { content: "Expires"; }
+
+  [data-recents-index] .file-line,
+  [data-share-links-index] .folder-link,
+  [data-shared-with-me] .folder-link,
+  [data-share-links-index] .url-line {
+    width: 100%;
+    min-width: 0;
+    align-items: flex-start;
+  }
+
+  [data-recents-index] .file-name,
+  [data-recents-index] .file-sub,
+  [data-share-links-index] .folder-name,
+  [data-share-links-index] .share-links-targets,
+  [data-share-links-index] .url-text,
+  [data-recents-index] .location-link,
+  [data-shared-with-me] .folder-name,
+  [data-shared-with-me] .col-item-owner .muted,
+  [data-shared-with-me] .col-item-expiry .muted {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 700px) {
+  .drive-topbar {
+    margin: 10px 10px 0;
+    border-radius: 22px;
+  }
+
+  .drive-body {
+    padding: 10px;
+  }
+
+  .drive-side-section {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .drive-side-link {
+    min-height: 50px;
+    justify-content: flex-start;
+    white-space: normal;
+  }
+
+  .dashboard-page,
+  .admin-shell,
+  .share-access-page {
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  .profile-toggle .profile-name {
+    display: none;
+  }
+
+  .dropdown-menu {
+    right: 0;
+    left: auto;
+    width: min(280px, calc(100vw - 28px));
+  }
+
+  .admin-hero,
+  .admin-section-head,
+  .admin-panel,
+  .drive-card,
+  .profile-card,
+  .share-access-card {
+    border-radius: 20px;
+  }
+
+  .admin-hero,
+  .admin-section-head,
+  .admin-panel-form,
+  .admin-toolbar-panel {
+    padding: 18px;
+  }
+
+  .admin-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-stat-card-wide {
+    grid-column: span 1;
+  }
+
+  .admin-hero-actions,
+  .admin-form-actions,
+  .admin-actions,
+  .profile-actions,
+  .modal-actions,
+  .share-access-actions,
+  .share-modal-actions,
+  .file-preview-actions,
+  .action-group,
+  [data-share-links-new] .share-links-new-actions,
+  [data-share-links-new] .share-links-new-toolbar,
+  [data-share-links-new] .share-links-new-split,
+  [data-folder-show] .folder-show-bulk-actions,
+  [data-folders-index] .dashboard-bulk-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .admin-hero-actions .btn,
+  .admin-form-actions .btn,
+  .admin-actions .btn,
+  .profile-actions .btn,
+  .modal-actions .btn,
+  .share-access-actions .btn,
+  .share-modal-actions .btn,
+  .file-preview-actions .btn,
+  .action-group .btn,
+  .action-group .inline-form,
+  .action-group .inline-form .btn,
+  [data-share-links-new] .share-links-new-actions .btn,
+  [data-share-links-new] .share-links-new-toolbar .btn,
+  [data-share-links-new] .share-links-new-toolbar .drive-select,
+  [data-share-links-new] .share-links-new-split .btn,
+  [data-folder-show] .folder-show-bulk-actions .btn,
+  [data-folders-index] .dashboard-bulk-actions .btn,
+  [data-folders-index] .dashboard-bulk-actions .inline-form,
+  [data-folders-index] .dashboard-bulk-actions .inline-form .btn,
+  .share-result-banner .btn {
+    width: 100%;
+  }
+
+  .drive-scroll {
+    overflow: visible;
+  }
+
+  [data-folder-show] .cvs-list,
+  .cvs-list,
+  [data-folders-index] .folders-list,
+  [data-share-links-index] .share-links-list,
+  [data-shared-with-me] .shared-items-list,
+  [data-recents-index] .recents-list,
+  [data-share-links-new] .select-files-list,
+  .dashboard-table {
+    min-width: 0 !important;
+  }
+
+  [data-folder-show] .cvs-list .drive-header,
+  [data-folders-index] .folders-list .drive-header,
+  [data-share-links-index] .share-links-list .drive-header,
+  [data-shared-with-me] .shared-items-list .drive-header,
+  [data-recents-index] .recents-list .drive-header,
+  [data-share-links-new] .select-files-list .drive-header,
+  .ratings-table thead {
+    display: none;
+  }
+
+  [data-folders-index] .folders-list .drive-header,
+  [data-folder-show] .cvs-list .drive-header,
+  [data-share-links-new] .select-files-list .drive-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 12px 0;
+    padding: 12px 16px;
+    border: 1px solid rgba(101, 21, 40, 0.12);
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,249,250,0.90));
+    box-shadow:
+      0 12px 24px rgba(77, 18, 33, 0.06),
+      inset 0 1px 0 rgba(255,255,255,0.82);
+  }
+
+  [data-folders-index] .folders-list .drive-header > :not(:first-child),
+  [data-folder-show] .cvs-list .drive-header > :not(:first-child),
+  [data-share-links-new] .select-files-list .drive-header > :not(:first-child) {
+    display: none;
+  }
+
+  [data-folders-index] .folders-list .drive-header::after,
+  [data-folder-show] .cvs-list .drive-header::after,
+  [data-share-links-new] .select-files-list .drive-header::after {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a6673;
+  }
+
+  [data-folders-index] .folders-list .drive-header::after { content: "Select folders"; }
+  [data-folder-show] .cvs-list .drive-header::after { content: "Select items"; }
+  [data-share-links-new] .select-files-list .drive-header::after { content: "Select files"; }
+
+  [data-folder-show] .cvs-list .drive-row,
+  [data-folders-index] .folders-list .drive-row,
+  [data-share-links-index] .share-links-list .drive-row,
+  [data-shared-with-me] .shared-items-list .drive-row,
+  [data-recents-index] .recents-list .drive-row,
+  [data-share-links-new] .select-files-list .drive-row {
+    margin: 12px;
+    padding: 16px;
+    border: 1px solid rgba(101, 21, 40, 0.12);
+    border-radius: 18px;
+    border-bottom: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,249,250,0.90));
+    box-shadow:
+      0 12px 24px rgba(77, 18, 33, 0.06),
+      inset 0 1px 0 rgba(255,255,255,0.82);
+  }
+
+  [data-folder-show] .cvs-list .drive-row > div,
+  [data-folders-index] .folders-list .drive-row > div,
+  [data-share-links-index] .share-links-list .drive-row > div,
+  [data-shared-with-me] .shared-items-list .drive-row > div,
+  [data-recents-index] .recents-list .drive-row > div,
+  [data-share-links-new] .select-files-list .drive-row > div {
+    min-width: 0;
+  }
+
+  [data-folders-index] .folders-list .drive-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name check"
+      "modified modified"
+      "actions actions";
+    gap: 12px;
+  }
+
+  [data-folders-index] .col-folder-check { grid-area: check; justify-content: flex-end; }
+  [data-folders-index] .col-folder-name { grid-area: name; }
+  [data-folders-index] .col-folder-modified { grid-area: modified; }
+  [data-folders-index] .col-folder-actions { grid-area: actions; justify-self: stretch; }
+  [data-folders-index] .col-folder-modified::before {
+    content: "Modified";
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a6673;
+  }
+
+  [data-folder-show] .cvs-list .drive-row,
+  [data-share-links-new] .select-files-list .drive-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name check"
+      "type size"
+      "modified actions";
+    gap: 12px;
+  }
+
+  [data-folder-show] .col-cv-check,
+  [data-share-links-new] .col-check { grid-area: check; justify-self: end; }
+  [data-folder-show] .col-cv-name,
+  [data-share-links-new] .col-name { grid-area: name; }
+  [data-folder-show] .col-cv-type,
+  [data-share-links-new] .col-type { grid-area: type; }
+  [data-folder-show] .col-cv-size,
+  [data-share-links-new] .col-size { grid-area: size; justify-self: stretch; }
+  [data-folder-show] .col-cv-modified,
+  [data-share-links-new] .col-modified { grid-area: modified; }
+  [data-folder-show] .col-cv-actions { grid-area: actions; justify-self: stretch; }
+
+  [data-folder-show] .col-cv-type::before,
+  [data-folder-show] .col-cv-size::before,
+  [data-folder-show] .col-cv-modified::before,
+  [data-share-links-new] .col-type::before,
+  [data-share-links-new] .col-size::before,
+  [data-share-links-new] .col-modified::before {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a6673;
+  }
+
+  [data-folder-show] .col-cv-type::before,
+  [data-share-links-new] .col-type::before { content: "Type"; }
+  [data-folder-show] .col-cv-size::before,
+  [data-share-links-new] .col-size::before { content: "Size"; }
+  [data-folder-show] .col-cv-modified::before,
+  [data-share-links-new] .col-modified::before { content: "Modified"; }
+
+  [data-folder-show] .kebab-wrap {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  [data-recents-index] .recent-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "name name"
+      "type size"
+      "location modified"
+      "actions actions";
+    gap: 12px;
+  }
+
+  [data-recents-index] .col-name { grid-area: name; }
+  [data-recents-index] .col-type { grid-area: type; }
+  [data-recents-index] .col-size { grid-area: size; }
+  [data-recents-index] .col-location { grid-area: location; }
+  [data-recents-index] .col-modified { grid-area: modified; }
+  [data-recents-index] .col-actions { grid-area: actions; justify-self: stretch; }
+
+  [data-recents-index] .col-type::before,
+  [data-recents-index] .col-size::before,
+  [data-recents-index] .col-location::before,
+  [data-recents-index] .col-modified::before {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a6673;
+  }
+
+  [data-recents-index] .col-type::before { content: "Type"; }
+  [data-recents-index] .col-size::before { content: "Size"; }
+  [data-recents-index] .col-location::before { content: "Location"; }
+  [data-recents-index] .col-modified::before { content: "Updated"; }
+
+  [data-share-links-index] .share-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "folder folder"
+      "url url"
+      "expires created"
+      "actions actions";
+    gap: 12px;
+  }
+
+  [data-share-links-index] .col-folder { grid-area: folder; }
+  [data-share-links-index] .col-url { grid-area: url; }
+  [data-share-links-index] .col-expires { grid-area: expires; }
+  [data-share-links-index] .col-created { grid-area: created; }
+  [data-share-links-index] .col-actions { grid-area: actions; justify-self: stretch; }
+
+  [data-share-links-index] .col-url::before,
+  [data-share-links-index] .col-expires::before,
+  [data-share-links-index] .col-created::before {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a6673;
+  }
+
+  [data-share-links-index] .col-url::before { content: "Details"; }
+  [data-share-links-index] .col-expires::before { content: "Expires"; }
+  [data-share-links-index] .col-created::before { content: "Created"; }
+
+  [data-shared-with-me] .shared-item-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "name name"
+      "type permission"
+      "owner expiry"
+      "actions actions";
+    gap: 12px;
+  }
+
+  [data-shared-with-me] .col-item-name { grid-area: name; }
+  [data-shared-with-me] .col-item-type { grid-area: type; }
+  [data-shared-with-me] .col-item-permission { grid-area: permission; }
+  [data-shared-with-me] .col-item-owner { grid-area: owner; }
+  [data-shared-with-me] .col-item-expiry { grid-area: expiry; }
+  [data-shared-with-me] .col-item-actions { grid-area: actions; justify-self: stretch; }
+
+  [data-shared-with-me] .col-item-type::before,
+  [data-shared-with-me] .col-item-permission::before,
+  [data-shared-with-me] .col-item-owner::before,
+  [data-shared-with-me] .col-item-expiry::before {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a6673;
+  }
+
+  [data-shared-with-me] .col-item-type::before { content: "Type"; }
+  [data-shared-with-me] .col-item-permission::before { content: "Permission"; }
+  [data-shared-with-me] .col-item-owner::before { content: "Shared by"; }
+  [data-shared-with-me] .col-item-expiry::before { content: "Expires"; }
+
+  [data-share-links-index] .share-links-list,
+  [data-shared-with-me] .shared-items-list,
+  [data-recents-index] .recents-list,
+  [data-share-links-index] .share-row,
+  [data-shared-with-me] .shared-item-row,
+  [data-recents-index] .recent-row {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  [data-recents-index] .recent-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "name"
+      "type"
+      "size"
+      "location"
+      "modified"
+      "actions";
+  }
+
+  [data-share-links-index] .share-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "folder"
+      "url"
+      "expires"
+      "created"
+      "actions";
+  }
+
+  [data-shared-with-me] .shared-item-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "name"
+      "type"
+      "permission"
+      "owner"
+      "expiry"
+      "actions";
+  }
+
+  [data-recents-index] .file-line,
+  [data-share-links-index] .folder-link,
+  [data-shared-with-me] .folder-link,
+  [data-share-links-index] .url-line {
+    width: 100%;
+    min-width: 0;
+    align-items: flex-start;
+  }
+
+  [data-recents-index] .file-text,
+  [data-share-links-index] .col-folder,
+  [data-share-links-index] .col-url,
+  [data-share-links-index] .col-expires,
+  [data-share-links-index] .col-created,
+  [data-shared-with-me] .col-item-name,
+  [data-shared-with-me] .col-item-owner,
+  [data-shared-with-me] .col-item-expiry,
+  [data-recents-index] .col-location,
+  [data-recents-index] .col-modified {
+    min-width: 0;
+  }
+
+  [data-recents-index] .file-name,
+  [data-recents-index] .file-sub,
+  [data-share-links-index] .folder-name,
+  [data-share-links-index] .share-links-targets,
+  [data-share-links-index] .url-text,
+  [data-recents-index] .location-link,
+  [data-shared-with-me] .folder-name,
+  [data-shared-with-me] .col-item-owner .muted,
+  [data-shared-with-me] .col-item-expiry .muted {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  [data-recents-index] .col-size,
+  [data-recents-index] .col-actions,
+  [data-share-links-index] .col-actions,
+  [data-shared-with-me] .col-item-actions {
+    justify-self: stretch;
+  }
+
+  .ratings-table,
+  .ratings-table tbody,
+  .ratings-table tr,
+  .ratings-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .ratings-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .ratings-table tr {
+    border: 1px solid rgba(101, 21, 40, 0.12);
+    border-radius: 18px;
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,249,250,0.90));
+    box-shadow: 0 12px 24px rgba(77, 18, 33, 0.06);
+  }
+
+  .ratings-table tbody td {
+    padding: 12px 14px;
+    border: 0;
+    border-top: 1px solid rgba(101, 21, 40, 0.08);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .ratings-table tbody td:first-child {
+    border-top: 0;
+  }
+
+  .ratings-table tbody td::before {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a6673;
+  }
+
+  .ratings-table tbody td:nth-child(1)::before { content: "ID"; }
+  .ratings-table tbody td:nth-child(2)::before { content: "CV"; }
+  .ratings-table tbody td:nth-child(3)::before { content: "User"; }
+  .ratings-table tbody td:nth-child(4)::before { content: "Stars"; }
+  .ratings-table tbody td:nth-child(5)::before { content: "Created"; }
+  .ratings-table tbody td:nth-child(6)::before { content: "Actions"; }
+
+  .main-footer .container {
+    margin: 0 10px 10px;
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .drive-side-section {
+    grid-template-columns: 1fr;
+  }
+
+  [data-recents-index] .recent-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "name"
+      "type"
+      "size"
+      "location"
+      "modified"
+      "actions";
+  }
+
+  [data-share-links-index] .share-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "folder"
+      "url"
+      "expires"
+      "created"
+      "actions";
+  }
+
+  [data-shared-with-me] .shared-item-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "name"
+      "type"
+      "permission"
+      "owner"
+      "expiry"
+      "actions";
+  }
+
+  [data-folder-show] .cvs-list .drive-row,
+  [data-share-links-new] .select-files-list .drive-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "check"
+      "name"
+      "type"
+      "size"
+      "modified"
+      "actions";
+  }
+
+  [data-folder-show] .col-cv-check,
+  [data-share-links-new] .col-check {
+    justify-self: start;
+  }
+}
+
+.drive-top-left {
+  gap: 10px;
+}
+
+.drive-mobile-nav-toggle,
+.drive-mobile-nav {
+  display: none;
+}
+
+.drive-mobile-nav-toggle {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 8px 20px rgba(15,23,42,0.06);
+}
+
+.drive-mobile-nav-toggle span {
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: #111827;
+  display: block;
+}
+
+body.mobile-nav-open {
+  overflow: hidden;
+}
+
+@media (max-width: 700px) {
+  .drive-mobile-nav-toggle {
+    display: inline-flex;
+  }
+
+  .drive-sidebar {
+    display: none;
+  }
+
+  .drive-mobile-nav {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 14000;
+    pointer-events: none;
+  }
+
+  .drive-mobile-nav.is-open {
+    pointer-events: auto;
+  }
+
+  .drive-mobile-nav-backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    padding: 0;
+    width: 100%;
+    background: rgba(15,23,42,0.40);
+    opacity: 0;
+    transition: opacity 0.22s ease;
+    cursor: pointer;
+  }
+
+  .drive-mobile-nav.is-open .drive-mobile-nav-backdrop {
+    opacity: 1;
+  }
+
+  .drive-mobile-nav-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(320px, 88vw);
+    padding: 18px 16px 22px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: 0 24px 60px rgba(15,23,42,0.18);
+    transform: translateX(-100%);
+    transition: transform 0.24s ease;
+    overflow-y: auto;
+  }
+
+  .drive-mobile-nav.is-open .drive-mobile-nav-panel {
+    transform: translateX(0);
+  }
+
+  .drive-mobile-nav-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .drive-mobile-nav-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    color: #6b7280;
+  }
+
+  .drive-mobile-nav-close {
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgba(0,0,0,0.10);
+    border-radius: 14px;
+    background: #fff;
+    color: #111827;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(15,23,42,0.06);
+  }
+
+  .drive-mobile-nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .drive-mobile-nav-links .drive-side-link {
+    border: 1px solid rgba(0,0,0,0.08);
+    background: rgba(248,250,252,0.88);
+  }
+
+  .drive-mobile-nav-links .drive-side-link.active {
+    background: var(--brand-soft-2);
+  }
+
+  .drive-page-head {
+    margin: 0 0 14px;
+    padding: 16px;
+    border: 1px solid rgba(15,23,42,0.08);
+    border-radius: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: 0 10px 24px rgba(15,23,42,0.05);
+  }
+
+  .drive-head-right {
+    width: 100%;
+  }
+
+  .drive-head-right .drive-input,
+  .drive-head-right .drive-select,
+  .drive-head-right .btn {
+    width: 100%;
+  }
+
+  [data-share-links-index] .share-links-section-title,
+  [data-shared-with-me] .shared-section-head {
+    margin-bottom: 10px;
+  }
+
+  [data-shared-with-me] .shared-section-head {
+    padding: 0 4px;
+  }
+
+  .drive-card {
+    overflow: hidden;
+  }
+
+  .empty-message {
+    margin: 0;
+  }
+}
+
+@media (max-width: 1360px) {
+  [data-share-links-index] .drive-scroll,
+  [data-shared-with-me] .drive-scroll,
+  [data-recents-index] .drive-scroll {
+    overflow: visible;
+  }
+
+  [data-share-links-index] .share-links-list,
+  [data-shared-with-me] .shared-items-list,
+  [data-recents-index] .recents-list {
+    min-width: 0 !important;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  [data-share-links-index] .share-links-list .drive-header,
+  [data-shared-with-me] .shared-items-list .drive-header,
+  [data-recents-index] .recents-list .drive-header {
+    display: none;
+  }
+
+  [data-share-links-index] .share-links-list .share-row,
+  [data-shared-with-me] .shared-items-list .shared-item-row,
+  [data-recents-index] .recents-list .recent-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin: 12px;
+    padding: 16px;
+    width: calc(100% - 24px);
+    max-width: calc(100% - 24px);
+    box-sizing: border-box;
+    align-items: start;
+    border: 1px solid rgba(101, 21, 40, 0.12);
+    border-radius: 18px;
+    border-bottom: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,249,250,0.90));
+    box-shadow:
+      0 12px 24px rgba(77, 18, 33, 0.06),
+      inset 0 1px 0 rgba(255,255,255,0.82);
+  }
+
+  [data-share-links-index] .share-links-list .share-row > div,
+  [data-shared-with-me] .shared-items-list .shared-item-row > div,
+  [data-recents-index] .recents-list .recent-row > div {
+    min-width: 0;
+  }
+
+  [data-recents-index] .recents-list .recent-row {
+    grid-template-areas:
+      "name"
+      "type"
+      "size"
+      "location"
+      "modified"
+      "actions";
+    gap: 14px;
+  }
+
+  [data-recents-index] .recents-list .col-name { grid-area: name; }
+  [data-recents-index] .recents-list .col-type { grid-area: type; }
+  [data-recents-index] .recents-list .col-size { grid-area: size; }
+  [data-recents-index] .recents-list .col-location { grid-area: location; }
+  [data-recents-index] .recents-list .col-modified { grid-area: modified; }
+  [data-recents-index] .recents-list .col-actions {
+    grid-area: actions;
+    justify-self: stretch;
+  }
+
+  [data-share-links-index] .share-links-list .share-row {
+    grid-template-areas:
+      "folder"
+      "url"
+      "expires"
+      "created"
+      "actions";
+    gap: 14px;
+  }
+
+  [data-share-links-index] .share-links-list .col-folder { grid-area: folder; }
+  [data-share-links-index] .share-links-list .col-url { grid-area: url; }
+  [data-share-links-index] .share-links-list .col-expires { grid-area: expires; }
+  [data-share-links-index] .share-links-list .col-created { grid-area: created; }
+  [data-share-links-index] .share-links-list .col-actions {
+    grid-area: actions;
+    justify-self: stretch;
+  }
+
+  [data-shared-with-me] .shared-items-list .shared-item-row {
+    grid-template-areas:
+      "name"
+      "type"
+      "permission"
+      "owner"
+      "expiry"
+      "actions";
+    gap: 14px;
+  }
+
+  [data-shared-with-me] .shared-items-list .col-item-name { grid-area: name; }
+  [data-shared-with-me] .shared-items-list .col-item-type { grid-area: type; }
+  [data-shared-with-me] .shared-items-list .col-item-permission { grid-area: permission; }
+  [data-shared-with-me] .shared-items-list .col-item-owner { grid-area: owner; }
+  [data-shared-with-me] .shared-items-list .col-item-expiry { grid-area: expiry; }
+  [data-shared-with-me] .shared-items-list .col-item-actions {
+    grid-area: actions;
+    justify-self: stretch;
+  }
+
+  [data-recents-index] .recents-list .col-type::before,
+  [data-recents-index] .recents-list .col-size::before,
+  [data-recents-index] .recents-list .col-location::before,
+  [data-recents-index] .recents-list .col-modified::before,
+  [data-share-links-index] .share-links-list .col-url::before,
+  [data-share-links-index] .share-links-list .col-expires::before,
+  [data-share-links-index] .share-links-list .col-created::before,
+  [data-shared-with-me] .shared-items-list .col-item-type::before,
+  [data-shared-with-me] .shared-items-list .col-item-permission::before,
+  [data-shared-with-me] .shared-items-list .col-item-owner::before,
+  [data-shared-with-me] .shared-items-list .col-item-expiry::before {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a6673;
+  }
+
+  [data-recents-index] .recents-list .col-type::before { content: "Type"; }
+  [data-recents-index] .recents-list .col-size::before { content: "Size"; }
+  [data-recents-index] .recents-list .col-location::before { content: "Location"; }
+  [data-recents-index] .recents-list .col-modified::before { content: "Updated"; }
+  [data-share-links-index] .share-links-list .col-url::before { content: "Details"; }
+  [data-share-links-index] .share-links-list .col-expires::before { content: "Expires"; }
+  [data-share-links-index] .share-links-list .col-created::before { content: "Created"; }
+  [data-shared-with-me] .shared-items-list .col-item-type::before { content: "Type"; }
+  [data-shared-with-me] .shared-items-list .col-item-permission::before { content: "Permission"; }
+  [data-shared-with-me] .shared-items-list .col-item-owner::before { content: "Shared by"; }
+  [data-shared-with-me] .shared-items-list .col-item-expiry::before { content: "Expires"; }
+
+  [data-recents-index] .recents-list .file-line,
+  [data-share-links-index] .share-links-list .folder-link,
+  [data-shared-with-me] .shared-items-list .folder-link,
+  [data-share-links-index] .share-links-list .url-line {
+    width: 100%;
+    min-width: 0;
+    align-items: flex-start;
+  }
+
+  [data-recents-index] .recents-list .file-name,
+  [data-recents-index] .recents-list .file-sub,
+  [data-share-links-index] .share-links-list .folder-name,
+  [data-share-links-index] .share-links-list .share-links-targets,
+  [data-share-links-index] .share-links-list .url-text,
+  [data-recents-index] .recents-list .location-link,
+  [data-shared-with-me] .shared-items-list .folder-name,
+  [data-shared-with-me] .shared-items-list .col-item-owner .muted,
+  [data-shared-with-me] .shared-items-list .col-item-expiry .muted {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  [data-share-links-index] .share-links-list .url-text,
+  [data-recents-index] .recents-list .location-link {
+    display: block;
+  }
+
+  [data-share-links-index] .share-links-list .action-group,
+  [data-shared-with-me] .shared-items-list .action-group,
+  [data-recents-index] .recents-list .action-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+    width: 100%;
+    justify-content: stretch;
+    align-items: stretch;
+  }
+
+  [data-share-links-index] .share-links-list .action-group .btn,
+  [data-share-links-index] .share-links-list .action-group .inline-form,
+  [data-share-links-index] .share-links-list .action-group .inline-form .btn,
+  [data-shared-with-me] .shared-items-list .action-group .btn,
+  [data-shared-with-me] .shared-items-list .action-group .inline-form,
+  [data-shared-with-me] .shared-items-list .action-group .inline-form .btn,
+  [data-recents-index] .recents-list .action-group .btn,
+  [data-recents-index] .recents-list .action-group .inline-form,
+  [data-recents-index] .recents-list .action-group .inline-form .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  [data-recents-index] .recents-list .recent-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "name"
+      "type"
+      "size"
+      "location"
+      "modified"
+      "actions";
+  }
+
+  [data-share-links-index] .share-links-list .share-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "folder"
+      "url"
+      "expires"
+      "created"
+      "actions";
+  }
+
+  [data-shared-with-me] .shared-items-list .shared-item-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "name"
+      "type"
+      "permission"
+      "owner"
+      "expiry"
+      "actions";
+  }
 }
