@@ -20,6 +20,11 @@ function initRecentsIndexPage() {
   const previewFallback = document.getElementById("file-preview-fallback");
   const previewOpenNew = document.getElementById("file-preview-open-new");
   const previewDownloadFallback = document.getElementById("file-preview-download-fallback");
+  const renameFileOverlay = page.querySelector("#rename-file-overlay");
+  const renameFileInput = page.querySelector("#rename-file-input");
+  const renameFileForm = page.querySelector("#rename-file-form");
+  const closeRenameFile = page.querySelector("#close-rename-file");
+  const cancelRenameFile = page.querySelector("#cancel-rename-file");
 
   function hidePreviewNodes() {
     [previewFrame, previewVideo, previewImage, previewAudio, previewFallback].forEach((node) => {
@@ -99,6 +104,20 @@ function initRecentsIndexPage() {
     previewOverlay.hidden = false;
   }
 
+  function openRenameFileModal(renameUrl, fileName) {
+    if (!renameFileOverlay || !renameFileForm || !renameFileInput || !renameUrl) return;
+
+    renameFileInput.value = fileName || "";
+    renameFileForm.action = renameUrl;
+    renameFileOverlay.style.display = "flex";
+    renameFileInput.focus();
+    renameFileInput.select();
+  }
+
+  function closeRenameFileModal() {
+    if (renameFileOverlay) renameFileOverlay.style.display = "none";
+  }
+
   function humanSize(bytes) {
     const units = ["B", "KB", "MB", "GB", "TB"];
     let value = Number(bytes || 0);
@@ -158,15 +177,32 @@ function initRecentsIndexPage() {
     }, { signal });
   });
 
+  page.querySelectorAll(".file-rename-btn").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      openRenameFileModal(button.dataset.renameUrl, button.dataset.fileName);
+    }, { signal });
+  });
+
   if (previewClose) previewClose.addEventListener("click", closePreviewModal, { signal });
+  if (closeRenameFile) closeRenameFile.addEventListener("click", closeRenameFileModal, { signal });
+  if (cancelRenameFile) cancelRenameFile.addEventListener("click", closeRenameFileModal, { signal });
   if (previewOverlay) {
     previewOverlay.addEventListener("click", (event) => {
       if (event.target === previewOverlay) closePreviewModal();
     }, { signal });
   }
+  if (renameFileOverlay) {
+    renameFileOverlay.addEventListener("click", (event) => {
+      if (event.target === renameFileOverlay) closeRenameFileModal();
+    }, { signal });
+  }
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && previewOverlay && !previewOverlay.hidden) closePreviewModal();
+    if (event.key === "Escape" && renameFileOverlay && renameFileOverlay.style.display === "flex") {
+      closeRenameFileModal();
+    }
   }, { signal });
 
   if (searchInput) searchInput.addEventListener("input", applyFilters, { signal });
@@ -175,6 +211,7 @@ function initRecentsIndexPage() {
     if (window.__recentsIndexAbort) window.__recentsIndexAbort.abort();
     window.__recentsIndexAbort = null;
     if (previewOverlay) previewOverlay.hidden = true;
+    if (renameFileOverlay) renameFileOverlay.style.display = "none";
     hidePreviewNodes();
   }, { signal, once: true });
 

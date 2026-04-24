@@ -63,7 +63,7 @@ class CvsController < ApplicationController
       flash[:alert] = @cv.errors.full_messages.join(", ")
     end
 
-    redirect_to folder_path(@folder)
+    redirect_back fallback_location: folder_path(@folder)
   end
 
   def destroy

@@ -501,6 +501,11 @@ function initFolderShowPage() {
   const renameForm = page.querySelector("#rename-folder-form");
   const closeRename = page.querySelector("#close-rename-folder");
   const cancelRename = page.querySelector("#cancel-rename-folder");
+  const renameFileOverlay = page.querySelector("#rename-file-overlay");
+  const renameFileInput = page.querySelector("#rename-file-input");
+  const renameFileForm = page.querySelector("#rename-file-form");
+  const closeRenameFile = page.querySelector("#close-rename-file");
+  const cancelRenameFile = page.querySelector("#cancel-rename-file");
 
   function openRenameModal(folderId, folderName) {
     if (!renameOverlay || !renameForm || !renameInput) return;
@@ -517,6 +522,20 @@ function initFolderShowPage() {
     if (renameOverlay) renameOverlay.style.display = "none";
   }
 
+  function openRenameFileModal(renameUrl, fileName) {
+    if (!renameFileOverlay || !renameFileForm || !renameFileInput || !renameUrl) return;
+
+    renameFileInput.value = fileName || "";
+    renameFileForm.action = renameUrl;
+    renameFileOverlay.style.display = "flex";
+    renameFileInput.focus();
+    renameFileInput.select();
+  }
+
+  function closeRenameFileModal() {
+    if (renameFileOverlay) renameFileOverlay.style.display = "none";
+  }
+
   page.querySelectorAll(".folder-rename-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -524,11 +543,25 @@ function initFolderShowPage() {
     }, { signal });
   });
 
+  page.querySelectorAll(".file-rename-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      openRenameFileModal(btn.dataset.renameUrl, btn.dataset.fileName);
+    }, { signal });
+  });
+
   if (closeRename) closeRename.addEventListener("click", closeRenameModal, { signal });
   if (cancelRename) cancelRename.addEventListener("click", closeRenameModal, { signal });
+  if (closeRenameFile) closeRenameFile.addEventListener("click", closeRenameFileModal, { signal });
+  if (cancelRenameFile) cancelRenameFile.addEventListener("click", closeRenameFileModal, { signal });
   if (renameOverlay) {
     renameOverlay.addEventListener("click", (e) => {
       if (e.target === renameOverlay) closeRenameModal();
+    }, { signal });
+  }
+  if (renameFileOverlay) {
+    renameFileOverlay.addEventListener("click", (e) => {
+      if (e.target === renameFileOverlay) closeRenameFileModal();
     }, { signal });
   }
 

@@ -77,20 +77,36 @@
               </div>
 
               <div class="col-folder-actions">
-                <div class="action-group">
-                  <%= link_to "Open", folder_path(folder), class: "btn secondary xsmall" %>
+                <div class="kebab-wrap">
+                  <button type="button" class="kebab-btn" data-kebab="dashboard-folder-<%= folder.id %>" aria-label="Folder actions">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                      <circle cx="12" cy="5" r="1.8"></circle>
+                      <circle cx="12" cy="12" r="1.8"></circle>
+                      <circle cx="12" cy="19" r="1.8"></circle>
+                    </svg>
+                  </button>
 
-                  <!-- ✅ NEW: Download single folder (zip with all subfolders/files) -->
-                  <%= link_to "Download",
-                    download_folder_path(folder),
-                    class: "btn secondary xsmall",
-                    data: { turbo: false, turbo_frame: "_top" } %>
-                  <%= button_to "Delete",
-                    folder_path(folder),
-                    method: :delete,
-                    data: { confirm: "Delete this folder and all CVs inside?" },
-                    class: "btn secondary xsmall",
-                    form: { class: "inline-form", data: {turbo:  false} } %> 
+                  <div class="kebab-menu" data-kebab-menu="dashboard-folder-<%= folder.id %>">
+                    <a class="kebab-item" href="<%= folder_path(folder) %>">Open</a>
+                    <a class="kebab-item"
+                       href="<%= download_folder_path(folder) %>"
+                       data-turbo="false"
+                       data-turbo-frame="_top">
+                      Download
+                    </a>
+                    <button type="button"
+                            class="kebab-item folder-rename-btn"
+                            data-folder-id="<%= folder.id %>"
+                            data-folder-name="<%= folder.name %>">
+                      Rename
+                    </button>
+                    <%= button_to "Delete",
+                      folder_path(folder),
+                      method: :delete,
+                      data: { confirm: "Delete this folder and all CVs inside?" },
+                      class: "kebab-item danger",
+                      form: { class: "inline-form", data: {turbo:  false} } %>
+                  </div>
                 </div>
               </div>
 
@@ -130,6 +146,33 @@
           <div class="modal-actions">
             <button type="button" id="cancel-create-folder" class="btn secondary">Cancel</button>
             <%= form.submit "Create Folder", class: "btn primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div id="rename-folder-overlay" class="overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 class="modal-title">Rename folder</h3>
+        <button type="button" id="close-rename-folder" class="btn secondary xsmall">Close</button>
+      </div>
+
+      <div class="folder-show-modal-body">
+        <%= form_with url: "#", method: :patch, local: true, id: "rename-folder-form", data: { rename_prefix: folders_path } do %>
+          <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+
+          <div class="muted folder-show-modal-label">New name</div>
+          <input id="rename-folder-input"
+                 name="folder[name]"
+                 type="text"
+                 required
+                 class="folder-show-modal-input">
+
+          <div class="modal-actions">
+            <button type="button" id="cancel-rename-folder" class="btn secondary">Cancel</button>
+            <button type="submit" class="btn primary">Rename</button>
           </div>
         <% end %>
       </div>

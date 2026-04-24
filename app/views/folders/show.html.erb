@@ -189,6 +189,12 @@
                     <a class="kebab-item" href="<%= download_url %>" data-turbo="false" data-turbo-frame="_top">Download</a>
 
                     <button type="button" class="kebab-item share-one-btn" data-cv-id="<%= cv.id %>">Share</button>
+                    <button type="button"
+                            class="kebab-item file-rename-btn"
+                            data-file-name="<%= display_name %>"
+                            data-rename-url="<%= folder_cv_path(@folder, cv) %>">
+                      Rename
+                    </button>
                     <button type="button" class="kebab-item move-one-btn" data-cv-id="<%= cv.id %>">Move</button>
 
                     <%= button_to "Delete",
@@ -289,6 +295,34 @@
 
           <div class="modal-actions">
             <button type="button" id="cancel-rename-folder" class="btn secondary">Cancel</button>
+            <button type="submit" class="btn primary">Rename</button>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rename file modal -->
+  <div id="rename-file-overlay" class="overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 class="modal-title">Rename file</h3>
+        <button type="button" id="close-rename-file" class="btn secondary xsmall">Close</button>
+      </div>
+
+      <div class="folder-show-modal-body">
+        <%= form_with url: "#", method: :patch, local: true, id: "rename-file-form" do %>
+          <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+
+          <div class="muted folder-show-modal-label">New name</div>
+          <input id="rename-file-input"
+                 name="cv[title]"
+                 type="text"
+                 required
+                 class="folder-show-modal-input">
+
+          <div class="modal-actions">
+            <button type="button" id="cancel-rename-file" class="btn secondary">Cancel</button>
             <button type="submit" class="btn primary">Rename</button>
           </div>
         <% end %>
