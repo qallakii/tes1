@@ -6,6 +6,16 @@ local:
   service: Disk
   root: <%= Rails.root.join("storage") %>
 
+amazon:
+  service: S3
+  access_key_id: <%= ENV.fetch("AWS_ACCESS_KEY_ID").to_s.strip.tap { |value| raise "Missing AWS_ACCESS_KEY_ID" if value.empty? } %>
+  secret_access_key: <%= ENV.fetch("AWS_SECRET_ACCESS_KEY").to_s.strip.tap { |value| raise "Missing AWS_SECRET_ACCESS_KEY" if value.empty? } %>
+  region: <%= ENV.fetch("AWS_REGION").to_s.strip.tap { |value| raise "Missing AWS_REGION" if value.empty? } %>
+  bucket: <%= ENV.fetch("AWS_S3_BUCKET").to_s.strip.tap { |value| raise "Missing AWS_S3_BUCKET" if value.empty? } %>
+<% if ENV["AWS_CA_BUNDLE"].to_s.strip != "" %>
+  ssl_ca_bundle: <%= ENV["AWS_CA_BUNDLE"].to_s.strip %>
+<% end %>
+
 # Use bin/rails credentials:edit to set the AWS secrets (as aws:access_key_id|secret_access_key)
 # amazon:
 #   service: S3

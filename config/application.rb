@@ -6,6 +6,8 @@ require "rails/all"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+require "dotenv/load" if %w[development test].include?(ENV.fetch("RAILS_ENV", "development"))
+
 module CvShareApp
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
