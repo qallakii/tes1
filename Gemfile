@@ -25,6 +25,8 @@ gem "kaminari"
 # Handle ZIP files (for share link downloads)
 gem "rubyzip", "~> 2.3"
 
+gem "aws-sdk-s3", require: false
+gem "dotenv-rails"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"

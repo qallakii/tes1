@@ -45,7 +45,8 @@ module ApplicationHelper
           [
             tag.path(
               d: "M3.6 7.5a2 2 0 0 1 2-2h4.6l1.7 1.8h6.8a2 2 0 0 1 2 2v1.2H3.6z",
-              fill: "#fde68a"
+              fill: "#fde68a",
+              "stroke-linejoin" => "round"
             ),
             tag.path(
               d: "M2.9 9.2A2 2 0 0 1 4.9 7.2h14.2a2 2 0 0 1 2 2v8.1a2 2 0 0 1-2 2H4.9a2 2 0 0 1-2-2z",
