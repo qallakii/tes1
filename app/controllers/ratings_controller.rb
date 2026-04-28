@@ -4,6 +4,8 @@ class RatingsController < ApplicationController
   before_action :set_cv, only: [:create]
 
   def index
+    @page = pagination_page
+    @per_page = pagination_per_page
     @ratings = rating_scope.includes(:cv, :user)
     if params[:stars].present?
       @ratings = @ratings.where(stars: params[:stars])
@@ -22,7 +24,14 @@ class RatingsController < ApplicationController
       @ratings = @ratings.order(created_at: :desc)
     end
 
-    @ratings = @ratings.page(params[:page]).per(10)
+    ratings_scope = @ratings
+    @ratings = ratings_scope.page(@page).per(@per_page)
+    clamped_page = clamp_pagination_page(@page, @ratings.total_count, @per_page)
+
+    if clamped_page != @page
+      @page = clamped_page
+      @ratings = ratings_scope.page(@page).per(@per_page)
+    end
   end
 
   def create

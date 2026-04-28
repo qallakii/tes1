@@ -11,18 +11,37 @@ class ShareLinksController < ApplicationController
   before_action :enforce_password_if_needed!, only: [ :show, :preview, :download, :download_folder ]
 
   def index
-    @share_links = ShareLink
+    @page = pagination_page
+    @per_page = pagination_per_page
+    @received_page = [ params[:received_page].to_i, 1 ].max
+    @received_per_page = pagination_per_page
+
+    share_links_scope = ShareLink
       .includes(:folder, :folders, share_link_accesses: :user)
       .left_joins(:folder)
       .where("folders.user_id = ? OR share_links.user_id = ?", current_user.id, current_user.id)
       .distinct
       .order(created_at: :desc)
 
-    @received_share_links = current_user.accessible_share_links
+    @share_links = share_links_scope.page(@page).per(@per_page)
+    clamped_page = clamp_pagination_page(@page, @share_links.total_count, @per_page)
+    if clamped_page != @page
+      @page = clamped_page
+      @share_links = share_links_scope.page(@page).per(@per_page)
+    end
+
+    received_share_links_scope = current_user.accessible_share_links
       .includes(:user, :folders, :cvs, share_link_accesses: :user)
       .where.not(user_id: current_user.id)
       .distinct
       .order(created_at: :desc)
+
+    @received_share_links = received_share_links_scope.page(@received_page).per(@received_per_page)
+    clamped_received_page = clamp_pagination_page(@received_page, @received_share_links.total_count, @received_per_page)
+    if clamped_received_page != @received_page
+      @received_page = clamped_received_page
+      @received_share_links = received_share_links_scope.page(@received_page).per(@received_per_page)
+    end
   end
 
   def new

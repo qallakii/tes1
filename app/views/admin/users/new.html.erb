@@ -3,7 +3,7 @@
     <div>
       <div class="admin-eyebrow">Create Account</div>
       <h1 class="admin-title">Add user</h1>
-      <div class="admin-subtitle">Create a new account and generate an invite link in one step.</div>
+      <div class="admin-subtitle">Create a new account and send the invite link to their email.</div>
     </div>
 
     <div class="admin-hero-actions">
@@ -16,7 +16,7 @@
       <div class="admin-form-intro">
         <div class="admin-card-kicker">Setup</div>
         <div class="admin-card-title">User details</div>
-        <div class="admin-form-copy">Set the account identity, choose access level, and decide how the first password should work.</div>
+        <div class="admin-form-copy">Set the account identity and access level. The app will email an invite link so the user can create their password.</div>
       </div>
       <%= form_with(model: @user, url: admin_users_path, method: :post, local: true) do |f| %>
         <div class="form-row">
@@ -37,38 +37,8 @@
           </label>
         </div>
 
-        <div class="form-row">
-          <label class="label">Password setup</label>
-          <div class="admin-radio-group">
-            <label class="admin-checkbox-row">
-              <%= radio_button_tag :password_mode, "password", params[:password_mode] != "temporary", data: { password_mode: "password" } %>
-              <span>Set a normal password now</span>
-            </label>
-            <label class="admin-checkbox-row">
-              <%= radio_button_tag :password_mode, "temporary", params[:password_mode] == "temporary", data: { password_mode: "temporary" } %>
-              <span>Set a temporary password and force change on first login</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="form-row password-mode-panel" data-password-panel="password">
-          <label class="label">Password</label>
-          <%= f.password_field :password, class: "input", autocomplete: "new-password" %>
-        </div>
-
-        <div class="form-row password-mode-panel" data-password-panel="password">
-          <label class="label">Confirm password</label>
-          <%= f.password_field :password_confirmation, class: "input", autocomplete: "new-password" %>
-        </div>
-
-        <div class="form-row password-mode-panel" data-password-panel="temporary" hidden>
-          <label class="label">Temporary password</label>
-          <%= password_field_tag :temporary_password, params[:temporary_password], class: "input", autocomplete: "new-password" %>
-          <div class="admin-form-copy">The user can log in with this once, then must create a new password.</div>
-        </div>
-
         <div class="admin-form-actions">
-          <%= f.submit "Create user", class: "btn primary" %>
+          <%= f.submit "Create user and send invite", class: "btn primary" %>
           <%= link_to "Cancel", admin_users_path, class: "btn secondary" %>
         </div>
       <% end %>
@@ -80,8 +50,8 @@
         <div class="admin-card-title">What happens next</div>
         <div class="admin-note-list">
           <div>An account is created immediately.</div>
-          <div>If you choose a normal password, the user can sign in directly.</div>
-          <div>If you choose a temporary password, the first login forces a password change.</div>
+          <div>An invite email is sent to the user with a secure password setup link.</div>
+          <div>The user sets their password before entering the workspace.</div>
         </div>
       </div>
 

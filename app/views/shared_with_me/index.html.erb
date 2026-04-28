@@ -13,7 +13,7 @@
 
   <div class="shared-section-head">
     <h2>Items</h2>
-    <span class="shared-count"><%= @shared_entries.size %></span>
+    <span class="shared-count"><%= @shared_entries_total_count %></span>
   </div>
 
   <% if @shared_entries.any? %>
@@ -72,21 +72,31 @@
               </div>
 
               <div class="col-item-actions">
-                <div class="action-group">
-                  <% if is_folder %>
-                    <%= link_to "Open",
-                      open_url,
-                      class: "btn secondary xsmall" %>
-                  <% else %>
-                    <%= link_to "Open",
-                      open_url,
-                      target: "_blank",
-                      rel: "noopener",
-                      class: "btn secondary xsmall" %>
-                    <%= link_to "Download",
-                      share_link_file_download_path(entry.share_link, cv_id: entry.cv.id),
-                      class: "btn secondary xsmall" %>
-                  <% end %>
+                <div class="kebab-wrap">
+                  <button type="button" class="kebab-btn" data-action-menu-trigger="true" data-menu-id="shared-item-actions-<%= entry.share_link.id %>-<%= is_folder ? "folder-#{entry.folder.id}" : "file-#{entry.cv.id}" %>" aria-label="Shared item actions">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                      <circle cx="12" cy="5" r="1.8"></circle>
+                      <circle cx="12" cy="12" r="1.8"></circle>
+                      <circle cx="12" cy="19" r="1.8"></circle>
+                    </svg>
+                  </button>
+
+                  <div id="shared-item-actions-<%= entry.share_link.id %>-<%= is_folder ? "folder-#{entry.folder.id}" : "file-#{entry.cv.id}" %>" class="kebab-menu hidden">
+                    <% if is_folder %>
+                      <%= link_to "Open",
+                        open_url,
+                        class: "kebab-item" %>
+                    <% else %>
+                      <%= link_to "Open",
+                        open_url,
+                        target: "_blank",
+                        rel: "noopener",
+                        class: "kebab-item" %>
+                      <%= link_to "Download",
+                        share_link_file_download_path(entry.share_link, cv_id: entry.cv.id),
+                        class: "kebab-item" %>
+                    <% end %>
+                  </div>
                 </div>
               </div>
             </div>
@@ -94,6 +104,11 @@
         </div>
       </div>
     </div>
+    <%= render "shared/pagination",
+      total_count: @shared_entries_total_count,
+      page: @page,
+      per_page: @per_page,
+      base_params: request.query_parameters %>
   <% else %>
     <div class="drive-card shared-empty-card">
       <div class="muted">Nothing has been shared with you yet.</div>

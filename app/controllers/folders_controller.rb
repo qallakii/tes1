@@ -10,12 +10,33 @@ class FoldersController < ApplicationController
   ]
 
   def index
-    @folders = current_user.folders.where(parent_id: nil).order(updated_at: :desc)
+    @page = pagination_page
+    @per_page = pagination_per_page
+    folders_scope = current_user.folders.where(parent_id: nil).order(updated_at: :desc)
+    @folders = folders_scope.page(@page).per(@per_page)
+    clamped_page = clamp_pagination_page(@page, @folders.total_count, @per_page)
+
+    if clamped_page != @page
+      @page = clamped_page
+      @folders = folders_scope.page(@page).per(@per_page)
+    end
   end
 
   def show
-    @subfolders = @folder.subfolders.order(updated_at: :desc)
-    @cvs = @folder.cvs.includes(file_attachment: :blob).order(updated_at: :desc)
+    @page = pagination_page
+    @per_page = pagination_per_page
+    all_items =
+      @folder.subfolders.to_a.map { |folder| { kind: :folder, record: folder, updated_at: folder.updated_at } } +
+      @folder.cvs.includes(file_attachment: :blob).to_a.map { |cv| { kind: :file, record: cv, updated_at: cv.updated_at } }
+
+    @folder_items_total_count = all_items.size
+    @page = clamp_pagination_page(@page, @folder_items_total_count, @per_page)
+    @folder_items = all_items
+      .sort_by { |item| item[:updated_at] || Time.zone.at(0) }
+      .reverse
+      .slice((@page - 1) * @per_page, @per_page) || []
+    @subfolders = @folder_items.select { |item| item[:kind] == :folder }.map { |item| item[:record] }
+    @cvs = @folder_items.select { |item| item[:kind] == :file }.map { |item| item[:record] }
     @all_folders_for_tree = current_user.folders.order(:name)
   end
 

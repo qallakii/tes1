@@ -35,7 +35,7 @@
     </div>
   </div>
 
-  <% if (@subfolders || []).any? || (@cvs || []).any? %>
+  <% if (@folder_items || []).any? %>
     <div class="drive-card">
       <div class="drive-scroll">
         <div class="drive-list cvs-list">
@@ -49,10 +49,11 @@
             <div class="col-cv-actions">Actions</div>
           </div>
 
-          <!-- ✅ FOLDERS -->
-          <% (@subfolders || []).each do |sf| %>
-            <div class="drive-row folder-row clickable-folder"
-                 data-folder-url="<%= folder_path(sf) %>">
+          <% (@folder_items || []).each do |item| %>
+            <% if item[:kind] == :folder %>
+              <% sf = item[:record] %>
+              <div class="drive-row folder-row clickable-folder"
+                   data-folder-url="<%= folder_path(sf) %>">
 
               <div class="col-cv-check">
                 <input class="folder-check" type="checkbox" value="<%= sf.id %>" />
@@ -119,13 +120,11 @@
                 </div>
               </div>
 
-            </div>
-          <% end %>
-
-          <!-- ✅ FILES -->
-          <% (@cvs || []).each do |cv| %>
-            <% blob = cv.file&.blob %>
-            <% display_name = cv.title.presence || cv.file.filename.to_s %>
+              </div>
+            <% else %>
+              <% cv = item[:record] %>
+              <% blob = cv.file&.blob %>
+              <% display_name = cv.title.presence || cv.file.filename.to_s %>
             <% ext = cv.file.filename.extension.to_s.upcase %>
             <% type_label = ext.present? ? ext : "FILE" %>
             <% size_bytes = blob&.byte_size.to_i %>
@@ -207,12 +206,18 @@
                 </div>
               </div>
 
-            </div>
+              </div>
+            <% end %>
           <% end %>
 
         </div>
       </div>
     </div>
+    <%= render "shared/pagination",
+      total_count: @folder_items_total_count,
+      page: @page,
+      per_page: @per_page,
+      base_params: request.query_parameters %>
   <% else %>
     <p class="empty-message">This folder is empty.</p>
   <% end %>

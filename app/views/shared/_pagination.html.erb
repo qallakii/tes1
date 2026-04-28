@@ -4,41 +4,72 @@
       page: Integer
       per_page: Integer
       base_params: Hash (keeps other query params)
+      page_param: String/Symbol (optional)
+      per_page_options: Array<Integer> (optional)
 %>
 <% total_pages = (total_count.to_f / per_page).ceil %>
-<% return if total_pages <= 1 %>
+<% page_param = local_assigns.fetch(:page_param, :page).to_sym %>
+<% per_page_options = local_assigns.fetch(:per_page_options, [10, 25, 50, 100]) %>
+<% current_page = total_pages.positive? ? [page, total_pages].min : 1 %>
+<% clean_params = base_params.to_h.except(page_param.to_s, page_param, "per_page", :per_page) %>
+<% page_numbers =
+  if total_pages <= 7
+    (1..total_pages).to_a
+  else
+    ([1, current_page - 1, current_page, current_page + 1, total_pages])
+      .select { |page_number| page_number.between?(1, total_pages) }
+      .uniq
+  end %>
 
 <div class="pager">
   <div class="muted pager-meta">
-    Page <strong><%= page %></strong> of <strong><%= total_pages %></strong>
+    Page <strong><%= current_page %></strong> of <strong><%= [total_pages, 1].max %></strong>
+    <span class="pager-count">(<%= total_count %> total)</span>
   </div>
 
   <div class="pager-controls">
     <form method="get" class="pager-form">
-      <% base_params.each do |k, v| %>
-        <% next if k.to_s.in?(["page", "per_page"]) %>
+      <% clean_params.each do |k, v| %>
         <input type="hidden" name="<%= k %>" value="<%= v %>">
       <% end %>
+      <input type="hidden" name="<%= page_param %>" value="1">
       <label class="muted pager-label">Rows:</label>
       <select name="per_page" class="drive-select" onchange="this.form.submit()">
-        <% [10, 25, 80].each do |n| %>
+        <% per_page_options.each do |n| %>
           <option value="<%= n %>" <%= "selected" if per_page == n %>><%= n %></option>
         <% end %>
       </select>
     </form>
 
     <div class="pager-links">
-      <% prev_page = page > 1 ? page - 1 : nil %>
-      <% next_page = page < total_pages ? page + 1 : nil %>
+      <% prev_page = current_page > 1 ? current_page - 1 : nil %>
+      <% next_page = current_page < total_pages ? current_page + 1 : nil %>
 
       <% if prev_page %>
-        <%= link_to "Prev", url_for(base_params.merge(page: prev_page, per_page: per_page)), class: "btn secondary xsmall" %>
+        <%= link_to "Prev", url_for(clean_params.merge(page_param => prev_page, per_page: per_page)), class: "btn secondary xsmall" %>
       <% else %>
         <span class="btn secondary xsmall pager-disabled">Prev</span>
       <% end %>
 
+      <div class="pager-pages" aria-label="Pages">
+        <% previous_number = nil %>
+        <% page_numbers.each do |page_number| %>
+          <% if previous_number && page_number > previous_number + 1 %>
+            <span class="pager-ellipsis">...</span>
+          <% end %>
+
+          <% if page_number == current_page %>
+            <span class="btn secondary xsmall pager-current"><%= page_number %></span>
+          <% else %>
+            <%= link_to page_number, url_for(clean_params.merge(page_param => page_number, per_page: per_page)), class: "btn secondary xsmall pager-page" %>
+          <% end %>
+
+          <% previous_number = page_number %>
+        <% end %>
+      </div>
+
       <% if next_page %>
-        <%= link_to "Next", url_for(base_params.merge(page: next_page, per_page: per_page)), class: "btn secondary xsmall" %>
+        <%= link_to "Next", url_for(clean_params.merge(page_param => next_page, per_page: per_page)), class: "btn secondary xsmall" %>
       <% else %>
         <span class="btn secondary xsmall pager-disabled">Next</span>
       <% end %>

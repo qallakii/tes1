@@ -301,6 +301,7 @@ function initFolderShowPage() {
   const folderInput = page.querySelector("#upload-folder-input");
   const uploadSubmitBtn = page.querySelector("#upload-submit");
   const uploadPaths = page.querySelector("#upload-paths");
+  const maxUploadBytes = 100 * 1024 * 1024;
 
   function resetUploadList() {
     if (listWrap) listWrap.innerHTML = "";
@@ -325,17 +326,26 @@ function initFolderShowPage() {
     resetUploadList();
 
     const selectedFiles = Array.from(files || []);
-    const hasFiles = selectedFiles.length > 0;
+    const oversizedFiles = selectedFiles.filter((file) => file.size > maxUploadBytes);
+    const hasFiles = selectedFiles.length > 0 && oversizedFiles.length === 0;
 
     setUploadSubmitEnabled(hasFiles);
-    if (listWrapCont) listWrapCont.style.display = hasFiles ? "flex" : "none";
+    if (listWrapCont) listWrapCont.style.display = selectedFiles.length > 0 ? "flex" : "none";
+
+    if (oversizedFiles.length > 0 && listWrap) {
+      const warning = document.createElement("li");
+      warning.className = "upload-file-warning";
+      warning.textContent = `Remove files over 100 MB before uploading: ${oversizedFiles.map((file) => file.name).join(", ")}`;
+      listWrap.appendChild(warning);
+    }
 
     selectedFiles.forEach((file) => {
       const relativePath = pathBuilder(file);
       const item = document.createElement("li");
-      item.textContent = relativePath;
+      item.textContent = `${relativePath} (${humanSize(file.size)})`;
+      if (file.size > maxUploadBytes) item.classList.add("upload-file-over-limit");
       if (listWrap) listWrap.appendChild(item);
-      appendUploadPath(relativePath);
+      if (oversizedFiles.length === 0) appendUploadPath(relativePath);
     });
   }
 

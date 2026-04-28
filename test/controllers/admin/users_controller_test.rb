@@ -11,13 +11,11 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     )
   end
 
-  test "admin can create a user account" do
+  test "admin can create a user account and generate an invite token" do
     post login_path, params: { email: @admin.email, password: "password123" }
 
     assert_difference("User.count", 1) do
       post admin_users_path, params: {
-        password_mode: "temporary",
-        temporary_password: "temporary123",
         user: {
           name: "Invited User",
           email: "invited@example.com",
@@ -30,5 +28,7 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to edit_admin_user_path(user)
     assert user.force_password_change?
+    assert user.reset_password_token.present?
+    assert user.reset_password_sent_at.present?
   end
 end

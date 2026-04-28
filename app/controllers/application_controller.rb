@@ -3,6 +3,21 @@ class ApplicationController < ActionController::Base
 
   private
 
+  def pagination_per_page(default: 25)
+    allowed = [ 10, 25, 50, 100 ]
+    requested = params[:per_page].to_i
+    allowed.include?(requested) ? requested : default
+  end
+
+  def pagination_page
+    [ params[:page].to_i, 1 ].max
+  end
+
+  def clamp_pagination_page(page, total_count, per_page)
+    total_pages = (total_count.to_f / per_page).ceil
+    total_pages.positive? ? [ page, total_pages ].min : 1
+  end
+
   def current_user
     return @current_user if defined?(@current_user)
 

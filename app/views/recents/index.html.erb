@@ -74,34 +74,42 @@
               </div>
 
               <div class="col-actions">
-                <div class="action-group">
-                  <button type="button"
-                    class="btn secondary xsmall preview-file-btn"
-                    data-preview="<%= rails_blob_path(cv.file, disposition: "inline") %>"
-                    data-download="<%= rails_blob_path(cv.file, disposition: "attachment") %>"
-                    data-preview-kind="<%= content_type %>"
-                    data-preview-title="<%= display_name %>">
-                    Preview
+                <div class="kebab-wrap">
+                  <button type="button" class="kebab-btn" data-action-menu-trigger="true" data-menu-id="recent-actions-<%= cv.id %>" aria-label="File actions">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                      <circle cx="12" cy="5" r="1.8"></circle>
+                      <circle cx="12" cy="12" r="1.8"></circle>
+                      <circle cx="12" cy="19" r="1.8"></circle>
+                    </svg>
                   </button>
 
-                  <%= link_to "Download",
-                    rails_blob_path(cv.file, disposition: "attachment"),
-                    class: "btn secondary xsmall" %>
-
-                  <% if folder.present? %>
+                  <div id="recent-actions-<%= cv.id %>" class="kebab-menu hidden">
                     <button type="button"
-                      class="btn secondary xsmall file-rename-btn"
-                      data-file-name="<%= display_name %>"
-                      data-rename-url="<%= folder_cv_path(folder, cv) %>">
-                      Rename
+                      class="kebab-item preview-file-btn"
+                      data-preview="<%= rails_blob_path(cv.file, disposition: "inline") %>"
+                      data-download="<%= rails_blob_path(cv.file, disposition: "attachment") %>"
+                      data-preview-kind="<%= content_type %>"
+                      data-preview-title="<%= display_name %>">
+                      Preview
                     </button>
-                  <% end %>
 
-                  <% if folder.present? %>
-                    <%= link_to "Open folder",
-                      folder_path(folder),
-                      class: "btn secondary xsmall" %>
-                  <% end %>
+                    <%= link_to "Download",
+                      rails_blob_path(cv.file, disposition: "attachment"),
+                      class: "kebab-item" %>
+
+                    <% if folder.present? %>
+                      <button type="button"
+                        class="kebab-item file-rename-btn"
+                        data-file-name="<%= display_name %>"
+                        data-rename-url="<%= folder_cv_path(folder, cv) %>">
+                        Rename
+                      </button>
+
+                      <%= link_to "Open folder",
+                        folder_path(folder),
+                        class: "kebab-item" %>
+                    <% end %>
+                  </div>
                 </div>
               </div>
 
@@ -111,6 +119,12 @@
         </div>
       </div>
     </div>
+
+    <%= render "shared/pagination",
+      total_count: @recent_cvs.total_count,
+      page: @page,
+      per_page: @per_page,
+      base_params: request.query_parameters %>
 
     <div id="recent-no-results" class="no-results" hidden>
       No recent files match your search.

@@ -14,30 +14,19 @@ module Admin
     end
 
     def create
-      mode = params[:password_mode].to_s
       @user = User.new(base_admin_user_params)
-
-      case mode
-      when "temporary"
-        temporary_password = params[:temporary_password].to_s
-        if temporary_password.blank?
-          @user.errors.add(:base, "Temporary password cannot be blank.")
-          flash.now[:alert] = @user.errors.full_messages.to_sentence
-          render :new, status: :unprocessable_entity
-          return
-        end
-
-        @user.password = temporary_password
-        @user.password_confirmation = temporary_password
-        @user.force_password_change = true
-      else
-        password_attrs = password_admin_user_params
-        @user.assign_attributes(password_attrs)
-        @user.force_password_change = false
-      end
+      temporary_password = SecureRandom.urlsafe_base64(32)
+      @user.password = temporary_password
+      @user.password_confirmation = temporary_password
+      @user.force_password_change = true
 
       if @user.save
-        flash[:notice] = mode == "temporary" ? "User created with a temporary password." : "User created."
+        invite_url = edit_password_reset_url(@user.generate_password_reset_token!)
+        email_status = deliver_link_email(:invite_link, @user, invite_url)
+
+        flash[:notice] = email_status ? "User created and invite email sent." : "User created, but invite email delivery failed."
+        flash[:admin_action_title] = "Invite link"
+        flash[:admin_action_url] = invite_url
         redirect_to edit_admin_user_path(@user)
       else
         flash.now[:alert] = @user.errors.full_messages.to_sentence
@@ -109,10 +98,6 @@ module Admin
 
     def admin_user_params
       params.require(:user).permit(:name, :email, :admin, :password, :password_confirmation)
-    end
-
-    def password_admin_user_params
-      params.require(:user).permit(:password, :password_confirmation)
     end
 
     def load_user_stats

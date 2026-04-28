@@ -9,6 +9,10 @@
   --sidebar-bg-deep: #870d22;
   --surface-border: rgba(135,13,34,0.10);
   --surface-shadow: 0 16px 40px rgba(87,18,34,0.07);
+  --z-header: 20000;
+  --z-header-menu: 20030;
+  --z-overlay: 30000;
+  --z-preview: 32000;
 }
 
 /* ===============================
@@ -45,7 +49,7 @@ a { text-decoration: none; color: inherit; }
 
 .drive-topbar {
   position: relative;
-  z-index: 20000;
+  z-index: var(--z-header);
   height: 64px;
   background: rgba(255,255,255,0.94);
   backdrop-filter: blur(14px);
@@ -114,7 +118,7 @@ a { text-decoration: none; color: inherit; }
 
 .drive-top-right {
   position: relative;
-  z-index: 20001;
+  z-index: calc(var(--z-header) + 1);
   display:flex;
   justify-content:flex-end;
   align-items:center;
@@ -287,7 +291,22 @@ a { text-decoration: none; color: inherit; }
 }
 
 .drive-select{
-  min-width: min(520px, 80vw);
+  width: auto;
+  min-width: 180px;
+  max-width: 240px;
+}
+
+[data-folders-index] .drive-head-right{
+  justify-content: flex-end;
+}
+
+[data-folders-index] #folder-search{
+  width: min(320px, 42vw);
+}
+
+[data-folders-index] #folder-sort{
+  min-width: 190px;
+  max-width: 220px;
 }
 
 .drive-scroll { overflow-x: auto; overflow-y: hidden; }
@@ -447,7 +466,7 @@ a { text-decoration: none; color: inherit; }
 .user-dropdown {
   position: relative;
   display: inline-block;
-  z-index: 20002;
+  z-index: calc(var(--z-header) + 2);
 }
 
 .profile-toggle {
@@ -488,7 +507,7 @@ a { text-decoration: none; color: inherit; }
   border-radius: 10px;
   min-width: 140px;
   box-shadow: 0 10px 25px rgba(0,0,0,0.10);
-  z-index: 20003;
+  z-index: var(--z-header-menu);
   padding: 6px 0;
 }
 
@@ -546,7 +565,7 @@ a { text-decoration: none; color: inherit; }
   opacity: 0;
   animation: flashIn 0.4s forwards;
   pointer-events: none;
-  z-index: 15000;
+  z-index: calc(var(--z-preview) + 10);
   box-shadow: 0 18px 48px rgba(15, 23, 42, 0.16);
   border: 1px solid rgba(15,23,42,0.08);
 }
@@ -797,6 +816,9 @@ a { text-decoration: none; color: inherit; }
   display:none;
   z-index: 12000;
 }
+.kebab-menu.hidden{
+  display:none !important;
+}
 .kebab-item{
   box-sizing: border-box;
   width:100%;
@@ -830,7 +852,7 @@ a { text-decoration: none; color: inherit; }
   display:flex;
   align-items:center;
   justify-content:center;
-  z-index: 8000;
+  z-index: var(--z-overlay);
   padding: 18px;
 }
 [data-folders-index] .modal-card,
@@ -987,6 +1009,11 @@ a { text-decoration: none; color: inherit; }
   margin: 0;
   padding-left: 18px;
 }
+[data-folder-show] .upload-file-warning,
+[data-folder-show] .upload-file-over-limit{
+  color: #b42318;
+  font-weight: 600;
+}
 .folder-show-head-left,
 [data-folder-show] .folder-show-head-left{
   display:flex;
@@ -1060,7 +1087,7 @@ a { text-decoration: none; color: inherit; }
 .share-modal-overlay{
   position: fixed;
   inset: 0;
-  z-index: 9000;
+  z-index: var(--z-overlay);
   display:flex;
   align-items:center;
   justify-content:center;
@@ -1672,7 +1699,7 @@ a { text-decoration: none; color: inherit; }
 .file-preview-overlay{
   position: fixed;
   inset: 0;
-  z-index: 9500;
+  z-index: var(--z-preview);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3320,6 +3347,103 @@ a { text-decoration: none; color: inherit; }
     0 12px 26px rgba(87,18,34,0.075);
 }
 
+/* Unified list density across dashboard, folder, recents, and shared views */
+.drive-list .drive-header,
+.drive-list .drive-row,
+[data-folder-show] .cvs-list .drive-header,
+[data-folder-show] .cvs-list .drive-row,
+[data-folders-index] .folders-list .drive-header,
+[data-folders-index] .folders-list .drive-row,
+[data-shared-with-me] .shared-items-list .drive-header,
+[data-shared-with-me] .shared-items-list .drive-row,
+[data-recents-index] .recents-list .drive-header,
+[data-recents-index] .recents-list .drive-row {
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 6px 12px;
+  align-items: center;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.drive-list .drive-header,
+[data-folder-show] .cvs-list .drive-header,
+[data-folders-index] .folders-list .drive-header,
+[data-shared-with-me] .shared-items-list .drive-header,
+[data-recents-index] .recents-list .drive-header {
+  min-height: 34px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  font-size: 11.5px;
+}
+
+.drive-list .file-line,
+.drive-list .folder-link,
+[data-folder-show] .file-line,
+[data-folders-index] .folder-link,
+[data-shared-with-me] .folder-link,
+[data-recents-index] .file-line {
+  gap: 10px;
+  min-width: 0;
+}
+
+.drive-list .file-icon-svg,
+.drive-list .folder-icon-svg,
+[data-folder-show] .file-icon-svg,
+[data-folder-show] .folder-icon-svg,
+[data-folders-index] .folder-icon-svg,
+[data-shared-with-me] .file-icon-svg,
+[data-shared-with-me] .folder-icon-svg,
+[data-recents-index] .file-icon-svg {
+  width: 20px;
+  height: 20px;
+}
+
+.drive-list .file-name,
+.drive-list .folder-name,
+[data-folder-show] .file-name,
+[data-folders-index] .folder-name,
+[data-shared-with-me] .folder-name,
+[data-recents-index] .file-name {
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+.drive-list .file-sub,
+[data-folder-show] .file-sub,
+[data-recents-index] .file-sub {
+  margin-top: 1px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.drive-list .pill,
+[data-folder-show] .pill,
+[data-shared-with-me] .shared-type-badge,
+[data-shared-with-me] .shared-permission-badge,
+[data-recents-index] .pill {
+  min-height: 22px;
+  padding: 3px 8px;
+  font-size: 10.5px;
+  line-height: 1;
+}
+
+.drive-list .action-group,
+[data-shared-with-me] .action-group,
+[data-recents-index] .action-group {
+  gap: 6px;
+}
+
+.drive-list .btn.xsmall,
+[data-shared-with-me] .action-group .btn,
+[data-recents-index] .action-group .btn {
+  min-height: 28px;
+  padding: 5px 8px;
+  font-size: 12px;
+  line-height: 1;
+}
+
 .legacy-page-actions {
   display: flex;
   gap: 10px;
@@ -3363,6 +3487,32 @@ a { text-decoration: none; color: inherit; }
 
 .pager-links {
   gap: 8px;
+}
+
+.pager-pages {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pager-page,
+.pager-current {
+  min-width: 34px;
+  justify-content: center;
+  padding-inline: 10px;
+}
+
+.pager-current {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--surface);
+}
+
+.pager-ellipsis {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 0 2px;
 }
 
 .pager-disabled {
@@ -4230,7 +4380,7 @@ body.mobile-nav-open {
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 14000;
+    z-index: var(--z-overlay);
     pointer-events: none;
   }
 

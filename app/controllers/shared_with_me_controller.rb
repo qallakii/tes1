@@ -4,6 +4,8 @@ class SharedWithMeController < ApplicationController
   SharedEntry = Struct.new(:share_link, :sender, :item_type, :folder, :cv, :permission, keyword_init: true)
 
   def index
+    @page = pagination_page
+    @per_page = pagination_per_page
     received_links = current_user.accessible_share_links
       .includes(:user, :folders, :cvs, :folder)
       .where.not(user_id: current_user.id)
@@ -45,5 +47,9 @@ class SharedWithMeController < ApplicationController
         )
       end
     end
+
+    @shared_entries_total_count = @shared_entries.size
+    @page = clamp_pagination_page(@page, @shared_entries_total_count, @per_page)
+    @shared_entries = Kaminari.paginate_array(@shared_entries).page(@page).per(@per_page)
   end
 end

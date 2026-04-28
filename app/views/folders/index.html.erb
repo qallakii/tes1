@@ -117,6 +117,12 @@
       </div>
     </div>
 
+    <%= render "shared/pagination",
+      total_count: @folders.total_count,
+      page: @page,
+      per_page: @per_page,
+      base_params: request.query_parameters %>
+
     <div id="folder-no-results" class="no-results folders-index-no-results" hidden>
       No folders match your search.
     </div>

@@ -4,6 +4,7 @@ let openTrigger = null
 function closeMenu() {
   if (!openMenu) return
   openMenu.classList.add("hidden")
+  openMenu.style.display = "none"
   openMenu = null
   openTrigger = null
 }
@@ -13,6 +14,7 @@ function positionMenu(trigger, menu) {
 
   menu.style.position = "fixed"
   menu.style.zIndex = "99999"
+  menu.style.display = "block"
 
   // show temporarily to measure
   menu.classList.remove("hidden")
@@ -72,6 +74,10 @@ export function initActionsMenus() {
     }
 
     // click outside closes
+    if (openMenu && openMenu.contains(e.target) && e.target.closest(".kebab-item")) {
+      window.setTimeout(closeMenu, 0)
+      return
+    }
     if (openMenu && !openMenu.contains(e.target)) closeMenu()
   })
 
@@ -86,4 +92,6 @@ export function initActionsMenus() {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeMenu()
   })
+
+  document.addEventListener("turbo:before-cache", closeMenu)
 }

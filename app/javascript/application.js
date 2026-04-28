@@ -1,5 +1,5 @@
 import "@hotwired/turbo-rails"
-import "admin_user_new"
+import { initActionsMenus } from "actions_menu"
 import "copy_buttons"
 import "controllers"
 import "flash_messages"
@@ -11,6 +11,8 @@ import "recents_index"
 import "share_modal"
 import "share_links_new"
 import "shared_with_me"
+
+initActionsMenus()
 
 // IMPORTANT:
 // Do NOT import "@rails/ujs" when using importmap unless you explicitly pinned it.

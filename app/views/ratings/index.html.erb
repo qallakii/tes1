@@ -38,9 +38,11 @@
       </div>
     </div>
 
-    <div class="ratings-pagination">
-      <%= paginate @ratings %>
-    </div>
+    <%= render "shared/pagination",
+      total_count: @ratings.total_count,
+      page: @page,
+      per_page: @per_page,
+      base_params: request.query_parameters %>
   <% else %>
     <div class="drive-card ratings-card">
       <p class="empty-message">No ratings yet.</p>
